@@ -1,26 +1,42 @@
 import { db } from "../config/database-connection"
 import { generateResponse } from "../services/gemini-service"
 import { getOrCreateConversation, logMessage, createUnresolvedTicket } from "../model/conversation-model"
+import { PrismaClient } from "../generated/prisma"
+
+const prisma = new PrismaClient()
 
 async function handleMessage(msg) {
     const userId = msg.from;
     const text = msg.body.trim()
     const chat = await msg.getChat()
 
+    const currentHour = new Date().getHours();
+    let greeting
+    if (currentHour >= 7 && currentHour < 11) {
+        greeting = "pagi"
+    } else if (currentHour >= 11 && currentHour < 15) {
+        greeting = "siang"
+    } else if (currentHour >= 15 && currentHour < 19) {
+        greeting = "sore"
+    }
+
     const conversation = await getOrCreateConversation(userId)
 
     await logMessage(conversation.id, 'user', text)
 
-    const [activeTickets] = await db.query(`
-        SELECT unresolved.id FROM unresolved
-        JOIN messages ON unresolved.message_id = messages.id
-        WHERE messages.conversation_id = ?
-        AND unresolved.status IN ('open', 'in_progress')
-        LIMIT 1`,
-        [conversation.id]
-    )
+    const activeTickets = await prisma.unresolved.findFirst({
+        where: {
+            message: {
+                conversationId: conversation.id
+            },
+            status: {
+                in: ['open', 'in_progress']
+            }
+        }
+    })
 
-    if (activeTickets.length > 0) {
+
+    if (activeTickets) {
         const reply = `Halo! Sepertinya admin kami sedang menangani permintaanmu sebelumnya.  
         \nMohon ditunggu balasan dari mereka ya sebelum memulai pertanyaan baru, agar tidak terjadi tumpang tindih informasi. 
         \nTerima kasih! 🙏`
@@ -33,37 +49,101 @@ async function handleMessage(msg) {
     if (conversation.isNew) {
         chat.sendStateTyping()
         await new Promise((resolve) => setTimeout(resolve, 3000))
-        await msg.reply("Halo 👋, saya admin akademik Fakultas Ekonomi dan Bisnis Telkom University.")
-        await msg.reply("Sebelum melanjutkan, boleh sebutkan NIM kamu dulu untuk verifikasi ya? 🙂")
+        await msg.reply(`Halo 👋, selamat ${greeting} dan selamat datang di layanan akademik Fakultas Ekonomi dan Bisnis Telkom University.`);
+        await msg.reply("Untuk personalisasi layanan, silakan pilih peran Anda:\n\n1️⃣ Mahasiswa\n2️⃣ Dosen 🙂")
         return
     }
-    
+
     if (conversation.step === "awaiting_feedback") {
         const lastMessageId = conversation.last_bot_message_id
         let replyText = ""
 
         switch (text) {
             case "1":
-                await db.query("UPDATE messages SET feedback = '1' WHERE id = ?", [lastMessageId])
+                await prisma.message.update({
+                    where: { id: lastMessageId },
+                    data: { feedback: 'ONE' }
+                })
                 replyText = `Syukurlah kalau begitu! Terima kasih feedback-nya ya. Jangan sungkan untuk memulai percakapan lagi ya ${conversation.user.name}`
-                await db.query("UPDATE conversations SET step = 'menu' WHERE id = ?", [conversation.id])
+                await prisma.conversation.update({
+                    where: { id: conversation.id },
+                    data: { step: 'menu' }
+                })
                 break
             case "2":
             case "3":
-                await db.query("UPDATE messages SET feedback = ?, need_human = TRUE WHERE id = ?", [text, lastMessageId])
+                const feedbackValue = text === "2" ? "TWO" : "THREE"
+                await prisma.message.update({
+                    where: { id: lastMessageId },
+                    data: {
+                        feedback: feedbackValue,
+                        need_human: true,
+                    }
+                })
+                // await db.query("UPDATE messages SET feedback = ?, need_human = TRUE WHERE id = ?", [text, lastMessageId])
                 await createUnresolvedTicket(lastMessageId)
                 replyText = "Terima kasih atas masukannya. 🙏 Pesan ini sudah kami tandai untuk ditinjau oleh admin.\n\nApakah kamu ingin terhubung dengan admin sekarang? Balas *'YA'* jika perlu."
                 break
             default:
                 if (text.toLowerCase() === 'ya') {
-                    await db.query("UPDATE unresolved SET status = 'in_progress' WHERE message_id = ?", [lastMessageId])
+                    const ticketToUpdate = await prisma.unresolved.update({
+                        where: { messageId: lastMessageId }
+                    })
+                    if (ticketToUpdate) {
+                        await prisma.unresolved.update({
+                            where: { id: ticketToUpdate },
+                            data: { status: 'in_progress' }
+                        })
+                    }
                     replyText = "Baik, pesanmu sudah diteruskan dan menjadi prioritas. Mohon tunggu balasan dari admin ya!"
-                    // Kembalikan ke menu setelah eskalasi
-                    await db.query("UPDATE conversations SET step = 'menu' WHERE id = ?", [conversation.id])
+                    await prisma.conversation.update({
+                        where: { id: conversation.id },
+                        data: { step: 'menu' }
+                    })
                 } else {
                     replyText = "Pilihan feedback tidak valid. Silakan balas dengan angka 1, 2, atau 3."
                 }
         }
+
+        chat.sendStateTyping()
+        await new Promise((resolve) => setTimeout(resolve, 3000))
+        await msg.reply(replyText)
+        await logMessage(conversation.id, 'bot', replyText)
+        return
+    }
+
+    // Step 1: Select Role
+    if (conversation.step === "select_role") {
+        let nextStep = ''
+        let userRole = ''
+        let replyText = ''
+
+        switch(text) {
+            case '1':
+                userRole = 'Mahasiswa'
+                nextStep = 'ask_nim'
+                replyText = "Terima kasih, Anda telah memilih opsi Mahasiswa. Mohon untuk memasukkan NIM Anda agar kami dapat melakukan verifikasi"
+                break
+            case '2':
+                userRole = 'Dosen'
+                nextStep = 'ask_lecturer_name'
+                replyText = "Terima kasih, Anda telah memilih opsi Dosen. Mohon untuk memasukkan nama lengkap Anda"
+                break
+            default:
+                replyText = "Pilihan tidak valid. Silakan balas dengan angka 1 (Mahasiswa) atau 2 (Dosen)."
+                await msg.reply(replyText)
+                await logMessage(conversation.id, 'bot', replyText)
+                return
+        }
+
+        await prisma.users.update({
+            where: { id: conversation.user.id },
+            data: { role: userRole }
+        })
+        await prisma.conversation.update({
+            where: { id: conversation.id },
+            data: { step: nextStep }
+        })
 
         await msg.reply(replyText)
         await logMessage(conversation.id, 'bot', replyText)
@@ -82,8 +162,14 @@ async function handleMessage(msg) {
             return
         }
 
-        await db.query("UPDATE users SET identifier = ? WHERE id = ?", [nim, conversation.user.id])
-        await db.query("UPDATE conversations SET step = 'ask_name' WHERE id = ?", [conversation.id])
+        await prisma.users.update({
+            where: { id: conversation.user.id },
+            data: { identifier: nim }
+        })
+        await prisma.conversation.update({
+            where: { id: conversation.id },
+            data: { step: 'ask_name' }
+        })
 
         chat.sendStateTyping()
         await new Promise((resolve) => setTimeout(resolve, 4000))
@@ -119,9 +205,15 @@ async function handleMessage(msg) {
             nama = text;
         }
 
-        await db.query("UPDATE users SET name = ? WHERE id = ?", [name, conversation.user.id])
-        await db.query("UPDATE conversations SET step = 'menu' WHERE id = ?", [conversation.id])
-
+        await prisma.users.update({
+            where: { id: conversation.user.id },
+            data: { name: name }
+        })
+        await prisma.conversation.update({
+            where: { id: conversation.id },
+            data: { step: 'menu' }
+        })
+    
         chat.sendStateTyping()
         await new Promise((resolve) => setTimeout(resolve, 4000))
         const reply = `Halo ${name}, datamu sudah tersimpan ✅\n\nSilakan pilih kategori bantuan di bawah ini:\n1️⃣ Sidang\n2️⃣ Keuangan\n3️⃣ Wisuda`
@@ -164,7 +256,13 @@ async function handleMessage(msg) {
         }
 
         if (skipWelcome) {
-            await db.query("UPDATE conversations SET step = 'chat', category = ? WHERE id = ?", [category, conversation.id])
+            await prisma.conversation.update({
+                where: { id: conversation.id },
+                data: {
+                    step: 'chat',
+                    category: category
+                }
+            })
             const reply = `✅ Kamu memilih kategori *${category}*. Silakan tanyakan apa yang ingin kamu ketahui.`
     
             chat.sendStateTyping()
@@ -207,10 +305,13 @@ async function handleMessage(msg) {
             await new Promise((resolve) => setTimeout(resolve, 4000))
             await msg.reply(feedbackQuestion)
             await logMessage(conversation.id, 'bot', feedbackQuestion)
-            await db.query(
-                "UPDATE conversations SET step = 'awaiting_feedback', last_bot_message_id = ? WHERE id = ?", 
-                [botMessageId, conversation.id]
-            )
+            await prisma.conversation.update({
+                where: { id: conversation.id },
+                data: {
+                    step: 'awaiting_feedback',
+                    last_bot_message_id: botMessageId
+                }
+            })
         } catch (error) {
             console.error("Error Gemini:", error)
             await new Promise((resolve) => setTimeout(resolve, 3000))

@@ -24,7 +24,7 @@ CREATE TABLE conversations (
   user_id INT NOT NULL,
   category ENUM('Sidang','Keuangan','Wisuda') NULL,
   last_bot_message_id INT NULL,
-  step ENUM('select_role', 'ask_nim', 'ask_name', 'menu','chat', 'awaiting_feedback') NOT NULL,
+  step ENUM('select_role', 'ask_lecturer_name', 'ask_student_nim', 'ask_student_name', 'menu','chat', 'awaiting_feedback') NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );

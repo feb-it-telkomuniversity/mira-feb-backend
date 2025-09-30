@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Users {
+  id            Int            @id @default(autoincrement())
+  phoneNumber   String         @unique(map: "phone_number") @map("phone_number") @db.VarChar(30)
+  name          String?        @db.VarChar(200)
+  role          Role?
+  identifier    String?        @db.VarChar(255)
+  createdAt     DateTime?      @default(now()) @map("created_at") @db.Timestamp(0)
+  conversations Conversation[]
+
+  @@map("users")
+}
+
+model Conversation {
+  id                  Int       @id @default(autoincrement())
+  userId              Int       @map("user_id")
+  category            Category?
+  last_bot_message_id Int?      @map("last_bot_message_id")
+  step                Step
+  createdAt           DateTime? @default(now()) @map("created_at") @db.Timestamp(0)
+  user                Users     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "conversations_ibfk_1")
+  messages            Message[]
+
+  @@index([userId], map: "user_id")
+  @@map("conversations")
+}
+
+model Message {
+  id             Int          @id @default(autoincrement())
+  conversationId Int          @map("conversation_id")
+  sender         Sender
+  message_text   String       @map("message_text") @db.Text
+  need_human     Boolean?     @default(false) @map("need_human")
+  feedback       Feedback?
+  createdAt      DateTime?    @default(now()) @map("created_at") @db.Timestamp(0)
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "messages_ibfk_1")
+  unresolved     Unresolved[]
+
+  @@index([conversationId], map: "conversation_id")
+  @@map("messages")
+}
+
+model Unresolved {
+  id         Int       @id @default(autoincrement())
+  messageId  Int       @map("message_id")
+  status     Status?   @default(open)
+  assignedTo String?   @map("assigned_to") @db.VarChar(100)
+  createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamp(0)
+  message    Message   @relation(fields: [messageId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "unresolved_ibfk_1")
+
+  @@index([messageId], map: "message_id")
+  @@map("unresolved")
+}
+
+enum Role {
+  mahasiswa
+  dosen
+}
+
+enum Category {
+  Sidang
+  Keuangan
+  Wisuda
+}
+
+enum Step {
+  select_role
+  ask_lecturer_name
+  ask_student_nim
+  ask_student_name
+  menu
+  chat
+  awaiting_feedback
+}
+
+enum Sender {
+  user
+  bot
+  admin
+}
+
+enum Feedback {
+  ONE   @map("1")
+  TWO   @map("2")
+  THREE @map("3")
+}
+
+enum Status {
+  open
+  in_progress
+  resolved
+}

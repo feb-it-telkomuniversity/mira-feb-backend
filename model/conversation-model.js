@@ -1,38 +1,41 @@
 import { db } from "../config/database-connection"
+import { PrismaClient } from "../generated/prisma"
+
+const prisma = new PrismaClient()
 
 async function getOrCreateConversation(phoneNumber) {
-    let user
     let isNewUser = false
-    
-    const [userRows] = await db.query("SELECT * FROM users WHERE phone_number = ? LIMIT 1", [phoneNumber])
-    if (userRows.length > 0) {
-        user = userRows[0]
-    } else {
-        const [result] = await db.query("INSERT INTO users (phone_number) VALUES (?)", [phoneNumber])
-        console.log("Membuat percakapan baru: ", result)
-        const [newUserRows] = await db.query("SELECT * FROM users WHERE id = ?", [result.insertId])
-        console.log("Menampilkan data percakapan baru: ", newUserRows)
-        user = newUserRows[0]
-        isNewUser = true // Kembalikan data percakapan baru
+
+    let user = await prisma.users.findUnique({
+        where: { phoneNumber: phoneNumber }
+    })
+    if (!user) {
+        user = await prisma.users.create({
+            data: { phoneNumber: phoneNumber }
+        })
+        isNewUser = true
     }
 
-    let conversation
-    const [converRows] = await db.query(
-        "SELECT * FROM conversations WHERE user_id = ? AND created_at > NOW() - INTERVAL 6 HOUR ORDER BY created_at DESC LIMIT 1",
-        [user.id]
-    )
+    let conversation = await prisma.conversation.findFirst({
+        where: {
+            userId: user.id,
+            createdAt: {
+                gt: new Date(Date.now() - 6 * 60 * 60 * 1000),
+            },
+        },
+        orderBy: { createdAt: 'desc' },
+    })
 
-    if (converRows.length > 0) {
-        conversation = converRows[0]
-    } else {
-        const initialStep = isNewUser ? 'ask_nim' : 'menu'
-        const [result] = await db.query(
-            "INSERT INTO conversations (user_id, step) VALUES (?, ?)",
-            [user.id, initialStep]
-        )
-        const [newConvoRows] = await db.query("SELECT * FROM conversations WHERE id = ?", [result.insertId])
-        conversation = newConvoRows[0]
+    if (!conversation) {
+        const initialStep = isNewUser ? 'select_role' : 'menu'
+        conversation = await prisma.conversation.create({
+            data: {
+                userId: user.id,
+                step: initialStep
+            }
+        })
     }
+
     return { ...conversation, user, isNew: isNewUser }
 }
 
@@ -46,9 +49,9 @@ async function logMessage(conversationId, sender, text, needHuman = false, feedb
 }
 
 async function createUnresolvedTicket(messageId) {
-    const createTicket = await db.query(
-        "INSERT INTO unresolved (message_id, status) VALUES (?, 'open')", [messageId]
-    )
+    const createTicket = await prisma.unresolved.create({
+        data: { messageId: messageId }
+    })
     console.log("Membuat tiket: ", createTicket)
 }
 
