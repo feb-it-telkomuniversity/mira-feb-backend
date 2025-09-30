@@ -1,20 +1,39 @@
 import { db } from "../config/database-connection"
 
 async function getOrCreateConversation(phoneNumber) {
-    const [rows] = await db.query("SELECT * FROM conversations WHERE phone_number = ? LIMIT 1", [phoneNumber])
-    if (rows.length > 0) {
-        console.log("Menampilkan percakapan sebelumnya: ", rows)
-        return {...rows[0], isNew: false}; // Kembalikan data percakapan yang sudah ada
+    let user
+    let isNewUser = false
+    
+    const [userRows] = await db.query("SELECT * FROM users WHERE phone_number = ? LIMIT 1", [phoneNumber])
+    if (userRows.length > 0) {
+        user = userRows[0]
     } else {
-        const [result] = await db.query(
-            "INSERT INTO conversations (phone_number, step) VALUES (?, 'ask_nim')", 
-            [phoneNumber]
-        );
+        const [result] = await db.query("INSERT INTO users (phone_number) VALUES (?)", [phoneNumber])
         console.log("Membuat percakapan baru: ", result)
-        const [newRows] = await db.query("SELECT * FROM conversations WHERE id = ?", [result.insertId])
-        console.log("Menampilkan data percakapan baru: ", newRows)
-        return {...newRows[0], isNew: true} // Kembalikan data percakapan baru
+        const [newUserRows] = await db.query("SELECT * FROM users WHERE id = ?", [result.insertId])
+        console.log("Menampilkan data percakapan baru: ", newUserRows)
+        user = newUserRows[0]
+        isNewUser = true // Kembalikan data percakapan baru
     }
+
+    let conversation
+    const [converRows] = await db.query(
+        "SELECT * FROM conversations WHERE user_id = ? AND created_at > NOW() - INTERVAL 6 HOUR ORDER BY created_at DESC LIMIT 1",
+        [user.id]
+    )
+
+    if (converRows.length > 0) {
+        conversation = converRows[0]
+    } else {
+        const initialStep = isNewUser ? 'ask_nim' : 'menu'
+        const [result] = await db.query(
+            "INSERT INTO conversations (user_id, step) VALUES (?, ?)",
+            [user.id, initialStep]
+        )
+        const [newConvoRows] = await db.query("SELECT * FROM conversations WHERE id = ?", [result.insertId])
+        conversation = newConvoRows[0]
+    }
+    return { ...conversation, user, isNew: isNewUser }
 }
 
 async function logMessage(conversationId, sender, text, needHuman = false, feedback = null) {
