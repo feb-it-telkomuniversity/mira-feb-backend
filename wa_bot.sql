@@ -1,6 +1,6 @@
 -- Membuat Database (Opsional, jika belum ada)
-CREATE DATABASE IF NOT EXISTS wa_bot;
-USE wa_bot;
+CREATE DATABASE IF NOT EXISTS wa_bot_db;
+USE wa_bot_db;
 
 -- --------------------------------------------------------
 -- BAGIAN 1: STRUKTUR TABEL
@@ -22,9 +22,9 @@ CREATE TABLE users (
 CREATE TABLE conversations (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
-  category ENUM('Sidang','Keuangan','Wisuda') NULL,
+  category ENUM('Sidang','Keuangan','Wisuda', 'Sekretariat', 'Wadek1', 'Wadek2', 'ProdiS1', 'ProdiS2') NULL,
   last_bot_message_id INT NULL,
-  step ENUM('select_role', 'ask_lecturer_name', 'ask_student_nim', 'ask_student_name', 'menu','chat', 'awaiting_feedback') NOT NULL,
+  step ENUM('select_role', 'ask_lecturer_name', 'lecturer_select_unit', 'ask_student_nim', 'ask_student_name', 'menu','chat', 'awaiting_feedback') NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );

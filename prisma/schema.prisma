@@ -70,11 +70,17 @@ enum Category {
   Sidang
   Keuangan
   Wisuda
+  Sekretariat
+  Wadek1
+  Wadek2
+  ProdiS1
+  ProdiS2
 }
 
 enum Step {
   select_role
   ask_lecturer_name
+  lecturer_select_unit
   ask_student_nim
   ask_student_name
   menu
