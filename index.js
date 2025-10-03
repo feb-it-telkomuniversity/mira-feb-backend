@@ -1,5 +1,6 @@
 import express from "express"
 import { initializeWhatsapp } from "./services/whatsapp-service";
+import route from "./routes/ticket";
 
 const app = express()
 app.use(express.json())
@@ -11,6 +12,8 @@ app.get("/", (req, res) => {
         "message": "WA Bot Service is running 🚀"
     });
 })
+
+app.use('/api', route)
 
 const PORT = 3001
 

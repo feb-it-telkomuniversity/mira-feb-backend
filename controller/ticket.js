@@ -13,7 +13,7 @@ async function getAllOpenTickets(req, res) {
     }
 }
 
-async function getConversationTickets(req, res) {
+async function getConversationDetails(req, res) {
     try {
         const { id } = req.params
         const conversation = await findConversationById(id)
@@ -25,3 +25,5 @@ async function getConversationTickets(req, res) {
         res.status(500).json({ message: "Error fetching Conversation details", error: error.message })
     }
 }
+
+export { getAllOpenTickets, getConversationDetails }

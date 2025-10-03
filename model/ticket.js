@@ -9,7 +9,7 @@ async function findTicketsByStatus(status = 'open') {
         include: {
             message: {
                 select: {
-                    messageText: true,
+                    message_text: true,
                     conversation: {
                         select: {
                             id: true,
