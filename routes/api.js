@@ -1,0 +1,16 @@
+import { Router } from 'express';
+import { getTickets, getConversationDetails, assignTicketToAdmin, countDasboardStats } from "../controller/tickets-controller"
+import { signIn, signUp } from '../controller/auth-controller';
+
+const route = Router()
+
+// AUTH
+route.post('/sign-in', signIn)
+route.post('/sign-up', signUp)
+
+route.get('/tickets', getTickets)
+route.put('/tickets/:id/assign', assignTicketToAdmin)
+route.get('/dashboard/stats', countDasboardStats)
+route.get('/conversations/:id', getConversationDetails)
+
+export default route

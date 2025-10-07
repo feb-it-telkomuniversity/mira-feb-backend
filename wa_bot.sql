@@ -54,6 +54,7 @@ CREATE TABLE unresolved (
   status ENUM('open','in_progress','resolved') DEFAULT 'open',
   assigned_to VARCHAR(100) NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE
 );
 
