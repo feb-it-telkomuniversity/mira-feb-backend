@@ -58,6 +58,18 @@ CREATE TABLE unresolved (
   FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE
 );
 
+CREATE TABLE schedules (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  target_person VARCHAR(200) NOT NULL,
+  target_phone_number VARCHAR(30) NOT NULL,
+  event_title VARCHAR(255) NOT NULL,
+  event_description TEXT NOT NULL,
+  event_time DATETIME NOT NULL,
+  status ENUM('draft','pending','sent','cancelled') DEFAULT 'pending',
+  created_by VARCHAR(100) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 
 -- --------------------------------------------------------
 -- BAGIAN 2: DATA DUMMY

@@ -1,6 +1,6 @@
 
 import { PrismaClient } from "../generated/prisma"
-import { findConversationById, findTickets, assignTicketToAdminQuery, countDasboardStatsQuery } from "../model/ticket-model"
+import { findConversationById, findTickets, assignTicketToAdminQuery, countDasboardStatsQuery, getTicketCategoryStatsQuery, getTicketTrendsQuery } from "../model/ticket-model"
 
 const prisma = new PrismaClient()
 
@@ -50,4 +50,31 @@ async function countDasboardStats(req, res) {
         res.status(500).json({ message: "Error fetching dashboard stats", error: error.message })
     }
 }
-export { getTickets, getConversationDetails, assignTicketToAdmin, countDasboardStats }
+
+async function getTicketCategoryStats(req, res) {
+    try {
+        const stats = await getTicketCategoryStatsQuery()
+        res.json(stats)
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching category stats", error: error.message })
+    }
+}
+
+async function getTicketTrends(req, res) {
+    try {
+        const period = parseInt(req.query.period) || 7
+        const stats = await getTicketTrendsQuery(period)
+        res.json(stats)
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching trend ticket", error: error.message })
+    }
+}
+
+export { 
+    getTickets, 
+    getConversationDetails, 
+    assignTicketToAdmin, 
+    countDasboardStats, 
+    getTicketCategoryStats,
+    getTicketTrends
+}

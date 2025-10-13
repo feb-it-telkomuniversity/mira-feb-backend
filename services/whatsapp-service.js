@@ -3,7 +3,7 @@ import qrcode from "qrcode-terminal"
 import { handleMessage } from "../controller/whatsapp-controller"
 
 // WhatsApp Client
-const client = new Client({
+export const client = new Client({
     authStrategy: new LocalAuth(),
 })
 

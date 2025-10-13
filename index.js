@@ -2,6 +2,9 @@ import express from "express"
 import { initializeWhatsapp } from "./services/whatsapp-service";
 import route from "./routes/api"
 import cors from 'cors'
+import nodeCron from "node-cron";
+import cron from "node-cron"
+import { sendScheduleReminders } from "./model/schedule-model";
 
 const app = express()
 app.use(cors())
@@ -19,6 +22,9 @@ app.get("/", (req, res) => {
 })
 
 app.use('/api', route)
+
+cron.schedule('* * * * *', sendScheduleReminders)
+console.log('🕒 Cron job untuk reminder sudah aktif dan akan berjalan setiap menit.')
 
 const PORT = 3001
 

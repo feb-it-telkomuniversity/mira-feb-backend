@@ -1,4 +1,4 @@
-import { PrismaClient } from "../generated/prisma";
+import { PrismaClient, Prisma } from "../generated/prisma";
 
 const prisma = new PrismaClient()
 
@@ -37,7 +37,10 @@ async function findConversationById(conversationId) {
                 select: { name: true, identifier: true }
             },
             messages: {
-                orderBy: { createdAt: 'asc' }
+                orderBy: { createdAt: 'asc' },
+                include: {
+                    unresolved: true
+                }
             }
         }
     });
@@ -53,8 +56,13 @@ async function assignTicketToAdminQuery(ticketId, adminName) {
     })
 }
 
-async function resolveTicketByAdminQuery() {
-
+async function resolveTicketByAdminQuery(ticketId) {
+    return await prisma.unresolved.update({
+        where: { id: ticketId },
+        data: {
+            status: 'resolved'
+        }
+    })
 }
 
 async function countDasboardStatsQuery() {
@@ -82,10 +90,59 @@ async function countDasboardStatsQuery() {
     return { openTickets, inProgressTickets, resolvedToday, totalUsers }
 }
 
+async function getTicketCategoryStatsQuery() {
+    const countCategory = await prisma.conversation.groupBy({
+        by: ['category'],
+        where: {
+            category: {
+                not: null, // Abaikan percakapan yang belum punya kategori
+            }
+        },
+        _count: {
+            category: true
+        }
+    })
+
+    return countCategory.map((item) => ({
+        name: item.category,
+        total: item._count.category
+    }))
+}
+
+async function getTicketTrendsQuery(periodInDays = 7) {
+    const query = await prisma.$queryRaw(
+        Prisma.sql`
+            SELECT DATE(created_at) as date, COUNT(*) as count
+            FROM Unresolved
+            WHERE created_at >= NOW() - INTERVAL ${periodInDays} DAY
+            GROUP BY DATE(created_at)
+            ORDER BY date ASC;
+        `
+    )
+
+    const trends = []
+    const dateMap = new Map(query.map(item => [new Date(item.date).toISOString().split('T')[0], Number(item.count)]))
+
+    for (let i = 0; i < periodInDays; i++) {
+        const date = new Date()
+        date.setDate(date.getDate() - i)
+        const dateString = date.toISOString().split('T')[0]
+        
+        trends.push({
+            date: dateString,
+            count: dateMap.get(dateString) || 0
+        })
+    }
+
+    return trends.reverse()
+}
+
 export { 
     findTickets, 
     findConversationById, 
     assignTicketToAdminQuery, 
     resolveTicketByAdminQuery, 
-    countDasboardStatsQuery 
+    countDasboardStatsQuery,
+    getTicketCategoryStatsQuery,
+    getTicketTrendsQuery
 }

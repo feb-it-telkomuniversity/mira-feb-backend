@@ -55,11 +55,25 @@ model Unresolved {
   status     Status?   @default(open)
   assignedTo String?   @map("assigned_to") @db.VarChar(100)
   createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamp(0)
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
   message    Message   @relation(fields: [messageId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "unresolved_ibfk_1")
 
   @@index([messageId], map: "message_id")
   @@map("unresolved")
+}
+
+model Schedule {
+  id                Int             @id @default(autoincrement())
+  targetPerson      String          @map("target_person")
+  targetPhoneNumber String          @map("target_phone_number")
+  eventTitle        String          @map("event_title")
+  eventDescription  String          @db.Text @map("event_description")
+  eventTime         DateTime        @map("event_time")
+  status            ScheduleStatus  @default(pending)
+  createdBy         String          @map("created_by")
+  createdAt         DateTime        @default(now()) @map("created_at")
+
+  @@map("schedules")
 }
 
 enum Role {
@@ -105,4 +119,11 @@ enum Status {
   open
   in_progress
   resolved
+}
+
+enum ScheduleStatus {
+  draft
+  pending
+  sent
+  cancelled
 }
