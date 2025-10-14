@@ -65,6 +65,7 @@ CREATE TABLE schedules (
   event_title VARCHAR(255) NOT NULL,
   event_description TEXT NOT NULL,
   event_time DATETIME NOT NULL,
+  reminder_time DATETIME NOT NULL,
   status ENUM('draft','pending','sent','cancelled') DEFAULT 'pending',
   created_by VARCHAR(100) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

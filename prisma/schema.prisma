@@ -69,6 +69,7 @@ model Schedule {
   eventTitle        String          @map("event_title")
   eventDescription  String          @db.Text @map("event_description")
   eventTime         DateTime        @map("event_time")
+  reminderTime      DateTime        @map("reminder_time")
   status            ScheduleStatus  @default(pending)
   createdBy         String          @map("created_by")
   createdAt         DateTime        @default(now()) @map("created_at")

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { getTickets, getConversationDetails, assignTicketToAdmin, countDasboardStats, getTicketCategoryStats, getTicketTrends } from "../controller/tickets-controller"
 import { signIn, signUp } from '../controller/auth-controller';
-import { handleCreateSchedule } from '../controller/schedule-controller';
+import { handleCreateSchedule, getSchedulesByMonth, handleCancelSchedule } from '../controller/schedule-controller';
 
 const route = Router()
 
@@ -17,5 +17,7 @@ route.get('/dashboard/stats/ticket-trends', getTicketTrends)
 route.get('/conversations/:id', getConversationDetails)
 
 route.post('/schedules', handleCreateSchedule)
+route.get('/schedules', getSchedulesByMonth)
+route.put('/schedules/:id/cancel', handleCancelSchedule)
 
 export default route

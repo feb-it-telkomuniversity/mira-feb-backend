@@ -10,6 +10,7 @@ async function createScheduleQuery(scheduleData) {
             eventTitle: scheduleData.eventTitle,
             eventDescription: scheduleData.eventDescription,
             eventTime: new Date(scheduleData.eventTime),
+            reminderTime: new Date(scheduleData.reminderTime),
             status: 'pending',
             createdBy: scheduleData.createdBy
         }
@@ -22,7 +23,7 @@ async function sendScheduleReminders() {
     const now = new Date()
     const reminderToSend = await prisma.schedule.findMany({
         where: {
-            eventTime: {
+            reminderTime: {
                 lte: now,
             },
             status: 'pending'
@@ -41,7 +42,7 @@ async function sendScheduleReminders() {
                 hour: '2-digit',
                 minute: '2-digit',
             })
-            const message = `🔔 *PENGINGAT JADWAL* 🔔\n\nAssalamualaikum, ${schedule.targetPerson}.\n\nSekadar pengingat, Anda memiliki jadwal:\n\n*Kegiatan:* ${schedule.eventDescription}\n*Waktu:* Pukul ${eventTimeFormatted} hari ini.\n\nTerima kasih.`
+            const message = `🔔 *PENGINGAT JADWAL* 🔔\n\nAssalamualaikum, ${schedule.targetPerson}.\n\nSekadar pengingat, Anda memiliki jadwal:\n\n*Kegiatan:* ${schedule.eventTitle}\n*Waktu:* Pukul ${eventTimeFormatted} hari ini.\n\nTerima kasih.`
 
             await whatsAppClient.sendMessage(schedule.targetPhoneNumber, message);
             console.log(`✅ Reminder untuk "${schedule.eventDescription}" berhasil dikirim ke ${schedule.targetPerson}.`)
@@ -56,4 +57,46 @@ async function sendScheduleReminders() {
     }
 }
 
-export { createScheduleQuery, sendScheduleReminders }
+async function getSchedulesByMonthQuery(year, month) {
+    const startDate = new Date(year, month - 1, 1)
+    const endDate = new Date(year, month, 1)
+
+    return await prisma.schedule.findMany({
+        where: {
+            eventTime: {
+                gte: startDate,
+                lt: endDate
+            }
+        },
+        orderBy: {
+            eventTime: 'asc'
+        }
+    })
+}
+
+async function cancelScheduleQuery(scheduleId) {
+    const cancelSchedule = await prisma.schedule.updateMany({
+        where: { 
+            id: scheduleId,
+            status: {
+                not: 'sent'
+            }
+         },
+        data: { status: 'cancelled' }
+    })
+    return cancelSchedule.count
+}
+
+async function deleteScheduleQuery(scheduleId) {
+    return await prisma.schedule.update({
+        where: { id: scheduleId } 
+    })
+}
+
+export { 
+    createScheduleQuery, 
+    sendScheduleReminders, 
+    getSchedulesByMonthQuery, 
+    cancelScheduleQuery, 
+    deleteScheduleQuery
+}

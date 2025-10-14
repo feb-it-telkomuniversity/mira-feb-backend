@@ -1,4 +1,18 @@
-import { createScheduleQuery } from "../model/schedule-model";
+import { cancelScheduleQuery, createScheduleQuery, getSchedulesByMonthQuery } from "../model/schedule-model";
+
+async function getSchedulesByMonth(req, res) {
+    try {
+        const now = new Date()
+        const year = parseInt(req.query.year) || now.getFullYear()
+        const month = parseInt(req.query.month) || now.getMonth() + 1
+
+        const schedule = await getSchedulesByMonthQuery(year, month)
+        res.json(schedule)
+    } catch (error) {
+        console.error('Error saat mengambil jadwal: ', error)
+        res.status(500).json({ "Message": "Internal server error" })
+    }
+}
 
 async function handleCreateSchedule(req, res) {
     try {
@@ -7,11 +21,12 @@ async function handleCreateSchedule(req, res) {
             targetPhoneNumber, 
             eventTitle, 
             eventDescription, 
-            eventTime,  
+            eventTime,
+            reminderTime,
             createdBy 
         } = req.body
 
-        if (!targetPerson || !targetPhoneNumber || !eventTitle || !eventDescription || !eventTime || !createdBy) {
+        if (!targetPerson || !targetPhoneNumber || !eventTitle || !eventDescription || !eventTime  || !reminderTime || !createdBy) {
             return res.status(400).json({ message: "Semua field wajib diisi." });
         }
 
@@ -28,4 +43,28 @@ async function handleCreateSchedule(req, res) {
     }
 }
 
-export { handleCreateSchedule }
+async function handleCancelSchedule(req, res) {
+    try {
+        const scheduleId = parseInt(req.params.id)
+        const updateScheduleStatus = await cancelScheduleQuery(scheduleId)
+        if (updateScheduleStatus === 0) {
+            return res.status(409).json({
+                message: "Schedule cannot be cancel. Maybe it has been sent or no schedule yet"
+            })
+        }
+        res.json({ message: `Schedule ${scheduleId} successfully cancelled` })
+    } catch (error) {
+        res.status(500).json({ message: "Got error when canceling schedule ", error: error.message })
+        console.error({ message: "Got error when canceling schedule ", error: error.message })
+    }
+}
+
+async function handleDeleteSchedule(req, res) {
+    try {
+        
+    } catch (error) {
+        res.status(500).json({ message: "" })
+    }
+}
+
+export { handleCreateSchedule, getSchedulesByMonth, handleCancelSchedule }
