@@ -28,7 +28,7 @@ async function handleNewUser(msg, conversation) {
 }
 
 async function handleMessage(msg) {
-    if (msg.fromMe) return
+    if (msg.fromMe || msg.type !== "chat" || !msg.body) return
     
     const userId = msg.from;
     const text = msg.body.trim()

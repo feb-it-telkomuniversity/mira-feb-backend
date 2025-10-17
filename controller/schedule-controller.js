@@ -1,4 +1,4 @@
-import { cancelScheduleQuery, createScheduleQuery, getSchedulesByMonthQuery } from "../model/schedule-model";
+import { cancelScheduleQuery, createScheduleQuery, deleteScheduleQuery, getSchedulesByMonthQuery } from "../model/schedule-model";
 
 async function getSchedulesByMonth(req, res) {
     try {
@@ -61,10 +61,12 @@ async function handleCancelSchedule(req, res) {
 
 async function handleDeleteSchedule(req, res) {
     try {
-        
+        const scheduleId = parseInt(req.params.id)
+        const deleteSchedule = await deleteScheduleQuery(scheduleId)
+        res.status(204).send()
     } catch (error) {
-        res.status(500).json({ message: "" })
+        res.status(500).json({ message: "Error when deleting schedule", error: error.message })
     }
 }
 
-export { handleCreateSchedule, getSchedulesByMonth, handleCancelSchedule }
+export { handleCreateSchedule, getSchedulesByMonth, handleCancelSchedule, handleDeleteSchedule }

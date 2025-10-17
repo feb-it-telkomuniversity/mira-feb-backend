@@ -1,5 +1,5 @@
 import { PrismaClient } from "../generated/prisma";
-import { client as whatsAppClient } from "../services/whatsapp-service";
+import { client as whatsAppClient } from '../services/whatsapp-client'
 const prisma = new PrismaClient()
 
 async function createScheduleQuery(scheduleData) {
@@ -38,11 +38,17 @@ async function sendScheduleReminders() {
 
     for (const schedule of reminderToSend) {
         try {
-            const eventTimeFormatted = new Date(schedule.eventTime).toLocaleTimeString('id-ID', {
+            const eventDate = new Date(schedule.eventTime);
+            const formattedTime = eventDate.toLocaleTimeString('id-ID', {
                 hour: '2-digit',
                 minute: '2-digit',
-            })
-            const message = `🔔 *PENGINGAT JADWAL* 🔔\n\nAssalamualaikum, ${schedule.targetPerson}.\n\nSekadar pengingat, Anda memiliki jadwal:\n\n*Kegiatan:* ${schedule.eventTitle}\n*Waktu:* Pukul ${eventTimeFormatted} hari ini.\n\nTerima kasih.`
+            });
+            const formattedDate = eventDate.toLocaleDateString('id-ID', {
+                weekday: 'long', // Hari
+                day: 'numeric',  // tanggal
+                month: 'long',   // bulan
+            });
+            const message = `🔔 *PENGINGAT JADWAL* 🔔\n\nAssalamualaikum, ${schedule.targetPerson}.\n\nSekadar pengingat, Anda memiliki jadwal:\n\n*Kegiatan:* ${schedule.eventTitle}\n*Detail:* ${schedule.eventDescription}\n*Waktu:* ${formattedDate}\n*Pukul:* ${formattedTime}\n\nPesan ini tidak untuk dibalas, hanya sebagai *PENGINGAT*\n\nTerima kasih.`;
 
             await whatsAppClient.sendMessage(schedule.targetPhoneNumber, message);
             console.log(`✅ Reminder untuk "${schedule.eventDescription}" berhasil dikirim ke ${schedule.targetPerson}.`)
@@ -88,7 +94,7 @@ async function cancelScheduleQuery(scheduleId) {
 }
 
 async function deleteScheduleQuery(scheduleId) {
-    return await prisma.schedule.update({
+    return await prisma.schedule.delete({
         where: { id: scheduleId } 
     })
 }
