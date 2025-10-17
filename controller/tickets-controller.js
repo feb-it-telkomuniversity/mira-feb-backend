@@ -67,6 +67,8 @@ async function getTicketTrends(req, res) {
         res.json(stats)
     } catch (error) {
         res.status(500).json({ message: "Error fetching trend ticket", error: error.message })
+        console.error("Error fetching trend ticket:", error.message);
+        res.json([])
     }
 }
 
