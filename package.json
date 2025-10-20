@@ -1,6 +1,6 @@
 {
   "name": "wa-bot",
-  "module": "index.ts",
+  "module": "index.js",
   "type": "module",
   "private": true,
   "devDependencies": {
@@ -20,5 +20,8 @@
     "prisma": "^6.17.1",
     "qrcode-terminal": "^0.12.0",
     "whatsapp-web.js": "^1.34.1"
+  },
+  "scripts": {
+    "build": "prisma generate"
   }
 }
