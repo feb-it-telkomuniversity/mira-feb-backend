@@ -1,4 +1,4 @@
-import { PrismaClient } from "../generated/prisma";
+import { PrismaClient } from "@prisma/client";
 import { client as whatsAppClient } from '../services/whatsapp-client.js'
 const prisma = new PrismaClient()
 
