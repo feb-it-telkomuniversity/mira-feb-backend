@@ -41,7 +41,11 @@ async function getOrCreateConversation(phoneNumber) {
 async function logMessage(conversationId, sender, text, needHuman = false, feedback = null) {
     const newMessage = await prisma.message.create({
         data: {
-            conversation: conversationId,
+            conversation: {
+                connect: {
+                    id: conversationId
+                }
+            },
             sender: sender,
             message_text: text,
             need_human: needHuman,
