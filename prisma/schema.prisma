@@ -64,8 +64,6 @@ model Unresolved {
 
 model Schedule {
   id                Int             @id @default(autoincrement())
-  targetPerson      String          @map("target_person")
-  targetPhoneNumber String          @map("target_phone_number")
   eventTitle        String          @map("event_title")
   eventDescription  String          @db.Text @map("event_description")
   eventTime         DateTime        @map("event_time")
@@ -74,7 +72,21 @@ model Schedule {
   createdBy         String          @map("created_by")
   createdAt         DateTime        @default(now()) @map("created_at")
 
+  // Relasi: Satu Jadwal bisa punya banyak Penerima
+  recipients       ScheduleRecipient[]
+
   @@map("schedules")
+}
+
+model ScheduleRecipient {
+  id                Int             @id @default(autoincrement())
+  scheduleId        Int             @map("schedule_id")
+  name              String
+  phoneNumber       String          @map("phone_number")
+
+  schedule          Schedule        @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@map("schedule_recipients")
 }
 
 enum Role {

@@ -17,8 +17,7 @@ async function getSchedulesByMonth(req, res) {
 async function handleCreateSchedule(req, res) {
     try {
         const { 
-            targetPerson, 
-            targetPhoneNumber, 
+            recipients,
             eventTitle, 
             eventDescription, 
             eventTime,
@@ -26,8 +25,8 @@ async function handleCreateSchedule(req, res) {
             createdBy 
         } = req.body
 
-        if (!targetPerson || !targetPhoneNumber || !eventTitle || !eventDescription || !eventTime  || !reminderTime || !createdBy) {
-            return res.status(400).json({ message: "Semua field wajib diisi." });
+        if (!Array.isArray(recipients)  || !recipients || recipients.length === 0 || !eventTitle || !eventDescription || !eventTime  || !reminderTime || !createdBy) {
+            return res.status(400).json({ message: "Field event, reminder, dan minimal satu penerima wajib diisi." });
         }
 
         const newSchedule = await createScheduleQuery(req.body)
