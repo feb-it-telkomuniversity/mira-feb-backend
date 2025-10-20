@@ -1,4 +1,3 @@
-import { db } from "../config/database-connection.js"
 import { PrismaClient } from "@prisma/client"
 
 const prisma = new PrismaClient()
@@ -40,12 +39,17 @@ async function getOrCreateConversation(phoneNumber) {
 }
 
 async function logMessage(conversationId, sender, text, needHuman = false, feedback = null) {
-    const [result] = await db.query(
-        "INSERT INTO messages (conversation_id, sender, message_text, need_human, feedback) VALUES (?, ?, ?, ?, ?)",
-        [conversationId, sender, text, needHuman, feedback]
-    )
-    console.log("Save message: ", result)
-    return result.insertId
+    const newMessage = await prisma.message.create({
+        data: {
+            conversation: conversationId,
+            sender: sender,
+            message_text: text,
+            need_human: needHuman,
+            feedback: feedback
+        }
+    })
+    console.log("Save message: ", newMessage)
+    return newMessage.id
 }
 
 async function createUnresolvedTicket(messageId) {

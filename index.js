@@ -2,7 +2,6 @@ import express from "express"
 import { initializeWhatsapp } from "./services/whatsapp-service.js";
 import route from "./routes/api.js"
 import cors from 'cors'
-import nodeCron from "node-cron";
 import cron from "node-cron"
 import { sendScheduleReminders } from "./model/schedule-model.js";
 

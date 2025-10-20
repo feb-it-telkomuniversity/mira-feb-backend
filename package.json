@@ -22,6 +22,9 @@
     "whatsapp-web.js": "^1.34.1"
   },
   "scripts": {
-    "build": "prisma generate"
+    "dev": "node index.js",
+    "build": "bun run prisma:generate",
+    "prisma:generate": "npx prisma generate",
+    "postinstall": "prisma generate"
   }
 }
