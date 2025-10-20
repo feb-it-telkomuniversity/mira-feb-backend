@@ -1,4 +1,4 @@
-import { getOrCreateConversation, logMessage, createUnresolvedTicket } from "../model/conversation-model.js"
+import { logMessage } from "../model/conversation-model.js"
 import { PrismaClient } from "../generated/prisma"
 
 const prisma = new PrismaClient()
