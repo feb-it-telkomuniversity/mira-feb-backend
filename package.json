@@ -23,6 +23,7 @@
   },
   "scripts": {
     "dev": "node index.js",
+    "start": "node index.js",
     "build": "bun run prisma:generate",
     "prisma:generate": "npx prisma generate",
     "postinstall": "prisma generate"
