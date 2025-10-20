@@ -1,5 +1,5 @@
 import { PrismaClient } from "../generated/prisma";
-import { client as whatsAppClient } from '../services/whatsapp-client'
+import { client as whatsAppClient } from '../services/whatsapp-client.js'
 const prisma = new PrismaClient()
 
 async function createScheduleQuery(scheduleData) {

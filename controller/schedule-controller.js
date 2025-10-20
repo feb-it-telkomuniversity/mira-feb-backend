@@ -1,4 +1,4 @@
-import { cancelScheduleQuery, createScheduleQuery, deleteScheduleQuery, getSchedulesByMonthQuery } from "../model/schedule-model";
+import { cancelScheduleQuery, createScheduleQuery, deleteScheduleQuery, getSchedulesByMonthQuery } from "../model/schedule-model.js";
 
 async function getSchedulesByMonth(req, res) {
     try {

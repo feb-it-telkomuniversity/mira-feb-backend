@@ -1,8 +1,5 @@
 
-import { PrismaClient } from "../generated/prisma"
-import { findConversationById, findTickets, assignTicketToAdminQuery, countDasboardStatsQuery, getTicketCategoryStatsQuery, getTicketTrendsQuery } from "../model/ticket-model"
-
-const prisma = new PrismaClient()
+import { findConversationById, findTickets, assignTicketToAdminQuery, countDasboardStatsQuery, getTicketCategoryStatsQuery, getTicketTrendsQuery } from "../model/ticket-model.js"
 
 async function getTickets(req, res) {
     try {

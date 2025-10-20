@@ -1,4 +1,4 @@
-import { logMessage } from "../model/conversation-model"
+import { logMessage } from "../model/conversation-model.js"
 import { PrismaClient } from "../generated/prisma"
 
 const prisma = new PrismaClient()

@@ -1,6 +1,6 @@
-import { getOrCreateConversation, logMessage, createUnresolvedTicket } from "../model/conversation-model"
+import { getOrCreateConversation, logMessage, createUnresolvedTicket } from "../model/conversation-model.js"
 import { PrismaClient } from "../generated/prisma"
-import { generateResponse } from "../services/gemini-service"
+import { generateResponse } from "../services/gemini-service.js"
 
 const prisma = new PrismaClient()
 

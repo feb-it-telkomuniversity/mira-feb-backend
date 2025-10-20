@@ -1,7 +1,7 @@
 import { Client, LocalAuth } from "whatsapp-web.js"
 import qrcode from "qrcode-terminal"
-import { handleMessage } from "../controller/whatsapp-controller"
-import { client } from "./whatsapp-client"
+import { handleMessage } from "../controller/whatsapp-controller.js"
+import { client } from "./whatsapp-client.js"
 
 // WhatsApp Client
 // export const client = new Client({

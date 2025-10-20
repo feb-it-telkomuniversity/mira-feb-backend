@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { getTickets, getConversationDetails, assignTicketToAdmin, countDasboardStats, getTicketCategoryStats, getTicketTrends } from "../controller/tickets-controller"
-import { signIn, signUp } from '../controller/auth-controller';
-import { handleCreateSchedule, getSchedulesByMonth, handleCancelSchedule, handleDeleteSchedule } from '../controller/schedule-controller';
+import { getTickets, getConversationDetails, assignTicketToAdmin, countDasboardStats, getTicketCategoryStats, getTicketTrends } from "../controller/tickets-controller.js"
+import { signIn, signUp } from '../controller/auth-controller.js';
+import { handleCreateSchedule, getSchedulesByMonth, handleCancelSchedule, handleDeleteSchedule } from '../controller/schedule-controller.js';
 
 const route = Router()
 

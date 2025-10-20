@@ -1,10 +1,10 @@
 import express from "express"
-import { initializeWhatsapp } from "./services/whatsapp-service";
-import route from "./routes/api"
+import { initializeWhatsapp } from "./services/whatsapp-service.js";
+import route from "./routes/api.js"
 import cors from 'cors'
 import nodeCron from "node-cron";
 import cron from "node-cron"
-import { sendScheduleReminders } from "./model/schedule-model";
+import { sendScheduleReminders } from "./model/schedule-model.js";
 
 const app = express()
 app.use(cors())
