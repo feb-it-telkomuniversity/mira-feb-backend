@@ -1,10 +1,9 @@
 import pkg from "whatsapp-web.js"
 
 const { Client, LocalAuth } = pkg
-const SESSION_PATH = path.join('/tmp', '.wwebjs_auth')
 
 export const client = new Client({
-    authStrategy: new LocalAuth({ dataPath: SESSION_PATH }),
+    authStrategy: new LocalAuth(),
     puppeteer: {
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
     }
