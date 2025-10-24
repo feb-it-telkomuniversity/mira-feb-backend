@@ -46,6 +46,52 @@ async function findConversationById(conversationId) {
     });
 }
 
+async function findRelevantConversationSegment(conversationId) {
+    const activeTicket = await prisma.unresolved.findFirst({
+        where: {
+            message: { conversationId: parseInt(conversationId) },
+            status: {
+                in: [ 'open', 'in_progress' ]
+            }
+        },
+        orderBy: { createdAt: 'desc' },
+        include: { message: true }
+    })
+
+    if (!activeTicket) {
+        const conversationInfo = await prisma.conversation.findUnique({
+            where: { id: parseInt(conversationId) },
+            include: { user: { select: { name: true, identifier: true } } }
+        })
+        return {
+            conversation: conversationInfo,
+            messages: [],
+            activeTicket: null
+        }
+    }
+
+    const relevantMessages = await prisma.message.findMany({
+        where: {
+            conversationId: parseInt(conversationId),
+            // Ambil pesan dari sebelum tiket dibuat sampai pesan tiket itu sendiri
+            id: { lte: activeTicket.messageId }, 
+        },
+        orderBy: { createdAt: 'asc' },
+        include: { unresolved: true } // Tetap sertakan data tiket
+    })
+
+    const conversationInfo = await prisma.conversation.findUnique({
+        where: { id: parseInt(conversationId) },
+        include: { user: { select: { name: true, identifier: true } } }
+    })
+
+    return {
+        conversation: conversationInfo, // Info dasar percakapan & user
+        messages: relevantMessages,    // Hanya potongan pesan relevan
+        activeTicket: activeTicket     // Detail tiket aktif
+    }
+}
+
 async function assignTicketToAdminQuery(ticketId, adminName) {
     return await prisma.unresolved.update({
         where: { id: parseInt(ticketId) },
@@ -57,12 +103,31 @@ async function assignTicketToAdminQuery(ticketId, adminName) {
 }
 
 async function resolveTicketByAdminQuery(ticketId) {
-    return await prisma.unresolved.update({
-        where: { id: ticketId },
-        data: {
-            status: 'resolved'
-        }
+    const ticket = await prisma.unresolved.findUnique({
+        where: { id: parseInt(ticketId) },
+        include: { 
+            message: {
+                select: { conversationId: true } 
+            } 
+        },
     })
+
+    if (!ticket) {
+        throw new Error("Ticket not found");
+    }
+
+    const conversationId = ticket.message.conversationId
+
+    return await prisma.$transaction([
+        prisma.unresolved.update({
+            where: { id: parseInt(ticketId) },
+            data: { status: 'resolved' },
+        }),
+        prisma.conversation.update({
+            where: { id: conversationId },
+            data: { step: 'menu', last_bot_message_id: null },
+        }),
+    ])
 }
 
 async function countDasboardStatsQuery() {
@@ -110,11 +175,15 @@ async function getTicketCategoryStatsQuery() {
 }
 
 async function getTicketTrendsQuery(periodInDays = 7) {
+    const startDate = new Date()
+    startDate.setDate(startDate.getDate() - periodInDays + 1)
+    startDate.setHours(0, 0, 0, 0)
+
     const query = await prisma.$queryRaw(
         Prisma.sql`
             SELECT DATE(created_at) as date, COUNT(*) as count
-            FROM Unresolved
-            WHERE created_at >= NOW() - INTERVAL ${periodInDays} DAY
+            FROM "unresolved"
+            WHERE created_at >= ${startDate} 
             GROUP BY DATE(created_at)
             ORDER BY date ASC;
         `
@@ -144,5 +213,6 @@ export {
     resolveTicketByAdminQuery, 
     countDasboardStatsQuery,
     getTicketCategoryStatsQuery,
-    getTicketTrendsQuery
+    getTicketTrendsQuery,
+    findRelevantConversationSegment
 }

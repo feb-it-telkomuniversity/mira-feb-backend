@@ -1,5 +1,5 @@
 
-import { findConversationById, findTickets, assignTicketToAdminQuery, countDasboardStatsQuery, getTicketCategoryStatsQuery, getTicketTrendsQuery } from "../model/ticket-model.js"
+import { findConversationById, findTickets, assignTicketToAdminQuery, countDasboardStatsQuery, getTicketCategoryStatsQuery, getTicketTrendsQuery, resolveTicketByAdminQuery, findRelevantConversationSegment } from "../model/ticket-model.js"
 
 async function getTickets(req, res) {
     try {
@@ -18,9 +18,32 @@ async function getConversationDetails(req, res) {
         if (!conversation) {
             return res.json(404).json({ message: "Conversation not found" })
         }
-        res.json(conversation)
+        let activeTicket = null
+        for (const msg of conversation.messages) {
+            if (msg.unresolved && Array.isArray(msg.unresolved) && msg.unresolved.length > 0) {
+                const ticket = msg.unresolved[0]
+                if (ticket.status === 'open' || ticket.status === 'in_progress') {
+                    activeTicket = ticket;
+                    break
+                }
+            }
+        }
+        res.json({...conversation, activeTicket})
     } catch (error) {
         res.status(500).json({ message: "Error fetching Conversation details", error: error.message })
+    }
+}
+
+async function getConversationRelevantDetails(req, res) {
+    try {
+        const { id } = req.params
+        const conversationSegment = await findRelevantConversationSegment(id)
+        if (!conversationSegment || !conversationSegment.conversation) {
+            return res.status(404).json({ message: "Conversation not found or no active ticket" })
+        }
+        res.json({ conversationSegment })
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching relevant conversation segment", error: error.message })
     }
 }
 
@@ -35,6 +58,17 @@ async function assignTicketToAdmin(req, res) {
         res.json(updatedTicket)
     } catch (error) {
         res.status(500).json({ message: "Error assigning ticket", error: error.message })
+        console.log("error: ", error.message);
+    }
+}
+
+async function resolveTicketByAdmin(req, res) {
+    try {
+        const { id } = req.params
+        const resolveTicket = await resolveTicketByAdminQuery(id)
+        res.json(resolveTicket)
+    } catch (error) {
+        res.status(500).json({ message: "Error when resolving ticket", error: error.message })
         console.log("error: ", error.message);
     }
 }
@@ -63,9 +97,8 @@ async function getTicketTrends(req, res) {
         const stats = await getTicketTrendsQuery(period)
         res.json(stats)
     } catch (error) {
+        console.error("Error fetching trend ticket:", error.message)
         res.status(500).json({ message: "Error fetching trend ticket", error: error.message })
-        console.error("Error fetching trend ticket:", error.message);
-        res.json([])
     }
 }
 
@@ -73,7 +106,9 @@ export {
     getTickets, 
     getConversationDetails, 
     assignTicketToAdmin, 
+    resolveTicketByAdmin,
     countDasboardStats, 
     getTicketCategoryStats,
-    getTicketTrends
+    getTicketTrends,
+    getConversationRelevantDetails
 }
