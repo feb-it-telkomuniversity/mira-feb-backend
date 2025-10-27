@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
-import { createAdminQuery, findAdminByUsernameQuery } from "../model/auth-model"
+import { createAdminQuery, findAdminByUsernameQuery } from "../model/auth-model.js"
 
 async function signIn(req, res) {
     try {
@@ -12,7 +12,7 @@ async function signIn(req, res) {
             })
         }
         
-        const admin = await findAdminByUsernameQuery()
+        const admin = await findAdminByUsernameQuery(username)
         if (!admin) {
             return res.status(401).json({
                 succes: false,
@@ -43,6 +43,7 @@ async function signIn(req, res) {
                 id: admin.id,
                 name: admin.name,
                 username: admin.username,
+                fullName: admin.fullName
             }
         })
     } catch (error) {
@@ -57,18 +58,18 @@ async function signIn(req, res) {
 async function registerAdmin(req, res) {
     try {
         const { username, fullname, password } = req.body
-        if (!email || !name || !password) {
+        if (!username || !fullname || !password) {
             return res.status(400).json({
                 success: false,
-                message: 'Email, name, and password are required'
+                message: 'Username, name, and password are required'
             });
         }
         
-        const existingAdmin = await findAdminByUsernameQuery()
+        const existingAdmin = await findAdminByUsernameQuery(username)
         if (existingAdmin) {
             return res.status(409).json({
                 success: false,
-                message: "Email already in use"
+                message: "username already in use"
             })
         }
 

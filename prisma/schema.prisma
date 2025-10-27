@@ -10,7 +10,7 @@ datasource db {
 
 model Users {
   id            Int            @id @default(autoincrement())
-  phoneNumber   String         @unique(map: "phone_number") @map("phone_number") @db.VarChar(30)
+  phoneNumber   String         @unique() @db.VarChar(30)
   name          String?        @db.VarChar(200)
   role          Role?
   identifier    String?        @db.VarChar(255)

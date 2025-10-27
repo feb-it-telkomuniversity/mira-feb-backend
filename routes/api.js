@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import { getTickets, getConversationDetails, assignTicketToAdmin, countDasboardStats, getTicketCategoryStats, getTicketTrends, resolveTicketByAdmin, getConversationRelevantDetails } from "../controller/tickets-controller.js"
-const AuthController = require('../controller/auth-controller.js')
+import { signIn, registerAdmin } from '../controller/auth-controller.js'
 import { handleCreateSchedule, getSchedulesByMonth, handleCancelSchedule, handleDeleteSchedule } from '../controller/schedule-controller.js';
 
 const route = Router()
 
 // AUTH
-route.post('/sign-in', AuthController.signIn)
-route.post('/register-admin', AuthController.registerAdmin)
+route.post('/sign-in', signIn)
+route.post('/register-admin', registerAdmin)
 
 route.get('/tickets', getTickets)
 route.put('/tickets/:id/assign', assignTicketToAdmin)

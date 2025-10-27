@@ -22,13 +22,25 @@ CREATE TYPE "ScheduleStatus" AS ENUM ('draft', 'pending', 'sent', 'cancelled');
 -- CreateTable
 CREATE TABLE "users" (
     "id" SERIAL NOT NULL,
-    "phone_number" VARCHAR(30) NOT NULL,
+    "phoneNumber" VARCHAR(30) NOT NULL,
     "name" VARCHAR(200),
     "role" "Role",
     "identifier" VARCHAR(255),
     "created_at" TIMESTAMP(0) DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Admins" (
+    "id" SERIAL NOT NULL,
+    "username" TEXT NOT NULL,
+    "full_name" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Admins_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -93,7 +105,10 @@ CREATE TABLE "schedule_recipients" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "phone_number" ON "users"("phone_number");
+CREATE UNIQUE INDEX "users_phoneNumber_key" ON "users"("phoneNumber");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Admins_username_key" ON "Admins"("username");
 
 -- CreateIndex
 CREATE INDEX "user_id" ON "conversations"("user_id");
