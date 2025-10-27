@@ -1,4 +1,4 @@
-# wa-bot
+# MIRA FEB Backend
 
 To install dependencies:
 
