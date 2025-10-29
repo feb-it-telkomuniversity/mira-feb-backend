@@ -20,8 +20,8 @@ app.get("/", (req, res) => {
 
 app.use('/api', route)
 
-cron.schedule('* * * * *', sendScheduleReminders)
-console.log('🕒 Cron job untuk reminder sudah aktif dan akan berjalan setiap menit.')
+cron.schedule('*/2 * * * *', sendScheduleReminders)
+console.log('🕒 Cron job untuk reminder sudah aktif dan akan berjalan setiap 2 menit.')
 
 const PORT = 3001
 

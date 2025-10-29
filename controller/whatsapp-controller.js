@@ -27,6 +27,10 @@ async function handleNewUser(msg, conversation) {
 }
 
 async function handleMessage(msg) {
+    console.log('====================================')
+    console.log('Pesan Diterima Dari ID:', msg.from)
+    console.log('====================================')
+    
     if (msg.fromMe || msg.type !== "chat" || !msg.body) return
     
     const userId = msg.from;

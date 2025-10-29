@@ -68,8 +68,8 @@ async function sendScheduleReminders() {
                     weekday: 'long', // Hari
                     day: 'numeric',  // tanggal
                     month: 'long',   // bulan
-                });
-                const message = `🔔 *PENGINGAT JADWAL* 🔔\n\nAssalamualaikum, ${recipient.name}.\n\nIzin mengingatkan, Anda memiliki jadwal:\n\n*Kegiatan:* ${schedule.eventTitle}\n*Detail:* ${schedule.eventDescription}\n*Waktu:* ${formattedDate}\n*Pukul:* ${formattedTime}\n\nPesan ini tidak untuk dibalas, hanya sebagai *PENGINGAT*\n\nTerima kasih.`;
+                })
+                const message = `*Pengingat Jadwal*\n\nYth. Bpk/Ibu ${recipient.name}\nIzin mengingatkan Anda memiliki jadwal:\n\n*Kegiatan*: ${schedule.eventTitle}\n*Detail*: ${schedule.eventDescription}\n*Waktu*: ${formattedDate}\n*Pukul*: ${formattedTime}\n\nTerima kasih\n\nCatatan: Pesan ini tidak untuk dibalas, hanya sebagai *PENGINGAT*`
 
                 await whatsAppClient.sendMessage(recipient.phoneNumber, message);
                 console.log(`✅ Reminder untuk "${schedule.eventTitle}" berhasil dikirim ke ${recipient.name}.`)

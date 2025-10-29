@@ -62,7 +62,7 @@ async function handleDeleteSchedule(req, res) {
     try {
         const scheduleId = parseInt(req.params.id)
         const deleteSchedule = await deleteScheduleQuery(scheduleId)
-        res.status(204).send()
+        res.status(204).json({ message: "Schedule deleted successfully" })
     } catch (error) {
         res.status(500).json({ message: "Error when deleting schedule", error: error.message })
     }
