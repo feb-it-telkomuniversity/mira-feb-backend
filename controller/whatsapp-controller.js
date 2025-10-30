@@ -26,16 +26,25 @@ async function handleNewUser(msg, conversation) {
     })
 }
 
+const GROUP_ID = '120363406764411190@g.us'
+
 async function handleMessage(msg) {
-    console.log('====================================')
-    console.log('Pesan Diterima Dari ID:', msg.from)
-    console.log('====================================')
-    
+    // console.log('====================================')
+    // console.log('Pesan Diterima Dari ID:', msg.from)
+    // console.log('====================================')
+
     if (msg.fromMe || msg.type !== "chat" || !msg.body) return
     
-    const userId = msg.from;
+    const userId = msg.from
     const text = msg.body.trim()
     const chat = await msg.getChat()
+    const chatId = chat.id._serialized
+
+    if (chat.isGroup && chatId === GROUP_ID) {
+        console.log(`Pesan dari group ${chat.name} (${chatId}) diabaikan (group reminder only)`)
+        return
+    }
+
 
     const conversation = await getOrCreateConversation(userId)
 
