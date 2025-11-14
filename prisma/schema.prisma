@@ -91,12 +91,27 @@ model Schedule {
 model ScheduleRecipient {
   id                Int             @id @default(autoincrement())
   scheduleId        Int             @map("schedule_id")
-  name              String
-  phoneNumber       String          @map("phone_number")
-
   schedule          Schedule        @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
 
+  contactId         Int?             @map("contact_id")
+  contact           Contacts?        @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
   @@map("schedule_recipients")
+}
+
+model Contacts {
+  id                Int             @id @default(autoincrement())
+  name              String
+  title             String
+  phoneNumber       String          @unique @map("phone_number")
+  notes             String?         @map("notes") @db.Text
+
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+
+  schedules         ScheduleRecipient[]
+
+  @@map("contacts")
 }
 
 enum Role {

@@ -16,21 +16,44 @@ async function createScheduleQuery(scheduleData) {
                 createdBy: mainScheduleData.createdBy
             }
         })
-        // Siapkan data penerima dengan ID jadwal yang baru dibuat
-        const recipientData = recipients.map((recipient) => ({
-            scheduleId: newSchedule.id,
-            name: recipient.name,
-            phoneNumber: recipient.phoneNumber
-        }))
-        await trans.scheduleRecipient.createMany({ // Simpan semua penerima sekaligus
-            data: recipientData
-        })
+
+        for (const recipient of recipients) {
+            // Cari atau Buat Kontak (Upsert)
+            const contact = await trans.contacts.upsert({
+                where: { 
+                    phoneNumber: recipient.phoneNumber 
+                },
+                update: { 
+                    name: recipient.name 
+                },
+                create: {
+                    // Jika tidak ditemukan, buat kontak baru
+                    name: recipient.name,
+                    phoneNumber: recipient.phoneNumber,
+                    title: recipient.title || "Nama kegiatan tidak diisi"
+                }
+            });
+
+            // 3. Hubungkan Jadwal dengan Kontak
+            //    di tabel ScheduleRecipient
+            await trans.scheduleRecipient.create({
+                data: {
+                    scheduleId: newSchedule.id,
+                    contactId: contact.id
+                }
+            });
+        }
         
-        // Kembalikan jadwal yang baru dibuat beserta penerimanya
         return trans.schedule.findUnique({
             where: { id: newSchedule.id },
-            include: { recipients: true }
-        }) 
+            include: { 
+                recipients: {
+                    include: {
+                        contact: true // Kirim juga data kontaknya
+                    }
+                } 
+            }
+        })
     })
 }
 
@@ -46,7 +69,11 @@ async function sendScheduleReminders() {
             status: 'pending'
         },
         include: {
-            recipients: true
+            recipients: {
+                include: {
+                    contact: true
+                }
+            }
         }
     })
     
@@ -57,7 +84,12 @@ async function sendScheduleReminders() {
     console.log(`Ditemukan ${reminderToSend.length} reminder untuk dikirim`)
 
     for (const schedule of reminderToSend) {
-        for (const recipient of schedule.recipients) {          
+        for (const recipient of schedule.recipients) {
+            const contact = recipient.contact
+            if (!contact) {
+                console.error(`Kontak tidak ditemukan untuk recipient ID ${recipient.id} di jadwal ID ${schedule.id}`)
+                continue
+            }
             try {
                 const eventDate = new Date(schedule.eventTime);
                 const formattedTime = eventDate.toLocaleTimeString('id-ID', {
@@ -69,10 +101,10 @@ async function sendScheduleReminders() {
                     day: 'numeric',  // tanggal
                     month: 'long',   // bulan
                 })
-                const message = `*Pengingat Jadwal*\n\nYth. Bpk/Ibu ${recipient.name}\nIzin mengingatkan Anda memiliki jadwal:\n\n*Kegiatan*: ${schedule.eventTitle}\n*Detail*: ${schedule.eventDescription}\n*Waktu*: ${formattedDate}\n*Pukul*: ${formattedTime}\n\nTerima kasih\n\nCatatan: Pesan ini tidak untuk dibalas, hanya sebagai *PENGINGAT*`
+                const message = `*Pengingat Jadwal*\n\nYth. Bpk/Ibu ${contact.name}\nIzin mengingatkan Anda memiliki jadwal:\n\n*Kegiatan*: ${schedule.eventTitle}\n*Detail*: ${schedule.eventDescription}\n*Waktu*: ${formattedDate}\n*Pukul*: ${formattedTime}\n\nTerima kasih\n\nCatatan: Pesan ini tidak untuk dibalas, hanya sebagai *PENGINGAT*`
 
-                await whatsAppClient.sendMessage(recipient.phoneNumber, message);
-                console.log(`✅ Reminder untuk "${schedule.eventTitle}" berhasil dikirim ke ${recipient.name}.`)
+                await whatsAppClient.sendMessage(contact.phoneNumber, message);
+                console.log(`✅ Reminder untuk "${schedule.eventTitle}" berhasil dikirim ke ${contact.name}.`)
 
                 await prisma.schedule.update({
                     where: { id: schedule.id },

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { getTickets, getConversationDetails, assignTicketToAdmin, countDasboardStats, getTicketCategoryStats, getTicketTrends, resolveTicketByAdmin, getConversationRelevantDetails } from "../controller/tickets-controller.js"
 import { signIn, registerAdmin } from '../controller/auth-controller.js'
 import { handleCreateSchedule, getSchedulesByMonth, handleCancelSchedule, handleDeleteSchedule } from '../controller/schedule-controller.js';
+import { createContact, getContacts } from '../controller/contacts-controller.js';
 
 const route = Router()
 
@@ -22,5 +23,8 @@ route.get('/schedules', getSchedulesByMonth)
 route.post('/schedules', handleCreateSchedule)
 route.delete('/schedules/:id', handleDeleteSchedule)
 route.put('/schedules/:id/cancel', handleCancelSchedule)
+
+route.get('/contacts', getContacts)
+route.post('/contacts', createContact)
 
 export default route
