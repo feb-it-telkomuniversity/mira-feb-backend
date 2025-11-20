@@ -19,20 +19,12 @@ async function createScheduleQuery(scheduleData) {
 
         for (const recipient of recipients) {
             // Cari atau Buat Kontak (Upsert)
-            const contact = await trans.contacts.upsert({
-                where: { 
-                    phoneNumber: recipient.phoneNumber 
-                },
-                update: { 
-                    name: recipient.name 
-                },
-                create: {
-                    // Jika tidak ditemukan, buat kontak baru
-                    name: recipient.name,
-                    phoneNumber: recipient.phoneNumber,
-                    title: recipient.title || "Nama kegiatan tidak diisi"
-                }
-            });
+            const contact = await trans.contacts.findUnique({
+                where: { id: recipient.id }
+            })          
+            if (!contact) {
+                throw new Error(`Kontak dengan ID ${recipient.id} tidak ditemukan`);
+            }
 
             // 3. Hubungkan Jadwal dengan Kontak
             //    di tabel ScheduleRecipient

@@ -27,4 +27,23 @@ async function createContactQuery(contactData) {
     return contact
 }
 
-export { getContactsQuery, createContactQuery }
+async function deleteContactQuery(scheduleId) {
+    return await prisma.contacts.delete({
+        where: { id: scheduleId }
+    })
+}
+
+async function updateContactQuery(contactId, contactData) {
+    // contactData: { name, title, phoneNumber, notes }
+    return await prisma.contacts.update({
+        where: { id: contactId },
+        data: {
+            name: contactData.name,
+            title: "",
+            phoneNumber: contactData.phoneNumber,
+            notes: contactData.notes
+        }
+    });
+}
+
+export { getContactsQuery, createContactQuery, deleteContactQuery, updateContactQuery }

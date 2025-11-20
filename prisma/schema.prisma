@@ -114,6 +114,34 @@ model Contacts {
   @@map("contacts")
 }
 
+model PartnershipDocument {
+  id                  Int             @id @default(autoincrement())
+  yearIssued          Int             @map("year_issued")
+  docType             DocType?        @map("doc_type")
+  partnerName         String          @map("partner_name")
+  scope               Scope?
+  picExternal         String?         @map("pic_external")
+  picInternal         String?         @map("pic_internal")
+  docNumberInternal   String?         @unique @map("doc_number_internal")
+  docNumberExternal   String?         @unique @map("doc_number_external")
+  partnershipType     PartnershipType? @map("partnership_type")
+  activityType        ActivityType?    @map("activity_type")
+  dateCreated         DateTime?       @map("date_created")
+  signingType         String?         @map("signing_type")
+  dateSigned          DateTime?       @map("date_signed")
+  validUntil          DateTime?       @map("valid_until")
+  notes               String?         @db.Text
+
+  // Kolom Arsip
+  hasHardcopy         Boolean   @default(false) @map("has_hardcopy")
+  hasSoftcopy         Boolean   @default(false) @map("has_softcopy")
+
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  @@map("partnership_documents")
+}
+
 enum Role {
   mahasiswa
   dosen
@@ -164,4 +192,41 @@ enum ScheduleStatus {
   pending
   sent
   cancelled
+}
+
+enum DocType {
+  MoA
+  MoU
+  IA
+}
+
+enum Scope {
+  national
+  international
+}
+
+enum PartnershipType {
+  Akademik
+  Penelitian
+  Abdimas
+}
+
+enum ActivityType {
+  // --- Sub Akademik ---
+  JointDegree
+  DoubleDegree
+  JointClass
+  StudentExchange
+  VisitingProfessor
+
+  // --- Sub Penelitian ---
+  JointResearch
+  JointPublication
+
+  // --- Sub Abdimas ---
+  JointCommunityService
+  SocialProject
+  
+  // --- Umum ---
+  General
 }
