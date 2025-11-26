@@ -31,7 +31,7 @@ async function getPartnershipCharts(req, res) {
         const chartData = await getPartnershipChartQuery()
         res.status(200).json({
             success: true,
-            message: "Successfully fetch chart date partnership",
+            message: "Successfully fetch chart data partnership",
             data: chartData
         });
     } catch (error) {
@@ -42,15 +42,28 @@ async function getPartnershipCharts(req, res) {
 
 async function getPartnershipData(req, res) {
     try {
-        const partnershipData = await getPartnershipDataQuery()
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 15;
+        const search = req.query.search || "";
+
+        if (page < 1 || limit < 1) {
+            return res.status(400).json({ 
+                success: false,
+                message: "Invalid page or limit parameter" 
+            });
+        }
+
+        const result = await getPartnershipDataQuery(page, limit, search);
+
         res.status(200).json({
             success: true,
             message: "Successfully fetch partnership data",
-            data: partnershipData
-        })
+            data: result.data,
+            pagination: result.pagination
+        });
     } catch (error) {
         console.error("Error fetching partnership data:", error);
-        res.status(500).json({ message: "Internal server error when fetching partnership data" })        
+        res.status(500).json({ message: "Internal server error when fetching partnership data" });
     }
 }
 

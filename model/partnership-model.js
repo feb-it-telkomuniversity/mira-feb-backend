@@ -94,28 +94,40 @@ async function getPartnershipChartQuery() {
     return { documentsByYear, documentByCategory, documentByScope }
 }
 
-async function getPartnershipDataQuery() {
-    const data = await prisma.partnershipDocument.findMany({
-        select: {
-            id: true,
-            yearIssued: true,
-            docType: true,
-            partnerName: true,
-            scope: true,
-            picExternal: true,
-            picInternal: true,
-            docNumberInternal: true,
-            docNumberExternal: true,
-            partnershipType: true,
-            activityType: true,
-            dateCreated: true,
-            signingType: true,
-            dateSigned: true,
-            validUntil: true,
-            notes: true
+async function getPartnershipDataQuery(page = 1, limit = 15, search = "") {
+    const skip = (page - 1) * limit
+    
+    const whereClause = search ? {
+        OR: [
+            { partnerName: { contains: search, mode: "insensitive" } },
+            { 
+                yearIssued: isNaN(parseInt(search)) ? undefined : parseInt(search)
+            }
+        ]
+    } : {}
+
+    const [data, totalCount] = await prisma.$transaction([
+        prisma.partnershipDocument.findMany({
+            where: whereClause,
+            skip: skip,     // Lewati data sebelumnya
+            take: limit,    // Ambil sejumlah limit
+            orderBy: {
+                updatedAt: 'desc', // Urutkan dari yang terbaru diupdate
+            },
+        }),
+        prisma.partnershipDocument.count({
+            where: whereClause,
+        })
+    ])
+    return {
+        data,
+        pagination: {
+            totalItems: totalCount,
+            totalPages: Math.ceil(totalCount / limit),
+            currentPage: page,
+            pageSize: limit
         }
-    })
-    return data
+    }
 }
 
 export { 
