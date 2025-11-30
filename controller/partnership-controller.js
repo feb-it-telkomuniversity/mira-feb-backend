@@ -44,7 +44,14 @@ async function getPartnershipData(req, res) {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 15;
-        const search = req.query.search || "";
+        const search = req.query.search || ""
+
+        const filters = {
+            scope: req.query.scope || null,
+            docType: req.query.docType || null,
+            status: req.query.status || null,
+            archive: req.query.archive || null,
+        }
 
         if (page < 1 || limit < 1) {
             return res.status(400).json({ 
@@ -53,7 +60,7 @@ async function getPartnershipData(req, res) {
             });
         }
 
-        const result = await getPartnershipDataQuery(page, limit, search);
+        const result = await getPartnershipDataQuery(page, limit, search, filters)
 
         res.status(200).json({
             success: true,

@@ -94,17 +94,55 @@ async function getPartnershipChartQuery() {
     return { documentsByYear, documentByCategory, documentByScope }
 }
 
-async function getPartnershipDataQuery(page = 1, limit = 15, search = "") {
+async function getPartnershipDataQuery(page = 1, limit = 15, search = "", filters={}) {
     const skip = (page - 1) * limit
-    
-    const whereClause = search ? {
-        OR: [
-            { partnerName: { contains: search, mode: "insensitive" } },
-            { 
-                yearIssued: isNaN(parseInt(search)) ? undefined : parseInt(search)
-            }
-        ]
-    } : {}
+
+    const andConditions = []
+
+    if (search) {
+        andConditions.push({
+            OR: [
+                { partnerName: { contains: search, mode: "insensitive" } },
+                { yearIssued: isNaN(parseInt(search)) ? undefined : parseInt(search) },
+                { docNumberInternal: { contains: search, mode: "insensitive" } }
+            ]
+        })
+    }
+
+    if (filters.scope) {
+        andConditions.push({ scope: filters.scope.toLowerCase() });
+    }
+
+    if (filters.docType) {
+        andConditions.push({ docType: filters.docType });
+    }
+
+    if (filters.archive) {
+        if (filters.archive === 'missing_hardcopy') {
+            andConditions.push({ hasHardcopy: false });
+        } else if (filters.archive === 'missing_softcopy') {
+            andConditions.push({ hasSoftcopy: false });
+        } else if (filters.archive === 'complete') {
+            andConditions.push({ hasHardcopy: true, hasSoftcopy: true });
+        }
+    }
+
+    if (filters.status) {
+        const today = new Date();
+        if (filters.status === 'active') {
+            andConditions.push({
+                OR: [{ validUntil: { gte: today } }, { validUntil: null }]
+            });
+        } else if (filters.status === 'expired') {
+            andConditions.push({ validUntil: { lt: today } });
+        } else if (filters.status === 'expiring') {
+            const threeMonthsLater = new Date();
+            threeMonthsLater.setMonth(today.getMonth() + 3);
+            andConditions.push({ validUntil: { gte: today, lte: threeMonthsLater } });
+        }
+    }
+
+    const whereClause = andConditions.length > 0 ? { AND: andConditions } : {}
 
     const [data, totalCount] = await prisma.$transaction([
         prisma.partnershipDocument.findMany({

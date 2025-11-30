@@ -120,24 +120,46 @@ model PartnershipDocument {
   docType             DocType?        @map("doc_type")
   partnerName         String          @map("partner_name")
   scope               Scope?
+  
   picExternal         String?         @map("pic_external")
+  picExternalPhone    String?         @map("pic_external_phone")
   picInternal         String?         @map("pic_internal")
+  
+
   docNumberInternal   String?         @unique @map("doc_number_internal")
   docNumberExternal   String?         @unique @map("doc_number_external")
+  
+
   partnershipType     PartnershipType? @map("partnership_type")
   activityType        ActivityType?    @map("activity_type")
+  
   dateCreated         DateTime?       @map("date_created")
   signingType         String?         @map("signing_type")
   dateSigned          DateTime?       @map("date_signed")
   validUntil          DateTime?       @map("valid_until")
+  duration            String?         @map("duration") 
+  
+  // --- APPROVAL WORKFLOW (Baju Surat) ---
+  approvalWadek2      ApprovalStatus? @map("approval_wadek2")
+  approvalWadek1      ApprovalStatus? @map("approval_wadek1")
+  approvalKabagKST    ApprovalStatus? @map("approval_kabag_kst")
+  approvalDirSPIO     ApprovalStatus? @map("approval_dir_spio")
+  approvalKaurLegal   ApprovalStatus? @map("approval_kaur_legal")
+  approvalKabagSekpim ApprovalStatus? @map("approval_kabag_sekpim")
+  approvalDirSPS      ApprovalStatus? @map("approval_dir_sps")
+  approvalDekan       ApprovalStatus? @map("approval_dekan")
+  approvalWarek1      ApprovalStatus? @map("approval_warek1")
+  approvalRektor      ApprovalStatus? @map("approval_rektor")
+
+  // --- Arsip & Lainnya ---
+  docLink             String?         @map("doc_link")
   notes               String?         @db.Text
+  
+  hasHardcopy         Boolean         @default(false) @map("has_hardcopy")
+  hasSoftcopy         Boolean         @default(false) @map("has_softcopy")
 
-  // Kolom Arsip
-  hasHardcopy         Boolean   @default(false) @map("has_hardcopy")
-  hasSoftcopy         Boolean   @default(false) @map("has_softcopy")
-
-  createdAt           DateTime  @default(now()) @map("created_at")
-  updatedAt           DateTime  @updatedAt @map("updated_at")
+  createdAt           DateTime        @default(now()) @map("created_at")
+  updatedAt           DateTime        @updatedAt @map("updated_at")
 
   @@map("partnership_documents")
 }
@@ -229,4 +251,12 @@ enum ActivityType {
   
   // --- Umum ---
   General
+}
+
+enum ApprovalStatus {
+  Approved
+  Returned
+  Submitted
+  Pending
+  Skipped // Opsional: jika tidak perlu lewat ponggawa tsb
 }
