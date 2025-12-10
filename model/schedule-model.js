@@ -110,20 +110,12 @@ async function sendScheduleReminders() {
 }
 
 async function getSchedulesByMonthQuery(year, month) {
-    const startDate = new Date(year, month - 1, 1)
-    const endDate = new Date(year, month, 1)
-
+    // Tidak ada filter berdasarkan bulan/tahun, ambil semua jadwal dan urutkan berdasarkan eventTime ascending
     return await prisma.schedule.findMany({
-        where: {
-            eventTime: {
-                gte: startDate,
-                lt: endDate
-            }
-        },
         orderBy: {
             eventTime: 'asc'
         }
-    })
+    });
 }
 
 async function cancelScheduleQuery(scheduleId) {

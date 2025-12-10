@@ -2,17 +2,30 @@ import { cancelScheduleQuery, createScheduleQuery, deleteScheduleQuery, getSched
 
 async function getSchedulesByMonth(req, res) {
     try {
-        const now = new Date()
-        const year = parseInt(req.query.year) || now.getFullYear()
-        const month = parseInt(req.query.month) || now.getMonth() + 1
+        // const now = new Date()
+        // const year = parseInt(req.query.year) || now.getFullYear()
+        // const month = parseInt(req.query.month) || now.getMonth() + 1
 
-        const schedule = await getSchedulesByMonthQuery(year, month)
+        const schedule = await getSchedulesByMonthQuery()
         res.json(schedule)
     } catch (error) {
         console.error('Error saat mengambil jadwal: ', error)
         res.status(500).json({ "Message": "Internal server error" })
     }
 }
+// async function getSchedulesByMonth(req, res) {
+//     try {
+//         const now = new Date()
+//         const year = parseInt(req.query.year) || now.getFullYear()
+//         const month = parseInt(req.query.month) || now.getMonth() + 1
+
+//         const schedule = await getSchedulesByMonthQuery(year, month)
+//         res.json(schedule)
+//     } catch (error) {
+//         console.error('Error saat mengambil jadwal: ', error)
+//         res.status(500).json({ "Message": "Internal server error" })
+//     }
+// }
 
 async function handleCreateSchedule(req, res) {
     try {

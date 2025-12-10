@@ -131,7 +131,8 @@ model PartnershipDocument {
   
 
   partnershipType     PartnershipType? @map("partnership_type")
-  activityType        ActivityType?    @map("activity_type")
+  // activityType        ActivityType?    @map("activity_type")
+  activities PartnershipActivity[]
   
   dateCreated         DateTime?       @map("date_created")
   signingType         String?         @map("signing_type")
@@ -162,6 +163,19 @@ model PartnershipDocument {
   updatedAt           DateTime        @updatedAt @map("updated_at")
 
   @@map("partnership_documents")
+}
+
+model PartnershipActivity {
+  id            Int               @id @default(autoincrement())
+  type          ActivityType?          
+  status        ActivityStatus?   @default(BelumTerlaksana)
+  notes         String?           @db.Text
+  
+  // Relasi ke Dokumen
+  documentId    Int               @map("document_id")
+  document      PartnershipDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@map("partnership_activities")
 }
 
 enum Role {
@@ -252,11 +266,15 @@ enum ActivityType {
   // --- Umum ---
   General
 }
+enum ActivityStatus {
+  Terlaksana
+  BelumTerlaksana
+}
 
 enum ApprovalStatus {
   Approved
   Returned
   Submitted
   Pending
-  Skipped // Opsional: jika tidak perlu lewat ponggawa tsb
+  Skipped
 }

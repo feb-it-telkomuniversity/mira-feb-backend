@@ -152,6 +152,9 @@ async function getPartnershipDataQuery(page = 1, limit = 15, search = "", filter
             orderBy: {
                 updatedAt: 'desc', // Urutkan dari yang terbaru diupdate
             },
+            include: {
+                activities: true 
+            }
         }),
         prisma.partnershipDocument.count({
             where: whereClause,
@@ -168,9 +171,178 @@ async function getPartnershipDataQuery(page = 1, limit = 15, search = "", filter
     }
 }
 
+async function createPartnershipDataQuery(payload) {
+    const toNull = (value) => (value === "" || value === undefined ? null : value)
+
+    return await prisma.partnershipDocument.create({
+        data: {
+            partnerName: payload.partnerName,
+            yearIssued: payload.yearIssued, // Sudah number dari FE
+            docType: payload.docType,
+            scope: payload.scope,
+
+            picExternal: toNull(payload.picExternal),
+            picExternalPhone: toNull(payload.picExternalPhone),
+            picInternal: toNull(payload.picInternal),
+
+            notes: payload.notes,
+            hasHardcopy: payload.hasHardcopy,
+            hasSoftcopy: payload.hasSoftcopy,
+            // Hati-hati: Kolom Unique. Kalau "" dikirim double, Prisma error. Jadi harus null.
+            docNumberInternal: toNull(payload.docNumberInternal), 
+            docNumberExternal: toNull(payload.docNumberExternal),
+
+            partnershipType: toNull(payload.partnershipType),
+
+            signingType: toNull(payload.signingType),
+            docLink: toNull(payload.docLink),
+            duration: toNull(payload.duration),
+            dateCreated: toNull(payload.dateCreated),
+            dateSigned: toNull(payload.dateSigned),
+            validUntil: toNull(payload.validUntil),
+
+            activities: {
+                create: (payload.activityType || []).map((type) => ({
+                    type: type,
+                    status: "BelumTerlaksana"
+                }))
+            }
+        },
+        include: {
+            activities: true
+        }
+    })
+}
+
+async function updatePartnershipDataQuery(id, payload) {
+    const processValue = (value) => {
+        if (value === undefined) return undefined;
+        if (value === "") return null;
+        return value;
+    }
+    
+    const processDate = (value) => {
+        if (value === undefined) return undefined;
+        if (value === "" || value === null) return null;
+        return new Date(value)
+    }
+
+    // ============================================================
+    // 🚨 LOGIC 1: UPDATE STATUS & NOTES (TRANSACTIONAL) 
+    // Dipakai jika FE mengirim array object yang punya 'id'
+    // ============================================================
+    if (payload.activities && payload.activities.length > 0 && payload.activities[0].id) {
+        const updatePromises = payload.activities.map(act => 
+            prisma.partnershipActivity.update({
+                where: { id: parseInt(act.id) }, // Cari berdasarkan ID activity
+                data: {
+                    status: act.status, // Update Status
+                    notes: act.notes    // Update Notes
+                }
+            })
+        );
+
+        await prisma.$transaction(updatePromises);
+
+        return await prisma.partnershipDocument.findUnique({
+            where: { id: parseInt(id) },
+            include: { activities: true }
+        });
+    }
+
+    // ============================================================
+    // 🚨 LOGIC 2: WIPE & REPLACE (DELETE ALL -> CREATE NEW)
+    // Dipakai jika FE mengirim array string (e.g. ['JointResearch'])
+    // atau object tanpa ID (Data baru dari form utama)
+    // ============================================================
+    let activitiesOperation = undefined;
+
+    const incomingActivities = payload.activities || payload.activityType;
+
+    if (incomingActivities && !incomingActivities[0]?.id) {
+        const activitiesData = incomingActivities.map((item) => {
+            if (typeof item === 'string') {
+                return {
+                    type: item,
+                    status: 'BelumTerlaksana',
+                    notes: null
+                }
+            } else {
+                return {
+                    type: item.type,
+                    status: item.status || 'BelumTerlaksana',
+                    notes: item.notes || null
+                }
+            }
+        });
+
+        activitiesOperation = {
+            deleteMany: {},
+            create: activitiesData
+        };
+    }
+
+    return await prisma.partnershipDocument.update({
+        where: { id: parseInt(id) },
+        data: {
+            yearIssued: payload.yearIssued ? parseInt(payload.yearIssued) : undefined, 
+            docType: payload.docType,
+            partnerName: payload.partnerName,
+            scope: payload.scope,
+            
+            picExternal: processValue(payload.picExternal),
+            picExternalPhone: processValue(payload.picExternalPhone),
+            picInternal: processValue(payload.picInternal),
+
+            docNumberInternal: processValue(payload.docNumberInternal),
+            docNumberExternal: processValue(payload.docNumberExternal),
+
+            partnershipType: processValue(payload.partnershipType),
+            
+            // Masukkan logic activitiesOperation disini
+            // (Akan undefined jika masuk ke Logic 1, jadi aman)
+            activities: activitiesOperation, 
+            
+            dateCreated: processDate(payload.dateCreated),
+            signingType: processValue(payload.signingType),
+            dateSigned: processDate(payload.dateSigned),
+            validUntil: processDate(payload.validUntil),
+            duration: processValue(payload.duration),
+
+            docLink: processValue(payload.docLink),
+            notes: payload.notes,
+            hasHardcopy: payload.hasHardcopy,
+            hasSoftcopy: payload.hasSoftcopy,
+
+            approvalWadek2: processValue(payload.approvalWadek2),
+            approvalWadek1: processValue(payload.approvalWadek1),
+            approvalKabagKST: processValue(payload.approvalKabagKST),
+            approvalDirSPIO: processValue(payload.approvalDirSPIO),
+            approvalKaurLegal: processValue(payload.approvalKaurLegal),
+            approvalKabagSekpim: processValue(payload.approvalKabagSekpim),
+            approvalDirSPS: processValue(payload.approvalDirSPS),
+            approvalDekan: processValue(payload.approvalDekan),
+            approvalWarek1: processValue(payload.approvalWarek1),
+            approvalRektor: processValue(payload.approvalRektor),
+        },
+        include: {
+            activities: true
+        }
+    })
+}
+
+async function deletePartnershipDataQuery(id) {
+    return await prisma.partnershipDocument.delete({
+        where: { id: id }
+    })
+}
+
 export { 
     getPartnershipStatsQuery, 
     getPartnershipSummaryStatsQuery, 
     getPartnershipChartQuery,
-    getPartnershipDataQuery
+    getPartnershipDataQuery,
+    createPartnershipDataQuery,
+    updatePartnershipDataQuery,
+    deletePartnershipDataQuery
 }
