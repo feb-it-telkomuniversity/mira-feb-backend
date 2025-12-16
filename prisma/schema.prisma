@@ -178,6 +178,32 @@ model PartnershipActivity {
   @@map("partnership_activities")
 }
 
+model ContractManagement {
+  id                Int           @id @default(autoincrement())
+  ContractManagementCategory ContractManagementCategory?
+  responsibility    String
+  quarterly         String
+  unit              String?
+
+  weight            String?
+  target            String?
+  realization       String?
+  achievement       String?
+
+  max               Int?
+  min               Int?
+  persReal          Decimal?      @map("pers_real")
+  value             Decimal?
+
+  Input             String?
+  Monitor           String?
+
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+
+  @@map("contract_management")
+}
+
 enum Role {
   mahasiswa
   dosen
@@ -230,6 +256,8 @@ enum ScheduleStatus {
   cancelled
 }
 
+// --- Partnership Monitoring ---
+
 enum DocType {
   MoA
   MoU
@@ -277,4 +305,12 @@ enum ApprovalStatus {
   Submitted
   Pending
   Skipped
+}
+
+// --- Contract Management ---
+
+enum ContractManagementCategory {
+  Financial
+  NonFinancial
+  InternalBusinessProcess  
 }
