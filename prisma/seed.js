@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import csv from "csv-parser";
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient()
 const csvFilePath = path.join(
   process.cwd(),
   "prisma",
@@ -12,16 +12,18 @@ const csvFilePath = path.join(
 );
 
 // ---------- Helpers ----------
-const parseIntSafe = (v) =>
-  v === undefined || v === null || v === "" ? null : parseInt(v);
+const parseDecimal = (v) => {
+  if (v === undefined || v === null || v === "") return null;
+  return Number(String(v).replace(",", "."));
+};
 
-const parseDecimalSafe = (v) =>
-  v === undefined || v === null || v === ""
-    ? null
-    : Number(v.replace(",", "."));
+const parseIntSafe = (v) => {
+  if (v === undefined || v === null || v === "") return null;
+  return Number(v);
+};
 
 const parseString = (v) =>
-  !v || v.trim() === "" ? null : v.trim();
+  !v || String(v).trim() === "" ? null : String(v).trim();
 
 async function main() {
   console.log("🌱 Seeding Contract Management...");
@@ -36,17 +38,20 @@ async function main() {
       .on("data", (row) => {
         records.push({
           ContractManagementCategory: row.ContractManagementCategory,
-          responsibility: row.responsibility,
+          responsibility: parseString(row.responsibility),
           quarterly: row.quarterly,
           unit: parseString(row.unit),
-          weight: parseString(row.weight),
-          target: parseString(row.target),
-          realization: parseString(row.realization),
-          achievement: parseString(row.achievement),
+
+          // NUMERIC (Decimal)
+          weight: parseDecimal(row.weight),
+          target: parseDecimal(row.target),
+          realization: parseDecimal(row.realization),
+
+          // NUMERIC (Int)
           max: parseIntSafe(row.max),
           min: parseIntSafe(row.min),
-          persReal: parseDecimalSafe(row.persReal),
-          value: parseDecimalSafe(row.value),
+
+          // META
           Input: parseString(row.Input),
           Monitor: parseString(row.Monitor),
         });

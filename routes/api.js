@@ -5,7 +5,7 @@ import { handleCreateSchedule, getSchedulesByMonth, handleCancelSchedule, handle
 import { createContact, getContacts, handleDeleteContact } from '../controller/contacts-controller.js';
 import { createPartnershipData, deletePartnershipData, getPartnershipCharts, getPartnershipData, getPartnershipStats, getPartnershipSummaryStats, updatePartnershipData } from '../controller/partnership-controller.js';
 import { addEvent, getEvents, getGoogleEvents, googleLogin, googleRedirect } from '../controller/google-calendar-controller.js';
-import { getContractManagementData } from '../controller/contract-management-controller.js';
+import { createContractManagement, getContractManagementData, getContractStats } from '../controller/contract-management-controller.js';
 
 const route = Router()
 
@@ -47,5 +47,7 @@ route.post("/google/events", addEvent);
 
 // ==== Contract Management ====
 route.get('/contract-management', getContractManagementData)
+route.post('/contract-management', createContractManagement)
+route.get('/contract-management/stats', getContractStats)
 
 export default route
