@@ -120,7 +120,12 @@ async function getContractManagementDataQuery(page = 1, limit = 15, search = "",
     }
 
     if (filters.unit) {
-        andConditions.push({ unit: filters.unit })
+        andConditions.push({
+            OR: [
+                { unit: filters.unit },
+                { unit: null }
+            ]
+        })
     }
 
     const whereClause = andConditions.length > 0 ? { AND: andConditions } : {}
