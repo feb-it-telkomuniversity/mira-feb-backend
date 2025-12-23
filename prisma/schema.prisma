@@ -314,3 +314,104 @@ enum ContractManagementCategory {
   NonFinancial
   InternalBusinessProcess  
 }
+
+// --- ActivityMonitoring ---
+model ActivityMonitoring {
+  id                  Int             @id @default(autoincrement())
+  title               String
+  description         String?
+  date                DateTime        @db.Date
+  startTime           DateTime
+  endTime             DateTime
+  participants  Int                   @default(0)
+
+  unit          UnitOption
+  prodi         ProdiOption?
+  room          RoomOption
+  officials     OfficialOption[]
+
+  status        ActivityMonitoringStatus  @default(Normal)
+
+  createdAt     DateTime              @default(now()) @map("created_at")
+  updatedAt     DateTime              @updatedAt @map("updated_at")
+
+  @@map("activity_monitoring")
+}
+
+enum UnitOption {
+  Dekan
+  WakilDekanI
+  WakilDekanII
+  UrusanSekretariatDekan
+  UrusanLayananAkademik
+  UrusanLaboratorium
+  UrusanSDMKeuangan
+  UrusanKemahasiswaan
+  ProdiS1Manajemen
+  ProdiS1AdministrasiBisnis
+  ProdiS1Akuntansi
+  ProdiS1LeisureManagement
+  ProdiS1BisnisDigital
+  ProdiS2Manajemen
+  ProdiS2ManajemenPJJ
+  ProdiS2AdministrasiBisnis
+  ProdiS2Akuntansi
+  ProdiS3Manajemen
+}
+
+enum ProdiOption {
+  S1Manajemen
+  S1AdministrasiBisnis
+  S1Akuntansi
+  S1LeisureManagement
+  S1BisnisDigital
+  S2Manajemen
+  S2ManajemenPJJ
+  S2AdministrasiBisnis
+  S2Akuntansi
+  S3Manajemen
+}
+
+enum RoomOption {
+  RuangRapatManterawuLt2
+  RuangRapatMiossuLt1
+  RuangRapatMiossuLt2
+  RuangRapatMaratuaLt1
+  AulaFEB
+  AulaManterawu
+  Lainnya
+}
+
+enum OfficialOption {
+  Rektor
+  WakilRektor1
+  WakilRektor2
+  WakilRektor3
+  WakilRektor4
+  Dekan
+  WakilDekanI
+  WakilDekanII
+  KaurSekretariatDekan
+  KaurAkademik
+  KaurLaboratorium
+  KaurSDMKeuangan
+  KaurKemahasiswaan
+  KaprodiS1Manajemen
+  KaprodiS1AdministrasiBisnis
+  KaprodiS1Akuntansi
+  KaprodiS1LeisureManagement
+  KaprodiS1BisnisDigital
+  KaprodiS2Manajemen
+  KaprodiS2ManajemenPJJ
+  KaprodiS2AdministrasiBisnis
+  KaprodiS2Akuntansi
+  KaprodiS3Manajemen
+}
+
+enum ActivityMonitoringStatus {
+  Normal
+  RoomConflict 
+  OfficialConflict
+  DoubleConflict
+  Cancelled
+}
