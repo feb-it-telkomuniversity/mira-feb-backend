@@ -70,15 +70,40 @@ const OFFICIAL_MAP = {
     "Kaprodi S3 Manajemen": "KaprodiS3Manajemen"
 }
 
+const ACTIVITY_STATUS_MAP = {
+    "Normal": "normal",
+    "Ada Konflik": "conflict",
+}
+
 async function getActivityMonitoringList(req, res) {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const search = req.query.search || "";
 
+        let unitFilter = undefined;
+        if (req.query.unit && req.query.unit !== "Semua Unit") { // Cek jika bukan default value
+             unitFilter = UNIT_MAP[req.query.unit] || req.query.unit;
+        }
+
+        let statusFilter = undefined
+        const rawStatus = req.query.status
+
+        if (rawStatus) {
+            if (rawStatus === 'normal') {
+                statusFilter = ['Normal'];
+            }
+            else if (rawStatus === 'conflict') {
+                statusFilter = ['RoomConflict', 'OfficialConflict', 'DoubleConflict'];
+            }
+            else if (['RoomConflict', 'OfficialConflict', 'DoubleConflict'].includes(rawStatus)) {
+                statusFilter = [rawStatus];
+            }
+        }
+
         const filters = {
-            unit: req.query.unit || undefined,
-            status: req.query.status || undefined,
+            unit: unitFilter || undefined,
+            status: statusFilter || undefined,
             date: req.query.date || undefined
         };
 
@@ -96,7 +121,14 @@ async function getActivityMonitoringList(req, res) {
         });
 
     } catch (error) {
-        console.error("Error fetching activities:", error);
+        console.error("Error fetching activities:", error)
+        if (error.message.includes("Invalid value for argument")) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Filter tidak valid (Format Enum salah)." 
+            });
+       }
+
         res.status(500).json({ 
             success: false, 
             message: "Terjadi kesalahan server." 

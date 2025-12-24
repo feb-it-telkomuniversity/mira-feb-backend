@@ -65,8 +65,13 @@ async function getActivityMonitoringListQuery(page = 1, limit = 10, search = "",
     }
 
     // 3. Filter Status (Exact Match Enum)
-    if (filters.status) {
-        andConditions.push({ status: filters.status });
+    // if (filters.status) {
+    //     andConditions.push({ status: filters.status });
+    // }
+    if (filters.status && Array.isArray(filters.status)) {
+        andConditions.push({
+            status: { in: filters.status } 
+        })
     }
 
     // 4. Filter Tanggal (Opsional)
