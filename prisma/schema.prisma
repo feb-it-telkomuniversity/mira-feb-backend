@@ -354,7 +354,11 @@ model ManagementReport {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
-  @@unique([indicator, year]) 
+  @@unique([indicator, year])
+
+  @@index([year]) 
+  @@index([indicator]) 
+  
   @@map("management_reports")
 }
 

@@ -50,8 +50,8 @@ async function detectConflicts(payload) {
 
 async function getActivityMonitoringListQuery(page = 1, limit = 10, search = "", filters = {}) {
     const skip = (page - 1) * limit;
-    const andConditions = [];
-
+    const andConditions = []
+    
     // 1. Search (Title)
     if (search) {
         andConditions.push({
