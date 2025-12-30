@@ -338,6 +338,26 @@ model ActivityMonitoring {
   @@map("activity_monitoring")
 }
 
+// --- Management Report ---
+model ManagementReport {
+  id            Int      @id @default(autoincrement())
+  
+  indicator     String   @map("indicator")
+  evidenceLink  String?  @map("evidence_link") @db.Text
+  year          Int
+  
+  tw1           Boolean  @default(false) @map("tw_1")
+  tw2           Boolean  @default(false) @map("tw_2")
+  tw3           Boolean  @default(false) @map("tw_3")
+  tw4           Boolean  @default(false) @map("tw_4")
+
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@unique([indicator, year]) 
+  @@map("management_reports")
+}
+
 enum UnitOption {
   Dekan
   WakilDekanI

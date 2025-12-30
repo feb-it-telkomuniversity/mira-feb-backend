@@ -7,6 +7,7 @@ import { createPartnershipData, deletePartnershipData, getPartnershipCharts, get
 import { addEvent, getEvents, getGoogleEvents, googleLogin, googleRedirect } from '../controller/google-calendar-controller.js';
 import { createContractManagement, getContractManagementData, getContractStats } from '../controller/contract-management-controller.js';
 import { createActivityMonitoring, getActivityMonitoringList, deleteActivityMonitoring, updateActivityMonitoring } from '../controller/activity-monitoring-controller.js';
+import { createManagementReport } from '../controller/management-report-controller.js';
 
 const route = Router()
 
@@ -56,5 +57,8 @@ route.get('/activity-monitoring', getActivityMonitoringList)
 route.post('/activity-monitoring', createActivityMonitoring)
 route.delete('/activity-monitoring/:id', deleteActivityMonitoring)
 route.put('/activity-monitoring/:id', updateActivityMonitoring)
+
+// ==== Management Report ====
+route.post('/management-reports', createManagementReport)
 
 export default route
