@@ -362,6 +362,88 @@ model ManagementReport {
   @@map("management_reports")
 }
 
+model EmployeeTPA {
+  id              Int      @id @default(autoincrement())
+  name            String   @map("name")
+  nip             String   @unique
+  workUnit        String   @map("work_unit")
+  employmentStatus String  @map("employment_status")
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("employee_tpa")
+}
+
+model Lecturer {
+  id          Int      @id @default(autoincrement())
+  nip         String   @unique
+  nuptk       String?
+  frontTitle  String?  @map("front_title")
+  name        String
+  backTitle   String?  @map("back_title")
+  prodi       String
+  lecturerCode String? @unique @map("lecturer_code")
+  education   String?
+  jobFunctional String? @map("job_functional")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("lecturers")
+}
+
+model Meeting {
+  id            Int      @id @default(autoincrement())
+  title         String   @map("title")
+  date          DateTime @db.Date
+  startTime     DateTime @map("start_time")
+  endTime       DateTime @map("end_time")
+  location      String
+  leader        String
+  notetaker     String
+  
+  participants  String[] @map("participants") 
+
+  // Relasi ke Anak
+  agendas       MeetingAgenda[]
+  actionItems   MeetingActionItem[]
+
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("meetings")
+}
+
+model MeetingAgenda {
+  id            Int      @id @default(autoincrement())
+  title         String
+  discussion    String?  @db.Text
+  decision      String?  @db.Text
+  
+  // Relasi ke Induk
+  meetingId     Int      @map("meeting_id")
+  meeting       Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@map("meeting_agendas")
+}
+
+model MeetingActionItem {
+  id            Int      @id @default(autoincrement())
+  task          String   @db.Text
+  pic           String
+  deadline      DateTime @db.Date
+  
+  status        MeetingActionStatus @default(Pending) 
+
+  meetingId     Int      @map("meeting_id")
+  meeting       Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@map("meeting_action_items")
+}
+
+// ======== ENUM START FROM HERE ============
+
 enum UnitOption {
   Dekan
   WakilDekanI
@@ -437,5 +519,12 @@ enum ActivityMonitoringStatus {
   RoomConflict 
   OfficialConflict
   DoubleConflict
+  Cancelled
+}
+
+enum MeetingActionStatus {
+  Pending
+  OnProgress
+  Done
   Cancelled
 }

@@ -1,81 +1,83 @@
+import fs from 'fs';
+import path from 'path';
+import csv from 'csv-parser';
 import { PrismaClient } from "@prisma/client";
-import fs from "fs";
-import path from "path";
-import csv from "csv-parser";
 
-const prisma = new PrismaClient()
-const csvFilePath = path.join(
-  process.cwd(),
-  "prisma",
-  "data",
-  "contract_management.csv"
-);
+const prisma = new PrismaClient();
 
-// ---------- Helpers ----------
-const parseDecimal = (v) => {
-  if (v === undefined || v === null || v === "") return null;
-  return Number(String(v).replace(",", "."));
+// Helper untuk membaca CSV dan mengembalikan Promise data
+const readCSV = (filePath) => {
+    return new Promise((resolve, reject) => {
+        const results = [];
+        fs.createReadStream(filePath)
+            .pipe(csv({ separator: ';' })) // 🚨 PENTING: Set separator titik koma
+            .on('data', (data) => results.push(data))
+            .on('end', () => resolve(results))
+            .on('error', (error) => reject(error));
+    });
 };
-
-const parseIntSafe = (v) => {
-  if (v === undefined || v === null || v === "") return null;
-  return Number(v);
-};
-
-const parseString = (v) =>
-  !v || String(v).trim() === "" ? null : String(v).trim();
 
 async function main() {
-  console.log("🌱 Seeding Contract Management...");
+    console.log('🌱 Start seeding...');
 
-  await prisma.contractManagement.deleteMany();
+    // --- 1. SEED DATA TPA (STAFF) ---
 
-  const records = [];
+    // Fix for __dirname ReferenceError:
+    const tpaFilePath = path.join(process.cwd(), 'prisma', 'data', 'data_tpa_feb.csv');
+    console.log(`Reading TPA data from ${tpaFilePath}...`);
 
-  await new Promise((resolve, reject) => {
-    fs.createReadStream(csvFilePath)
-      .pipe(csv())
-      .on("data", (row) => {
-        records.push({
-          ContractManagementCategory: row.ContractManagementCategory,
-          responsibility: parseString(row.responsibility),
-          quarterly: row.quarterly,
-          unit: parseString(row.unit),
+    const tpaDataRaw = await readCSV(tpaFilePath);
 
-          // NUMERIC (Decimal)
-          weight: parseDecimal(row.weight),
-          target: parseDecimal(row.target),
-          realization: parseDecimal(row.realization),
+    const tpaDataFormatted = tpaDataRaw.map(row => ({
+        name: row['Nama'],
+        nip: row['NIP'] ? String(row['NIP']).trim() : null,
+        workUnit: row['Lokasi Kerja'],
+        employmentStatus: row['Status']
+    })).filter(item => item.nip)
 
-          // NUMERIC (Int)
-          max: parseIntSafe(row.max),
-          min: parseIntSafe(row.min),
-
-          // META
-          Input: parseString(row.Input),
-          Monitor: parseString(row.Monitor),
+    if (tpaDataFormatted.length > 0) {
+        await prisma.EmployeeTPA.createMany({
+            data: tpaDataFormatted,
+            skipDuplicates: true,
         });
-      })
-      .on("end", resolve)
-      .on("error", reject);
-  });
-
-  let success = 0;
-  let failed = 0;
-
-  for (const r of records) {
-    try {
-      await prisma.contractManagement.create({ data: r });
-      success++;
-    } catch (e) {
-      failed++;
-      console.error("❌ Gagal:", r.responsibility, e.message);
+        console.log(`✅ Berhasil seed ${tpaDataFormatted.length} data TPA.`);
     }
-  }
 
-  console.log(`✅ Selesai. Success: ${success}, Failed: ${failed}`);
+
+    // --- 2. SEED DATA DOSEN (LECTURER) ---
+    const dosenFilePath = path.join(process.cwd(), 'prisma', 'data', 'data_dosen_feb.csv');
+    console.log(`Reading Dosen data from ${dosenFilePath}...`)
+
+    const dosenDataRaw = await readCSV(dosenFilePath);
+
+    const dosenDataFormatted = dosenDataRaw.map(row => ({
+        nip: row['NIP'] ? String(row['NIP']).trim() : null,
+        nuptk: row['NUPTK'] === '' ? null : String(row['NUPTK']), // Handle kosong
+        frontTitle: row['GLR DPN'],
+        name: row['NAMA'],
+        backTitle: row['GLR BLKG'],
+        prodi: row['PRODI'],
+        lecturerCode: row['KODE DOSEN'],
+        education: row['Pendidikan'],
+        jobFunctional: row['JAD']
+    })).filter(item => item.nip && item.name);
+
+    if (dosenDataFormatted.length > 0) {
+        await prisma.lecturer.createMany({
+            data: dosenDataFormatted,
+            skipDuplicates: true,
+        });
+        console.log(`✅ Berhasil seed ${dosenDataFormatted.length} data Dosen.`);
+    }
+
+    console.log('🚀 Seeding finished.');
 }
 
 main()
-  .catch(console.error)
-  .finally(() => prisma.$disconnect());
+    .catch((e) => {
+        console.error(e);
+        process.exit(1);
+    })
+    .finally(async () => {
+        await prisma.$disconnect();
+    });

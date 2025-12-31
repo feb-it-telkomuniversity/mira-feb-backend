@@ -6,8 +6,11 @@ import { createContact, getContacts, handleDeleteContact } from '../controller/c
 import { createPartnershipData, deletePartnershipData, getPartnershipCharts, getPartnershipData, getPartnershipStats, getPartnershipSummaryStats, updatePartnershipData } from '../controller/partnership-controller.js';
 import { addEvent, getEvents, getGoogleEvents, googleLogin, googleRedirect } from '../controller/google-calendar-controller.js';
 import { createContractManagement, getContractManagementData, getContractStats } from '../controller/contract-management-controller.js';
-import { createActivityMonitoring, getActivityMonitoringList, deleteActivityMonitoring, updateActivityMonitoring } from '../controller/activity-monitoring-controller.js';
-import { createManagementReport, deleteManagementReport, getManagementReportList, toggleReportStatus, updateManagementReport } from '../controller/management-report-controller.js';
+import { createActivityMonitoring, getActivityMonitoringList, deleteActivityMonitoring, updateActivityMonitoring } from '../controller/activity-monitoring-controller.js'
+import { createManagementReport, deleteManagementReport, getManagementReportList, toggleReportStatus, updateManagementReport } from '../controller/management-report-controller.js'
+import { getLecturersList } from '../controller/lecturer-controller.js'
+import { getStaffsList } from '../controller/staff-controller.js'
+import { createMeeting } from '../controller/meeting-controller.js'
 
 const route = Router()
 
@@ -62,7 +65,16 @@ route.put('/activity-monitoring/:id', updateActivityMonitoring)
 route.get('/management-reports', getManagementReportList)
 route.post('/management-reports', createManagementReport)
 route.delete('/management-reports/:id', deleteManagementReport)
-route.put('/management-reports/:id', updateManagementReport);
-route.patch('/management-reports/:id/toggle', toggleReportStatus);
+route.put('/management-reports/:id', updateManagementReport)
+route.patch('/management-reports/:id/toggle', toggleReportStatus)
+
+// ==== MEETING ====
+route.post('/meetings', createMeeting)
+
+
+// ==== DATA TPA dan DATA DOSEN ====
+route.get('/lecturers', getLecturersList)
+route.get('/staffs', getStaffsList)
+
 
 export default route
