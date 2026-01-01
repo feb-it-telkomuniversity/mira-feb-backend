@@ -408,6 +408,7 @@ model Meeting {
   // Relasi ke Anak
   agendas       MeetingAgenda[]
   actionItems   MeetingActionItem[]
+  status        MeetingStatus @default(Terjadwal)
 
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
@@ -520,6 +521,13 @@ enum ActivityMonitoringStatus {
   OfficialConflict
   DoubleConflict
   Cancelled
+}
+
+enum MeetingStatus {
+  Selesai
+  Berlangsung
+  Terjadwal
+  Batal
 }
 
 enum MeetingActionStatus {

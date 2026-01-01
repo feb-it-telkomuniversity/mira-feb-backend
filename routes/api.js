@@ -10,7 +10,7 @@ import { createActivityMonitoring, getActivityMonitoringList, deleteActivityMoni
 import { createManagementReport, deleteManagementReport, getManagementReportList, toggleReportStatus, updateManagementReport } from '../controller/management-report-controller.js'
 import { getLecturersList } from '../controller/lecturer-controller.js'
 import { getStaffsList } from '../controller/staff-controller.js'
-import { createMeeting } from '../controller/meeting-controller.js'
+import { createMeeting, deleteMeetingById, getMeetingList, getMeetingListById } from '../controller/meeting-controller.js'
 
 const route = Router()
 
@@ -68,13 +68,14 @@ route.delete('/management-reports/:id', deleteManagementReport)
 route.put('/management-reports/:id', updateManagementReport)
 route.patch('/management-reports/:id/toggle', toggleReportStatus)
 
-// ==== MEETING ====
+// ==== NOTULENSI MEETING ====
+route.get('/meetings', getMeetingList)
+route.get('/meetings/:id', getMeetingListById)
 route.post('/meetings', createMeeting)
-
+route.delete('/meetings/:id', deleteMeetingById)
 
 // ==== DATA TPA dan DATA DOSEN ====
 route.get('/lecturers', getLecturersList)
 route.get('/staffs', getStaffsList)
-
 
 export default route
