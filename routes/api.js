@@ -10,7 +10,7 @@ import { createActivityMonitoring, getActivityMonitoringList, deleteActivityMoni
 import { createManagementReport, deleteManagementReport, getManagementReportList, toggleReportStatus, updateManagementReport } from '../controller/management-report-controller.js'
 import { getLecturersList } from '../controller/lecturer-controller.js'
 import { getStaffsList } from '../controller/staff-controller.js'
-import { createMeeting, deleteMeetingById, getMeetingList, getMeetingListById } from '../controller/meeting-controller.js'
+import { createMeeting, deleteMeetingById, getMeetingList, getMeetingListById, updateMeeting } from '../controller/meeting-controller.js'
 
 const route = Router()
 
@@ -72,6 +72,7 @@ route.patch('/management-reports/:id/toggle', toggleReportStatus)
 route.get('/meetings', getMeetingList)
 route.get('/meetings/:id', getMeetingListById)
 route.post('/meetings', createMeeting)
+route.put('/meetings/:id', updateMeeting)
 route.delete('/meetings/:id', deleteMeetingById)
 
 // ==== DATA TPA dan DATA DOSEN ====

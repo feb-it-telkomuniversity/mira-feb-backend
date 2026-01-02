@@ -107,10 +107,124 @@ async function getMeetingListQueryById(id) {
     })
 }
 
+const parseDate = (val) => {
+    if (!val) return undefined; // Biarkan Prisma pakai data lama kalau undefined
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? undefined : d;
+};
+
+async function updateMeetingQuery(id, payload) {
+    const meetingId = parseInt(id)
+
+    return await prisma.$transaction(async (tx) => {
+        const allowedStatuses = ["Selesai", "Berlangsung", "Terjadwal", "Batal"]
+        let status = payload.status
+        if (!allowedStatuses.includes(status)) {
+            status = "Terjadwal"
+        }
+        const updatedMeeting = await tx.meeting.update({
+            where: { id: meetingId },
+            data: {
+                title: payload.title,
+                date: parseDate(payload.date),
+                startTime: parseDate(payload.startTime),
+                endTime: parseDate(payload.endTime),
+                location: payload.location,
+                leader: payload.leader,
+                notetaker: payload.notetaker,
+                participants: payload.participants || [],
+                status: status
+            }
+        })
+    
+        // Sync Agendas
+        if (payload.agendas) {
+            const keptAgendaIds = payload.agendas
+                .filter(a => a.id)
+                .map(a => parseInt(a.id));
+    
+            // Hapus agenda di DB yang ID-nya TIDAK ADA di list FE
+            await tx.meetingAgenda.deleteMany({
+                where: {
+                    meetingId: meetingId,
+                    id: { notIn: keptAgendaIds }
+                }
+            });
+    
+            // B. Upsert (Update Existing / Create New)
+            for (const agenda of payload.agendas) {
+                if (agenda.id) {
+                    await tx.meetingAgenda.update({
+                        where: { id: parseInt(agenda.id) },
+                        data: {
+                            title: agenda.title,
+                            discussion: agenda.discussion,
+                            decision: agenda.decision
+                        }
+                    })
+                } else {
+                    await tx.meetingAgenda.create({
+                        data: {
+                            meetingId: meetingId,
+                            title: agenda.title,
+                            discussion: agenda.discussion,
+                            decision: agenda.decision
+                        }
+                    })
+                }
+            }    
+        }
+        // Sync Action Items
+        if (payload.actionItems) {
+            // A. Delete Missing
+            const keptActionIds = payload.actionItems
+                .filter(a => a.id)
+                .map(a => parseInt(a.id));
+
+            await tx.meetingActionItem.deleteMany({
+                where: {
+                    meetingId: meetingId,
+                    id: { notIn: keptActionIds }
+                }
+            });
+
+            // B. Upsert Loop
+            for (const item of payload.actionItems) {
+                if (item.id) {
+                    await tx.meetingActionItem.update({
+                        where: { id: parseInt(item.id) },
+                        data: {
+                            task: item.task,
+                            pic: item.pic,
+                            deadline: new Date(item.deadline),
+                            status: item.status
+                        }
+                    });
+                } else {
+                    await tx.meetingActionItem.create({
+                        data: {
+                            meetingId: meetingId,
+                            task: item.task,
+                            pic: item.pic,
+                            deadline: new Date(item.deadline),
+                            status: 'Pending'
+                        }
+                    });
+                }
+            }
+        }
+    
+        return await tx.meeting.findUnique({
+            where: { id: meetingId },
+            include: { agendas: true, actionItems: true }
+        })
+    })
+}
+
 async function deleteMeetingQueryById(meetingId) {
     return await prisma.meeting.delete({
         where: { id: parseInt(meetingId) },
     })
 }
 
-export { createMeetingQuery, getMeetingListQuery, getMeetingListQueryById, deleteMeetingQueryById }
+export { createMeetingQuery, getMeetingListQuery, getMeetingListQueryById, deleteMeetingQueryById, updateMeetingQuery }

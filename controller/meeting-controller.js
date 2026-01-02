@@ -1,4 +1,4 @@
-import { createMeetingQuery, deleteMeetingQueryById, getMeetingListQuery, getMeetingListQueryById } from "../model/meeting-model.js";
+import { createMeetingQuery, deleteMeetingQueryById, getMeetingListQuery, getMeetingListQueryById, updateMeetingQuery } from "../model/meeting-model.js";
 
 async function createMeeting(req, res) {
     try {
@@ -48,11 +48,21 @@ async function getMeetingList(req, res) {
 
         const result = await getMeetingListQuery(page, limit, search, status)
 
+        const mappedData = result.data.map(meeting => {
+            // Menambahkan properti hasNotulensi berdasarkan status meeting:
+            // Jika status BUKAN 'Terjadwal' dan BUKAN 'Batal', maka hasNotulensi = true
+            // Artinya, notulensi sudah tersedia untuk rapat tsb
+            return {
+                ...meeting,
+                hasNotulensi: meeting.status !== 'Terjadwal' && meeting.status !== 'Batal'
+            }
+        })
+
         if (result) {
             return res.status(200).json({
                 success: true,
                 message: "Berhasil mengambil data rapat",
-                data: result.data,
+                data: mappedData,
                 pagination: result.pagination
             })
         }
@@ -96,6 +106,40 @@ async function getMeetingListById(req, res) {
     }
 }
 
+async function updateMeeting(req, res) {
+    try {
+        const { id } = req.params
+        const payload = req.body
+
+        if (!id) {
+            return res.status(400).json({ success: false, message: "ID Rapat wajib ada." })
+        }
+
+        if (!payload.title) {
+            return res.status(400).json({ success: false, message: "Judul rapat tidak boleh kosong." })
+        }
+
+        const updatedData = await updateMeetingQuery(id, payload)
+
+        res.status(200).json({
+            success: true,
+            message: "Data notulensi berhasil diperbarui.",
+            data: updatedData
+        })
+    } catch (error) {
+        console.error("Error updating meeting:", error)
+
+        if (error.code === 'P2025') {
+            return res.status(404).json({ success: false, message: "Data rapat tidak ditemukan." })
+        }
+
+        res.status(500).json({
+            success: false,
+            message: "Terjadi kesalahan server saat memperbarui data."
+        })
+    }
+}
+
 async function deleteMeetingById(req, res) {
     try {
         const { id } = req.params
@@ -124,4 +168,4 @@ async function deleteMeetingById(req, res) {
     }
 }
 
-export { createMeeting, getMeetingList, getMeetingListById, deleteMeetingById }
+export { createMeeting, getMeetingList, getMeetingListById, deleteMeetingById, updateMeeting }
