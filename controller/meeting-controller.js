@@ -1,5 +1,24 @@
 import { createMeetingQuery, deleteMeetingQueryById, getMeetingListQuery, getMeetingListQueryById, updateMeetingQuery } from "../model/meeting-model.js";
 
+const calculateMeetingStatus = (meeting) => {
+    // 1. Prioritas Utama: Kalau di DB statusnya 'Cancelled', ya tetap Cancelled
+    if (meeting.status === 'Batal') {
+        return 'Batal'
+    }
+
+    const now = new Date();
+    const start = new Date(meeting.startTime);
+    const end = new Date(meeting.endTime);
+
+    if (now < start) {
+        return 'Terjadwal'; // Belum mulai
+    } else if (now >= start && now <= end) {
+        return 'Berlangsung'; // Sedang jalan
+    } else {
+        return 'Selesai'; // Waktu sudah lewat
+    }
+};
+
 async function createMeeting(req, res) {
     try {
         const payload = req.body
@@ -46,15 +65,15 @@ async function getMeetingList(req, res) {
 
         const status = req.query.status || undefined
 
-        const result = await getMeetingListQuery(page, limit, search, status)
+        const result = await getMeetingListQuery(page, limit, search)
 
         const mappedData = result.data.map(meeting => {
-            // Menambahkan properti hasNotulensi berdasarkan status meeting:
-            // Jika status BUKAN 'Terjadwal' dan BUKAN 'Batal', maka hasNotulensi = true
-            // Artinya, notulensi sudah tersedia untuk rapat tsb
+            const dynamicStatus = calculateMeetingStatus(meeting)
             return {
                 ...meeting,
-                hasNotulensi: meeting.status !== 'Terjadwal' && meeting.status !== 'Batal'
+                status: dynamicStatus,
+                hasNotulensi: dynamicStatus !== 'Terjadwal' && dynamicStatus !== 'Batal'
+                // hasNotulensi: meeting.status !== 'Terjadwal' && meeting.status !== 'Batal'
             }
         })
 
@@ -78,13 +97,20 @@ async function getMeetingList(req, res) {
 async function getMeetingListById(req, res) {
     try {
         const { id } = req.params
-        const result = await getMeetingListQueryById(id)
+        const data = await getMeetingListQueryById(id)
 
-        if (!result) {
+        if (!data) {
             return res.status(404).json({
                 success: false,
                 message: "Data rapat tidak ditemukan."
             })
+        }
+        
+        const dynamicStatus = calculateMeetingStatus(data)
+
+        const result = {
+            ...data,
+            status: dynamicStatus
         }
 
         res.status(200).json({

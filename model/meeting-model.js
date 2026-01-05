@@ -196,7 +196,7 @@ async function updateMeetingQuery(id, payload) {
                         data: {
                             task: item.task,
                             pic: item.pic,
-                            deadline: new Date(item.deadline),
+                            deadline: parseDate(item.deadline),
                             status: item.status
                         }
                     });
@@ -206,7 +206,7 @@ async function updateMeetingQuery(id, payload) {
                             meetingId: meetingId,
                             task: item.task,
                             pic: item.pic,
-                            deadline: new Date(item.deadline),
+                            deadline: parseDate(item.deadline) || new Date(),
                             status: 'Pending'
                         }
                     });
@@ -218,6 +218,9 @@ async function updateMeetingQuery(id, payload) {
             where: { id: meetingId },
             include: { agendas: true, actionItems: true }
         })
+    }, {
+        maxWait: 5000,
+        timeout: 20000,
     })
 }
 
