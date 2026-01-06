@@ -204,117 +204,6 @@ model ContractManagement {
   @@map("contract_management")
 }
 
-enum Role {
-  mahasiswa
-  dosen
-}
-
-enum Category {
-  Sidang
-  Keuangan
-  Wisuda
-  Sekretariat
-  Wadek1
-  Wadek2
-  ProdiS1
-  ProdiS2
-}
-
-enum Step {
-  select_role
-  ask_lecturer_name
-  lecturer_select_unit
-  ask_student_nim
-  ask_student_name
-  menu
-  chat
-  awaiting_feedback
-}
-
-enum Sender {
-  user
-  bot
-  admin
-}
-
-enum Feedback {
-  ONE   @map("1")
-  TWO   @map("2")
-  THREE @map("3")
-}
-
-enum Status {
-  open
-  in_progress
-  resolved
-}
-
-enum ScheduleStatus {
-  draft
-  pending
-  sent
-  cancelled
-}
-
-// --- Partnership Monitoring ---
-
-enum DocType {
-  MoA
-  MoU
-  IA
-}
-
-enum Scope {
-  national
-  international
-}
-
-enum PartnershipType {
-  Akademik
-  Penelitian
-  Abdimas
-}
-
-enum ActivityType {
-  // --- Sub Akademik ---
-  JointDegree
-  DoubleDegree
-  JointClass
-  StudentExchange
-  VisitingProfessor
-
-  // --- Sub Penelitian ---
-  JointResearch
-  JointPublication
-
-  // --- Sub Abdimas ---
-  JointCommunityService
-  SocialProject
-  
-  // --- Umum ---
-  General
-}
-enum ActivityStatus {
-  Terlaksana
-  BelumTerlaksana
-}
-
-enum ApprovalStatus {
-  Approved
-  Returned
-  Submitted
-  Pending
-  Skipped
-}
-
-// --- Contract Management ---
-
-enum ContractManagementCategory {
-  Financial
-  NonFinancial
-  InternalBusinessProcess  
-}
-
 // --- ActivityMonitoring ---
 model ActivityMonitoring {
   id                  Int             @id @default(autoincrement())
@@ -326,8 +215,8 @@ model ActivityMonitoring {
   participants  Int                   @default(0)
 
   unit          UnitOption
-  prodi         ProdiOption?
   room          RoomOption
+  locationDetail String?              @map("location_detail")
   officials     OfficialOption[]
 
   status        ActivityMonitoringStatus  @default(Normal)
@@ -443,6 +332,117 @@ model MeetingActionItem {
   @@map("meeting_action_items")
 }
 
+enum Role {
+  mahasiswa
+  dosen
+}
+
+enum Category {
+  Sidang
+  Keuangan
+  Wisuda
+  Sekretariat
+  Wadek1
+  Wadek2
+  ProdiS1
+  ProdiS2
+}
+
+enum Step {
+  select_role
+  ask_lecturer_name
+  lecturer_select_unit
+  ask_student_nim
+  ask_student_name
+  menu
+  chat
+  awaiting_feedback
+}
+
+enum Sender {
+  user
+  bot
+  admin
+}
+
+enum Feedback {
+  ONE   @map("1")
+  TWO   @map("2")
+  THREE @map("3")
+}
+
+enum Status {
+  open
+  in_progress
+  resolved
+}
+
+enum ScheduleStatus {
+  draft
+  pending
+  sent
+  cancelled
+}
+
+// --- Partnership Monitoring ---
+
+enum DocType {
+  MoA
+  MoU
+  IA
+}
+
+enum Scope {
+  national
+  international
+}
+
+enum PartnershipType {
+  Akademik
+  Penelitian
+  Abdimas
+}
+
+enum ActivityType {
+  // --- Sub Akademik ---
+  JointDegree
+  DoubleDegree
+  JointClass
+  StudentExchange
+  VisitingProfessor
+
+  // --- Sub Penelitian ---
+  JointResearch
+  JointPublication
+
+  // --- Sub Abdimas ---
+  JointCommunityService
+  SocialProject
+  
+  // --- Umum ---
+  General
+}
+enum ActivityStatus {
+  Terlaksana
+  BelumTerlaksana
+}
+
+enum ApprovalStatus {
+  Approved
+  Returned
+  Submitted
+  Pending
+  Skipped
+}
+
+// --- Contract Management ---
+
+enum ContractManagementCategory {
+  Financial
+  NonFinancial
+  InternalBusinessProcess  
+}
+
 // ======== ENUM START FROM HERE ============
 
 enum UnitOption {
@@ -464,19 +464,6 @@ enum UnitOption {
   ProdiS2AdministrasiBisnis
   ProdiS2Akuntansi
   ProdiS3Manajemen
-}
-
-enum ProdiOption {
-  S1Manajemen
-  S1AdministrasiBisnis
-  S1Akuntansi
-  S1LeisureManagement
-  S1BisnisDigital
-  S2Manajemen
-  S2ManajemenPJJ
-  S2AdministrasiBisnis
-  S2Akuntansi
-  S3Manajemen
 }
 
 enum RoomOption {
@@ -513,8 +500,13 @@ enum OfficialOption {
   KaprodiS2AdministrasiBisnis
   KaprodiS2Akuntansi
   KaprodiS3Manajemen
+  SekprodiS1Manajemen
+  SekprodiS1ICTBusiness
+  SekprodiS1Akuntansi
+  SekprodiS2Manajemen
+  SekprodiS2ManajemenPJJ
+  SekprodiS2AdministrasiBisnis
 }
-
 enum ActivityMonitoringStatus {
   Normal
   RoomConflict 

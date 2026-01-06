@@ -155,10 +155,21 @@ async function createActivityMonitoring(req, res) {
             prodiEnum = PRODI_MAP[raw.prodi] || raw.prodi;
         }
 
-        // Handle Officials (Array)
         let officialsEnum = []
         if (raw.officials && Array.isArray(raw.officials)) {
-            officialsEnum = raw.officials.map(p => OFFICIAL_MAP[p] || p)
+            officialsEnum = raw.officials.map(p => {
+                if (typeof p !== 'string') return null
+                // Regex ini menghapus SPASI, TITIK, KOMA. Sisa Huruf & Angka saja.
+                // "Kaur SDM Keuangan" -> "KaurSDMKeuangan"
+                return p.replace(/[^a-zA-Z0-9]/g, "") 
+            }).filter(p => p !== null && p !== "")
+        }
+
+        if (roomEnum === 'Lainnya' && (!raw.locationDetail || raw.locationDetail.trim() === "")) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Jika ruangan 'Lainnya', mohon isi detail lokasi kegiatan." 
+            })
         }
 
         const payload = {
@@ -171,7 +182,7 @@ async function createActivityMonitoring(req, res) {
             
             unit: unitEnum,
             room: roomEnum,
-            prodi: prodiEnum,
+            locationDetail: raw.locationDetail,
             officials: officialsEnum
         }
 
@@ -240,15 +251,22 @@ async function updateActivityMonitoring(req, res) {
 
         const unitEnum = UNIT_MAP[raw.unit] || raw.unit
         const roomEnum = ROOM_MAP[raw.room] || raw.room
-        
-        let prodiEnum = null;
-        if (raw.prodi && raw.prodi !== "-" && raw.prodi !== "") {
-            prodiEnum = PRODI_MAP[raw.prodi] || raw.prodi
+
+        let officialsEnum = []
+        if (raw.officials && Array.isArray(raw.officials)) {
+            officialsEnum = raw.officials.map(p => {
+                if (typeof p !== 'string') return null
+                // Regex ini menghapus SPASI, TITIK, KOMA. Sisa Huruf & Angka saja.
+                // "Kaur SDM Keuangan" -> "KaurSDMKeuangan"
+                return p.replace(/[^a-zA-Z0-9]/g, "") 
+            }).filter(p => p !== null && p !== "")
         }
 
-        let officialsEnum = [];
-        if (raw.officials && Array.isArray(raw.officials)) {
-            officialsEnum = raw.officials.map(p => OFFICIAL_MAP[p] || p)
+        if (roomEnum === 'Lainnya' && (!raw.locationDetail || raw.locationDetail.trim() === "")) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Jika ruangan 'Lainnya', mohon isi detail lokasi kegiatan." 
+            })
         }
 
         const payload = {
@@ -261,7 +279,7 @@ async function updateActivityMonitoring(req, res) {
             
             unit: unitEnum,
             room: roomEnum,
-            prodi: prodiEnum,
+            locationDetail: raw.locationDetail,
             officials: officialsEnum
         }
 

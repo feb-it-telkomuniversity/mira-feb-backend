@@ -16,15 +16,22 @@ async function detectConflicts(payload) {
             { endTime: { gt: start } }
         ],
         status: { not: 'Cancelled' }
-    };
+    }
+
+    if (payload.id) {
+        timeFilter.id = { not: parseInt(payload.id) };
+    }
 
     // 1. Cek Konflik Ruangan
-    const roomConflict = await prisma.activityMonitoring.findFirst({
-        where: {
-            ...timeFilter,
-            room: room
-        }
-    });
+    let roomConflict = null
+    if (roomConflict !== "Lainnya") {
+        roomConflict = await prisma.activityMonitoring.findFirst({
+            where: {
+                ...timeFilter,
+                room: room
+            }
+        })
+    } 
 
     // 2. Cek Konflik Pejabat (Array vs Array)
     // "Cari kegiatan lain di jam yg sama, yang pejabatnya ada di list pejabat baru ini"
@@ -119,10 +126,9 @@ async function createActivityMonitoringQuery(payload) {
             participants: parseInt(payload.participants),
             
             unit: payload.unit,
-            prodi: payload.prodi || null,
             room: payload.room,
+            locationDetail: payload.locationDetail || null,
             officials: payload.officials || [],
-            
             status: detectedStatus
         }
     })
@@ -182,8 +188,8 @@ async function updateActivityMonitoringQuery(id, payload) {
             participants: parseInt(payload.participants),
             description: payload.description,
             unit: payload.unit,
-            prodi: payload.prodi || null,
             room: payload.room,
+            locationDetail: payload.locationDetail || null,
             officials: payload.officials || [],
             status: newStatus
         }
