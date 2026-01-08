@@ -5,7 +5,7 @@ import { handleCreateSchedule, getSchedulesByMonth, handleCancelSchedule, handle
 import { createContact, getContacts, handleDeleteContact } from '../controller/contacts-controller.js';
 import { createPartnershipData, deletePartnershipData, getPartnershipCharts, getPartnershipData, getPartnershipStats, getPartnershipSummaryStats, updatePartnershipData } from '../controller/partnership-controller.js';
 import { addEvent, getEvents, getGoogleEvents, googleLogin, googleRedirect } from '../controller/google-calendar-controller.js';
-import { createContractManagement, getContractManagementData, getContractStats, updateContractManagement } from '../controller/contract-management-controller.js';
+import { createContractManagement, getContractManagementById, getContractManagementData, getContractStats, updateContractManagement } from '../controller/contract-management-controller.js';
 import { createActivityMonitoring, getActivityMonitoringList, deleteActivityMonitoring, updateActivityMonitoring } from '../controller/activity-monitoring-controller.js'
 import { createManagementReport, deleteManagementReport, getManagementReportList, toggleReportStatus, updateManagementReport } from '../controller/management-report-controller.js'
 import { getLecturersList } from '../controller/lecturer-controller.js'
@@ -52,6 +52,7 @@ route.post("/google/events", addEvent);
 
 // ==== Contract Management ====
 route.get('/contract-management', getContractManagementData)
+route.get('/contract-management/:id', getContractManagementById)
 route.get('/contract-management/stats', getContractStats)
 route.post('/contract-management', createContractManagement)
 route.put('/contract-management/:id', updateContractManagement)

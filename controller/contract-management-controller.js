@@ -1,4 +1,4 @@
-import { createContractManagementQuery, getContractManagementDataQuery, getContractStatsQuery, updateContractManagementQuery } from "../model/contract-management-model.js"
+import { createContractManagementQuery, getContractManagementByIdQuery, getContractManagementDataQuery, getContractStatsQuery, updateContractManagementQuery } from "../model/contract-management-model.js"
 
 export const getContractStats = async (req, res) => {
     try {
@@ -94,6 +94,36 @@ async function getContractManagementData(req, res) {
     }
 }
 
+async function getContractManagementById(req, res) {
+    try {
+        const { id } = req.params
+        const data = await getContractManagementByIdQuery(id)
+
+        if (!data) {
+            return res.status(404).json({
+                success: false,
+                message: "Data rapat tidak ditemukan."
+            })
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Berhasil mengambil detail data KM dari id: ${id}`,
+            data: data,
+        })
+    } catch (error) {
+        console.error("Error fetching meetings:", error);
+        if (error.code === 'P2025' || error.message.includes('Int')) {
+            return res.status(400).json({ success: false, message: "Format ID tidak valid." });
+       }
+
+       res.status(500).json({
+           success: false,
+           message: "Terjadi kesalahan server saat memuat data."
+       })
+    }
+}
+
 async function createContractManagement(req, res) {
     try {
         const payload = req.body;
@@ -144,4 +174,4 @@ async function updateContractManagement(req, res) {
     }
 }
 
-export { getContractManagementData, createContractManagement, updateContractManagement }
+export { getContractManagementData, createContractManagement, updateContractManagement, getContractManagementById }

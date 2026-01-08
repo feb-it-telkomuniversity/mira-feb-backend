@@ -155,6 +155,12 @@ async function getContractManagementDataQuery(page = 1, limit = 15, search = "",
     }
 }
 
+async function getContractManagementByIdQuery(id) {
+    return await prisma.contractManagement.findUnique({
+        where: { id: parseInt(id) }
+    })
+}
+
 async function createContractManagementQuery(data) {
     const {
         weight,
@@ -220,4 +226,4 @@ async function updateContractManagementQuery(id, payload) {
     })
 }
 
-export { getContractManagementDataQuery, createContractManagementQuery, updateContractManagementQuery }
+export { getContractManagementDataQuery, createContractManagementQuery, updateContractManagementQuery, getContractManagementByIdQuery }
