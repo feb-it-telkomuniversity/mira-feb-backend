@@ -180,4 +180,44 @@ async function createContractManagementQuery(data) {
     });
 }
 
-export { getContractManagementDataQuery, createContractManagementQuery }
+async function updateContractManagementQuery(id, payload) {
+    const fetchData = await prisma.contractManagement.findUnique({
+        where: { id: parseInt(id) }
+    })
+
+    if (!fetchData) {
+        throw new Error("RecordNotFound")
+    }
+
+    const mergedData = {
+        weight: payload.weight !== undefined ? payload.weight : fetchData.weight,
+        target: payload.target !== undefined ? payload.target : fetchData.target,
+        realization: payload.realization !== undefined ? payload.realization : fetchData.realization,
+        min: payload.min !== undefined ? payload.min : fetchData.min,
+        max: payload.max !== undefined ? payload.max : fetchData.max,
+    }
+    const calculateData = calculateKM(mergedData)
+
+    return await prisma.contractManagement.update({
+        where: { id: parseInt(id) },
+        data: {
+            responsibility: payload.responsibility, 
+            quarterly: payload.quarterly,
+            unit: payload.unit,
+            
+            weight: mergedData.weight,
+            target: mergedData.target,
+            realization: mergedData.realization,
+            min: mergedData.min,
+            max: mergedData.max,
+            Input: payload.Input,
+            Monitor: payload.Monitor,
+
+            achievement: calculateData.achievement,
+            persReal: calculateData.persReal,
+            value: calculateData.value
+        }
+    })
+}
+
+export { getContractManagementDataQuery, createContractManagementQuery, updateContractManagementQuery }

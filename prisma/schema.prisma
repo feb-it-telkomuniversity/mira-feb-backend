@@ -185,15 +185,16 @@ model ContractManagement {
   quarterly         String
   unit              String?
 
-  weight         Float?
-  target         Decimal? @db.Decimal(10,2)
-  realization    Decimal? @db.Decimal(10,2)
+  weight            Float?
+  target            String?
+  realization       Float?
 
-  max               Int?
-  min               Int?
-  achievement    Decimal? @db.Decimal(6,2)
-  persReal       Decimal? @db.Decimal(6,2)    @map("pers_real")
-  value          Decimal? @db.Decimal(6,2)
+  max               Float?
+  min               Float?
+  
+  achievement       Float?
+  persReal          Float?         @map("pers_real")
+  value             Float?
 
   Input             String?
   Monitor           String?

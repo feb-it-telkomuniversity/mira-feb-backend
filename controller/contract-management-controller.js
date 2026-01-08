@@ -1,4 +1,4 @@
-import { createContractManagementQuery, getContractManagementDataQuery, getContractStatsQuery } from "../model/contract-management-model.js"
+import { createContractManagementQuery, getContractManagementDataQuery, getContractStatsQuery, updateContractManagementQuery } from "../model/contract-management-model.js"
 
 export const getContractStats = async (req, res) => {
     try {
@@ -114,4 +114,34 @@ async function createContractManagement(req, res) {
     }
 }
 
-export { getContractManagementData, createContractManagement }
+async function updateContractManagement(req, res) {
+    try {
+        const { id } = req.params
+        const payload = req.body
+        
+        if (!id) {
+            return res.status(400).json({ success: false, message: "ID is required" })
+        }
+
+        const updatedData = await updateContractManagementQuery(id, payload)
+
+        res.status(200).json({
+            success: true,
+            message: "Data successfully recalculated and updated",
+            data: updatedData
+        })
+    } catch (error) {
+        console.error("Update KM error:", error)
+
+        if (error.message === "RecordNotFound" || error.code === 'P2025') {
+            return res.status(404).json({ success: false, message: "Data not found" });
+        }
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to update contract management data"
+        })
+    }
+}
+
+export { getContractManagementData, createContractManagement, updateContractManagement }
