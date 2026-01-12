@@ -216,7 +216,7 @@ model ActivityMonitoring {
   participants  Int                   @default(0)
 
   unit          UnitOption
-  room          RoomOption
+  room          RoomOption            @default(AulaFEB)
   locationDetail String?              @map("location_detail")
   officials     OfficialOption[]
 
@@ -289,15 +289,15 @@ model Meeting {
   date          DateTime @db.Date
   startTime     DateTime @map("start_time")
   endTime       DateTime @map("end_time")
-  location      String
   leader        String
   notetaker     String
+  room          RoomOption  
+  locationDetail String?   @map("location_detail")
   
   participants  String[] @map("participants") 
 
   // Relasi ke Anak
   agendas       MeetingAgenda[]
-  actionItems   MeetingActionItem[]
   status        MeetingStatus @default(Terjadwal)
 
   createdAt     DateTime @default(now()) @map("created_at")
@@ -315,6 +315,7 @@ model MeetingAgenda {
   // Relasi ke Induk
   meetingId     Int      @map("meeting_id")
   meeting       Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  actionItems   MeetingActionItem[]
 
   @@map("meeting_agendas")
 }
@@ -327,9 +328,9 @@ model MeetingActionItem {
   
   status        MeetingActionStatus @default(Pending) 
 
-  meetingId     Int      @map("meeting_id")
-  meeting       Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
-
+  agendaId      Int      @map("agenda_id")
+  agenda        MeetingAgenda @relation(fields: [agendaId], references: [id], onDelete: Cascade)
+  
   @@map("meeting_action_items")
 }
 

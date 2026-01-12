@@ -19,20 +19,38 @@ const calculateMeetingStatus = (meeting) => {
     }
 };
 
+const ROOM_MAP = {
+    "Ruang Rapat Manterawu lt. 2": "RuangRapatManterawuLt2",
+    "Ruang Rapat Miossu lt. 1": "RuangRapatMiossuLt1",
+    "Ruang Rapat Miossu lt. 2": "RuangRapatMiossuLt2",
+    "Ruang Rapat Maratua lt. 1": "RuangRapatMaratuaLt1",
+    "Aula FEB": "AulaFEB",
+    "Aula Manterawu": "AulaManterawu",
+    "Lainnya": "Lainnya"
+};
+
 async function createMeeting(req, res) {
     try {
-        const payload = req.body
+        const raw = req.body
 
         // 1. Validasi Field Wajib (Header Rapat)
-        if (!payload.title || !payload.date || !payload.startTime || !payload.leader) {
+        if (!raw.title || !raw.date || !raw.startTime || !raw.endTime || !raw.leader || !raw.room) {
             return res.status(400).json({
                 success: false,
-                message: "Data pokok rapat (Judul, Tanggal, Waktu, Pemimpin) wajib diisi."
+                message: "Data pokok rapat (Judul, Waktu, Tempat, Pemimpin) wajib diisi."
+            });
+        }
+
+        const roomEnum = ROOM_MAP[raw.room] || raw.room
+        if (roomEnum === 'Lainnya' && (!raw.locationDetail || raw.locationDetail.trim() === "")) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Jika ruangan 'Lainnya', mohon isi detail lokasi rapat." 
             })
         }
 
         // 2. Validasi Agenda (Minimal 1 Agenda biar gak kosong melompong)
-        if (!payload.agendas || payload.agendas.length === 0) {
+        if (!raw.agendas || raw.agendas.length === 0) {
             return res.status(400).json({
                 success: false,
                 message: "Minimal harus ada 1 Agenda pembahasan."
@@ -40,11 +58,25 @@ async function createMeeting(req, res) {
         }
 
         // 3. Eksekusi Model
-        const newMeeting = await createMeetingQuery(payload);
+        const payload = {
+            title: raw.title,
+            date: raw.date,
+            startTime: raw.startTime,
+            endTime: raw.endTime,
+            room: roomEnum,
+            locationDetail: raw.locationDetail,
+
+            leader: raw.leader,
+            notetaker: raw.notetaker,
+            participants: raw.participants || [],
+
+            agendas: raw.agendas
+        }
+        const newMeeting = await createMeetingQuery(payload)
 
         res.status(201).json({
             success: true,
-            message: "Notulensi rapat berhasil disimpan.",
+            message: "Rapat berhasil dijadwalkan.",
             data: newMeeting
         });
 
@@ -52,7 +84,7 @@ async function createMeeting(req, res) {
         console.error("Error creating meeting:", error);
         res.status(500).json({
             success: false,
-            message: "Terjadi kesalahan server saat menyimpan notulensi."
+            message: "Terjadi kesalahan server saat menyimpan data."
         });
     }
 }
@@ -135,14 +167,38 @@ async function getMeetingListById(req, res) {
 async function updateMeeting(req, res) {
     try {
         const { id } = req.params
-        const payload = req.body
+        const raw = req.body
 
         if (!id) {
             return res.status(400).json({ success: false, message: "ID Rapat wajib ada." })
         }
 
-        if (!payload.title) {
+        if (!raw.title) {
             return res.status(400).json({ success: false, message: "Judul rapat tidak boleh kosong." })
+        }
+
+        const roomEnum = ROOM_MAP[raw.room] || raw.room
+        if (roomEnum === 'Lainnya' && (!raw.locationDetail || raw.locationDetail.trim() === "")) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Jika ruangan 'Lainnya', mohon isi detail lokasi rapat." 
+            });
+        }
+
+        const payload = {
+            title: raw.title,
+            date: raw.date,
+            startTime: raw.startTime,
+            endTime: raw.endTime,
+            room: roomEnum,
+            locationDetail: raw.locationDetail,
+
+            leader: raw.leader,
+            notetaker: raw.notetaker,
+            participants: raw.participants || [],
+            status: raw.status,
+
+            agendas: raw.agendas
         }
 
         const updatedData = await updateMeetingQuery(id, payload)

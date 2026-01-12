@@ -8,36 +8,37 @@ async function createMeetingQuery(payload) {
             date: new Date(payload.date),
             startTime: new Date(payload.startTime),
             endTime: new Date(payload.endTime),
-            location: payload.location,
             leader: payload.leader,
             notetaker: payload.notetaker,
-            
+            room: payload.room,
+            locationDetail: payload.locationDetail,
             participants: payload.participants || [], 
 
-            // 2. Data Agenda (Nested Create)
-            // Prisma otomatis looping array ini dan insert ke tabel meeting_agendas
+            // Nested Create level 1 (Agenda)
             agendas: {
                 create: (payload.agendas || []).map(agenda => ({
                     title: agenda.title,
                     discussion: agenda.discussion,
-                    decision: agenda.decision || null // Optional
-                }))
-            },
-
-            // 3. Data Tindak Lanjut (Nested Create)
-            actionItems: {
-                create: (payload.actionItems || []).map(item => ({
-                    task: item.task,
-                    pic: item.pic,
-                    deadline: new Date(item.deadline),
-                    status: 'Pending'
+                    decision: agenda.decision,
+                    
+                    actionItems: {
+                        create: (agenda.actionItems || []).map(item => ({
+                            task: item.task,
+                            pic: item.pic,
+                            deadline: new Date(item.deadline),
+                            status: 'Pending'
+                        }))
+                    }
                 }))
             }
         },
         // Include biar pas response datanya lengkap sama anak-anaknya
         include: {
-            agendas: true,
-            actionItems: true
+            agendas: {
+                include: {
+                    actionItems: true // Include cucu
+                }
+            }
         }
     })
 }
@@ -49,7 +50,7 @@ async function getMeetingListQuery(page = 1, limit = 10, search = "", status) {
     const whereClause = {
         OR: search ? [
             { title: { contains: search, mode: 'insensitive' } },
-            { location: { contains: search, mode: 'insensitive' } },
+            { room: { contains: search, mode: 'insensitive' } },
             { leader: { contains: search, mode: 'insensitive' } }
         ] : undefined,
 
@@ -73,7 +74,8 @@ async function getMeetingListQuery(page = 1, limit = 10, search = "", status) {
                 date: true,
                 startTime: true,
                 endTime: true,
-                location: true,
+                room: true,
+                locationDetail: true,
                 leader: true,
                 notetaker: true,
                 status: true,
@@ -99,18 +101,15 @@ async function getMeetingListQueryById(id) {
         include: {
             agendas: {
                 orderBy: { id: 'asc' }
-            },
-            actionItems: {
-                orderBy: { id: 'asc' }
             }
         },
     })
 }
 
 const parseDate = (val) => {
-    if (!val) return undefined; // Biarkan Prisma pakai data lama kalau undefined
-    const d = new Date(val);
-    return isNaN(d.getTime()) ? undefined : d;
+    if (!val) return undefined
+    const d = new Date(val)
+    return isNaN(d.getTime()) ? undefined : d
 };
 
 async function updateMeetingQuery(id, payload) {
@@ -122,16 +121,17 @@ async function updateMeetingQuery(id, payload) {
         if (!allowedStatuses.includes(status)) {
             status = "Terjadwal"
         }
-        const updatedMeeting = await tx.meeting.update({
+        await tx.meeting.update({
             where: { id: meetingId },
             data: {
                 title: payload.title,
                 date: parseDate(payload.date),
                 startTime: parseDate(payload.startTime),
                 endTime: parseDate(payload.endTime),
-                location: payload.location,
                 leader: payload.leader,
                 notetaker: payload.notetaker,
+                room: payload.room,
+                locationDetail: payload.locationDetail,
                 participants: payload.participants || [],
                 status: status
             }
@@ -153,9 +153,10 @@ async function updateMeetingQuery(id, payload) {
     
             // B. Upsert (Update Existing / Create New)
             for (const agenda of payload.agendas) {
-                if (agenda.id) {
+                let currentAgendaId = agenda.id ? parseInt(agenda.id) : null
+                if (currentAgendaId) {
                     await tx.meetingAgenda.update({
-                        where: { id: parseInt(agenda.id) },
+                        where: { id: parseInt(currentAgendaId) },
                         data: {
                             title: agenda.title,
                             discussion: agenda.discussion,
@@ -163,7 +164,7 @@ async function updateMeetingQuery(id, payload) {
                         }
                     })
                 } else {
-                    await tx.meetingAgenda.create({
+                    const newAgenda = await tx.meetingAgenda.create({
                         data: {
                             meetingId: meetingId,
                             title: agenda.title,
@@ -171,52 +172,56 @@ async function updateMeetingQuery(id, payload) {
                             decision: agenda.decision
                         }
                     })
+                    currentAgendaId = newAgenda.id
+                }
+                // 3. SYNC ACTION ITEMS
+                if (agenda.actionItems && Array.isArray(agenda.actionItems)) {
+                    // A. Delete Missing
+                    const keptActionIds = agenda.actionItems
+                        .filter(i => i.id)
+                        .map(i => parseInt(i.id));
+        
+                    await tx.meetingActionItem.deleteMany({
+                        where: { agendaId: currentAgendaId, id: { notIn: keptActionIds } }
+                    })
+        
+                    // B. Upsert Action Items
+                    for (const item of agenda.actionItems) {
+                        if (item.id) {
+                            await tx.meetingActionItem.update({
+                                where: { id: parseInt(item.id) },
+                                data: {
+                                    task: item.task,
+                                    pic: item.pic,
+                                    deadline: new Date(item.deadline),
+                                    status: item.status
+                                }
+                            });
+                        } else {
+                            await tx.meetingActionItem.create({
+                                data: {
+                                    agendaId: currentAgendaId,
+                                    task: item.task,
+                                    pic: item.pic,
+                                    deadline: new Date(item.deadline),
+                                    status: 'Pending'
+                                }
+                            });
+                        }
+                    }
                 }
             }    
-        }
-        // Sync Action Items
-        if (payload.actionItems) {
-            // A. Delete Missing
-            const keptActionIds = payload.actionItems
-                .filter(a => a.id)
-                .map(a => parseInt(a.id));
-
-            await tx.meetingActionItem.deleteMany({
-                where: {
-                    meetingId: meetingId,
-                    id: { notIn: keptActionIds }
-                }
-            });
-
-            // B. Upsert Loop
-            for (const item of payload.actionItems) {
-                if (item.id) {
-                    await tx.meetingActionItem.update({
-                        where: { id: parseInt(item.id) },
-                        data: {
-                            task: item.task,
-                            pic: item.pic,
-                            deadline: parseDate(item.deadline),
-                            status: item.status
-                        }
-                    });
-                } else {
-                    await tx.meetingActionItem.create({
-                        data: {
-                            meetingId: meetingId,
-                            task: item.task,
-                            pic: item.pic,
-                            deadline: parseDate(item.deadline) || new Date(),
-                            status: 'Pending'
-                        }
-                    });
-                }
-            }
         }
     
         return await tx.meeting.findUnique({
             where: { id: meetingId },
-            include: { agendas: true, actionItems: true }
+            include: {
+                agendas: {
+                    include: {
+                        actionItems: true
+                    }
+                }
+            }
         })
     }, {
         maxWait: 5000,
