@@ -100,7 +100,12 @@ async function getMeetingListQueryById(id) {
         where: { id: parseInt(id) },
         include: {
             agendas: {
-                orderBy: { id: 'asc' }
+                orderBy: { id: 'asc' },
+                include: {
+                    actionItems: {
+                        orderBy: { id: 'asc' }
+                    }
+                }
             }
         },
     })
