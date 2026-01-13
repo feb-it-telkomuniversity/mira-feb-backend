@@ -12,7 +12,7 @@ async function createMeetingQuery(payload) {
             notetaker: payload.notetaker,
             room: payload.room,
             locationDetail: payload.locationDetail,
-            participants: payload.participants || [], 
+            participants: payload.participants || [],
 
             // Nested Create level 1 (Agenda)
             agendas: {
@@ -20,13 +20,14 @@ async function createMeetingQuery(payload) {
                     title: agenda.title,
                     discussion: agenda.discussion,
                     decision: agenda.decision,
-                    
+
                     actionItems: {
                         create: (agenda.actionItems || []).map(item => ({
                             task: item.task,
                             pic: item.pic,
                             deadline: new Date(item.deadline),
-                            status: 'Pending'
+                            status: 'Open',
+                            notes: item.notes || ""
                         }))
                     }
                 }))
@@ -54,7 +55,7 @@ async function getMeetingListQuery(page = 1, limit = 10, search = "", status) {
             { leader: { contains: search, mode: 'insensitive' } }
         ] : undefined,
 
-        status: status ? status : undefined 
+        status: status ? status : undefined
     };
 
     if (!search) delete whereClause.OR
@@ -141,13 +142,13 @@ async function updateMeetingQuery(id, payload) {
                 status: status
             }
         })
-    
+
         // Sync Agendas
         if (payload.agendas) {
             const keptAgendaIds = payload.agendas
                 .filter(a => a.id)
                 .map(a => parseInt(a.id));
-    
+
             // Hapus agenda di DB yang ID-nya TIDAK ADA di list FE
             await tx.meetingAgenda.deleteMany({
                 where: {
@@ -155,7 +156,7 @@ async function updateMeetingQuery(id, payload) {
                     id: { notIn: keptAgendaIds }
                 }
             });
-    
+
             // B. Upsert (Update Existing / Create New)
             for (const agenda of payload.agendas) {
                 let currentAgendaId = agenda.id ? parseInt(agenda.id) : null
@@ -185,11 +186,11 @@ async function updateMeetingQuery(id, payload) {
                     const keptActionIds = agenda.actionItems
                         .filter(i => i.id)
                         .map(i => parseInt(i.id));
-        
+
                     await tx.meetingActionItem.deleteMany({
                         where: { agendaId: currentAgendaId, id: { notIn: keptActionIds } }
                     })
-        
+
                     // B. Upsert Action Items
                     for (const item of agenda.actionItems) {
                         if (item.id) {
@@ -209,15 +210,16 @@ async function updateMeetingQuery(id, payload) {
                                     task: item.task,
                                     pic: item.pic,
                                     deadline: new Date(item.deadline),
-                                    status: 'Pending'
+                                    status: 'Open',
+                                    notes: item.notes || ""
                                 }
                             });
                         }
                     }
                 }
-            }    
+            }
         }
-    
+
         return await tx.meeting.findUnique({
             where: { id: meetingId },
             include: {

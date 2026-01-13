@@ -43,9 +43,9 @@ async function createMeeting(req, res) {
 
         const roomEnum = ROOM_MAP[raw.room] || raw.room
         if (roomEnum === 'Lainnya' && (!raw.locationDetail || raw.locationDetail.trim() === "")) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "Jika ruangan 'Lainnya', mohon isi detail lokasi rapat." 
+            return res.status(400).json({
+                success: false,
+                message: "Jika ruangan 'Lainnya', mohon isi detail lokasi rapat."
             })
         }
 
@@ -69,6 +69,7 @@ async function createMeeting(req, res) {
             leader: raw.leader,
             notetaker: raw.notetaker,
             participants: raw.participants || [],
+            notes: raw.notes || "",
 
             agendas: raw.agendas
         }
@@ -122,7 +123,7 @@ async function getMeetingList(req, res) {
         res.status(500).json({
             success: false,
             message: "Terjadi kesalahan server saat memuat data."
-        })        
+        })
     }
 }
 
@@ -137,7 +138,7 @@ async function getMeetingListById(req, res) {
                 message: "Data rapat tidak ditemukan."
             })
         }
-        
+
         const dynamicStatus = calculateMeetingStatus(data)
 
         const result = {
@@ -155,12 +156,12 @@ async function getMeetingListById(req, res) {
         console.error("Error fetching meetings:", error);
         if (error.code === 'P2025' || error.message.includes('Int')) {
             return res.status(400).json({ success: false, message: "Format ID tidak valid." });
-       }
+        }
 
-       res.status(500).json({
-           success: false,
-           message: "Terjadi kesalahan server saat memuat data."
-       })
+        res.status(500).json({
+            success: false,
+            message: "Terjadi kesalahan server saat memuat data."
+        })
     }
 }
 
@@ -179,9 +180,9 @@ async function updateMeeting(req, res) {
 
         const roomEnum = ROOM_MAP[raw.room] || raw.room
         if (roomEnum === 'Lainnya' && (!raw.locationDetail || raw.locationDetail.trim() === "")) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "Jika ruangan 'Lainnya', mohon isi detail lokasi rapat." 
+            return res.status(400).json({
+                success: false,
+                message: "Jika ruangan 'Lainnya', mohon isi detail lokasi rapat."
             });
         }
 
@@ -197,6 +198,7 @@ async function updateMeeting(req, res) {
             notetaker: raw.notetaker,
             participants: raw.participants || [],
             status: raw.status,
+            notes: raw.notes || "",
 
             agendas: raw.agendas
         }
@@ -237,15 +239,15 @@ async function deleteMeetingById(req, res) {
     } catch (error) {
         res.status(500).json({ message: error.message })
         if (error.code === 'P2025') {
-            return res.status(404).json({ 
-                success: false, 
-                message: "Data rapat tidak ditemukan atau sudah dihapus sebelumnya." 
+            return res.status(404).json({
+                success: false,
+                message: "Data rapat tidak ditemukan atau sudah dihapus sebelumnya."
             });
         }
 
-        res.status(500).json({ 
-            success: false, 
-            message: "Terjadi kesalahan server." 
+        res.status(500).json({
+            success: false,
+            message: "Terjadi kesalahan server."
         })
     }
 }

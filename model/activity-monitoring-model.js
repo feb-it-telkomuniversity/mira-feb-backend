@@ -3,13 +3,12 @@ const prisma = new PrismaClient()
 
 async function detectConflicts(payload) {
     const { room, officials, startTime, endTime, date } = payload;
-    
+
     const start = new Date(startTime);
     const end = new Date(endTime);
 
     const timeFilter = {
-        // Tanggal harus sama
-        date: new Date(date), 
+        date: new Date(date),
         // Logic Overlapping: (StartBaru < EndLama) && (EndBaru > StartLama)
         AND: [
             { startTime: { lt: end } },
@@ -31,34 +30,42 @@ async function detectConflicts(payload) {
                 room: room
             }
         })
-    } 
+    }
 
     // 2. Cek Konflik Pejabat (Array vs Array)
     // "Cari kegiatan lain di jam yg sama, yang pejabatnya ada di list pejabat baru ini"
-    let officialConflict = null;
-    
+    let officialConflict = null
+    let conflictingOfficialName = []
     if (officials && officials.length > 0) {
         officialConflict = await prisma.activityMonitoring.findFirst({
             where: {
                 ...timeFilter,
                 officials: {
-                    hasSome: officials 
+                    hasSome: officials
                 }
             }
-        });
+        })
+        if (officialConflict) {
+            conflictingOfficialName = officials.filter(person => officialConflict.officials.includes(person))
+        }
     }
 
-    if (roomConflict && officialConflict) return 'DoubleConflict';
-    if (roomConflict) return 'RoomConflict';
-    if (officialConflict) return 'OfficialConflict';
-    
-    return 'Normal';
+    let status = 'Normal'
+    if (roomConflict && officialConflict) status = 'DoubleConflict';
+    if (roomConflict) status = 'RoomConflict';
+    if (officialConflict) status = 'OfficialConflict';
+
+    return {
+        status: status,
+        conflictingOfficials: conflictingOfficialName,
+        conflictedWith: officialConflict ? officialConflict.title : null
+    }
 }
 
 async function getActivityMonitoringListQuery(page = 1, limit = 10, search = "", filters = {}) {
     const skip = (page - 1) * limit;
     const andConditions = []
-    
+
     // 1. Search (Title)
     if (search) {
         andConditions.push({
@@ -77,7 +84,7 @@ async function getActivityMonitoringListQuery(page = 1, limit = 10, search = "",
     // }
     if (filters.status && Array.isArray(filters.status)) {
         andConditions.push({
-            status: { in: filters.status } 
+            status: { in: filters.status }
         })
     }
 
@@ -114,24 +121,29 @@ async function getActivityMonitoringListQuery(page = 1, limit = 10, search = "",
 }
 
 async function createActivityMonitoringQuery(payload) {
-    
-    const detectedStatus = await detectConflicts(payload)
 
-    return await prisma.activityMonitoring.create({
+    const conflictResult = await detectConflicts(payload)
+
+    const newActivity = await prisma.activityMonitoring.create({
         data: {
             title: payload.title,
             date: new Date(payload.date),
             startTime: new Date(payload.startTime),
             endTime: new Date(payload.endTime),
             participants: parseInt(payload.participants),
-            
+
             unit: payload.unit,
             room: payload.room,
             locationDetail: payload.locationDetail || null,
             officials: payload.officials || [],
-            status: detectedStatus
+            status: conflictResult.status
         }
     })
+
+    return {
+        ...newActivity,
+        _conflictDetails: conflictResult.conflictingOfficials
+    }
 }
 
 async function deleteActivityMonitoringQuery(activityId) {
@@ -147,6 +159,8 @@ async function updateActivityMonitoringQuery(id, payload) {
     const start = new Date(startTime)
     const end = new Date(endTime)
     const targetDate = new Date(date)
+    const conflictPayload = { ...payload, id: id }
+    const conflictResult = await detectConflicts(conflictPayload);
 
     const timeFilter = {
         date: targetDate,
@@ -178,7 +192,7 @@ async function updateActivityMonitoringQuery(id, payload) {
     else if (roomConflict) newStatus = 'RoomConflict'
     else if (officialConflict) newStatus = 'OfficialConflict'
 
-    return await prisma.activityMonitoring.update({
+    const updatedActivity = await prisma.activityMonitoring.update({
         where: { id: parseInt(id) },
         data: {
             title: payload.title,
@@ -187,13 +201,19 @@ async function updateActivityMonitoringQuery(id, payload) {
             endTime: end,
             participants: parseInt(payload.participants),
             description: payload.description,
+
             unit: payload.unit,
             room: payload.room,
             locationDetail: payload.locationDetail || null,
             officials: payload.officials || [],
-            status: newStatus
+            status: conflictResult.status
         }
     })
+
+    return {
+        ...updatedActivity,
+        _conflictDetails: conflictResult.conflictingOfficials
+    }
 }
 
 export { getActivityMonitoringListQuery, createActivityMonitoringQuery, deleteActivityMonitoringQuery, updateActivityMonitoringQuery }

@@ -83,7 +83,7 @@ async function getActivityMonitoringList(req, res) {
 
         let unitFilter = undefined;
         if (req.query.unit && req.query.unit !== "Semua Unit") { // Cek jika bukan default value
-             unitFilter = UNIT_MAP[req.query.unit] || req.query.unit;
+            unitFilter = UNIT_MAP[req.query.unit] || req.query.unit;
         }
 
         let statusFilter = undefined
@@ -112,7 +112,7 @@ async function getActivityMonitoringList(req, res) {
         // Helper: Format Enum jadi Readable String (Opsional)
         // Kalau mau formatting di BE, lakukan map di sini. 
         // Tapi biasanya formatting tampilan dilakukan di Frontend.
-        
+
         res.status(200).json({
             success: true,
             message: "Berhasil mengambil data monitoring kegiatan",
@@ -123,15 +123,15 @@ async function getActivityMonitoringList(req, res) {
     } catch (error) {
         console.error("Error fetching activities:", error)
         if (error.message.includes("Invalid value for argument")) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "Filter tidak valid (Format Enum salah)." 
+            return res.status(400).json({
+                success: false,
+                message: "Filter tidak valid (Format Enum salah)."
             });
-       }
+        }
 
-        res.status(500).json({ 
-            success: false, 
-            message: "Terjadi kesalahan server." 
+        res.status(500).json({
+            success: false,
+            message: "Terjadi kesalahan server."
         });
     }
 }
@@ -161,14 +161,14 @@ async function createActivityMonitoring(req, res) {
                 if (typeof p !== 'string') return null
                 // Regex ini menghapus SPASI, TITIK, KOMA. Sisa Huruf & Angka saja.
                 // "Kaur SDM Keuangan" -> "KaurSDMKeuangan"
-                return p.replace(/[^a-zA-Z0-9]/g, "") 
+                return p.replace(/[^a-zA-Z0-9]/g, "")
             }).filter(p => p !== null && p !== "")
         }
 
         if (roomEnum === 'Lainnya' && (!raw.locationDetail || raw.locationDetail.trim() === "")) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "Jika ruangan 'Lainnya', mohon isi detail lokasi kegiatan." 
+            return res.status(400).json({
+                success: false,
+                message: "Jika ruangan 'Lainnya', mohon isi detail lokasi kegiatan."
             })
         }
 
@@ -179,7 +179,7 @@ async function createActivityMonitoring(req, res) {
             endTime: raw.endTime,
             participants: raw.participants,
             description: raw.description,
-            
+
             unit: unitEnum,
             room: roomEnum,
             locationDetail: raw.locationDetail,
@@ -192,10 +192,13 @@ async function createActivityMonitoring(req, res) {
         if (newActivity.status === 'RoomConflict') {
             message = "Disimpan dengan KONFLIK RUANGAN."
         } else if (newActivity.status === 'OfficialConflict') {
-            message = "Disimpan dengan KONFLIK PEJABAT."
+            const names = newActivity._conflictDetails.join(", ")
+            message = `Disimpan dengan KONFLIK PEJABAT: ${names}.`
         } else if (newActivity.status === 'DoubleConflict') {
-            message = "Disimpan dengan KONFLIK GANDA (Ruangan & Pejabat)."
+            const names = newActivity._conflictDetails.join(", ")
+            message = `Disimpan dengan KONFLIK GANDA (Ruangan & Pejabat: ${names}).`
         }
+        delete newActivity._conflictDetails;
 
         res.status(201).json({
             success: true,
@@ -206,11 +209,11 @@ async function createActivityMonitoring(req, res) {
         console.error("Error creating activity:", error)
         if (error.code === 'P2002') {
             return res.status(409).json({ success: false, message: "Data konflik unique." });
-       }
-       
-       if (error.message.includes("Argument 'room'")) {
+        }
+
+        if (error.message.includes("Argument 'room'")) {
             return res.status(400).json({ success: false, message: "Format Ruangan tidak valid." });
-       }
+        }
 
         res.status(500).json({ success: false, message: "Server error." })
     }
@@ -258,14 +261,14 @@ async function updateActivityMonitoring(req, res) {
                 if (typeof p !== 'string') return null
                 // Regex ini menghapus SPASI, TITIK, KOMA. Sisa Huruf & Angka saja.
                 // "Kaur SDM Keuangan" -> "KaurSDMKeuangan"
-                return p.replace(/[^a-zA-Z0-9]/g, "") 
+                return p.replace(/[^a-zA-Z0-9]/g, "")
             }).filter(p => p !== null && p !== "")
         }
 
         if (roomEnum === 'Lainnya' && (!raw.locationDetail || raw.locationDetail.trim() === "")) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "Jika ruangan 'Lainnya', mohon isi detail lokasi kegiatan." 
+            return res.status(400).json({
+                success: false,
+                message: "Jika ruangan 'Lainnya', mohon isi detail lokasi kegiatan."
             })
         }
 
@@ -276,7 +279,7 @@ async function updateActivityMonitoring(req, res) {
             endTime: raw.endTime,
             participants: raw.participants,
             description: raw.description,
-            
+
             unit: unitEnum,
             room: roomEnum,
             locationDetail: raw.locationDetail,
@@ -289,10 +292,14 @@ async function updateActivityMonitoring(req, res) {
         if (updatedActivity.status === 'RoomConflict') {
             message = "Diperbarui dengan KONFLIK RUANGAN.";
         } else if (updatedActivity.status === 'OfficialConflict') {
-            message = "Diperbarui dengan KONFLIK PEJABAT.";
-        } else if (updatedActivity.status === 'DoubleConflict') {
-            message = "Diperbarui dengan KONFLIK GANDA.";
+            const names = updatedActivity._conflictDetails ? updatedActivity._conflictDetails.join(", ") : ""
+            message = `Diperbarui dengan KONFLIK PEJABAT: ${names}.`
         }
+        else if (updatedActivity.status === 'DoubleConflict') {
+            const names = updatedActivity._conflictDetails ? updatedActivity._conflictDetails.join(", ") : ""
+            message = `Diperbarui dengan KONFLIK GANDA (Ruangan & Pejabat: ${names}).`
+        }
+        delete updatedActivity._conflictDetails
 
         res.status(200).json({
             success: true,
@@ -305,9 +312,9 @@ async function updateActivityMonitoring(req, res) {
         if (error.code === 'P2025') {
             return res.status(404).json({ success: false, message: "Data kegiatan tidak ditemukan." })
         }
-        
+
         if (error.message.includes("Argument")) {
-             return res.status(400).json({ success: false, message: "Format data (Enum) tidak valid." })
+            return res.status(400).json({ success: false, message: "Format data (Enum) tidak valid." })
         }
         res.status(500).json({ success: false, message: "Server error." })
     }

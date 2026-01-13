@@ -325,8 +325,9 @@ model MeetingActionItem {
   task          String   @db.Text
   pic           String
   deadline      DateTime @db.Date
+  notes         String?  @db.Text
   
-  status        MeetingActionStatus @default(Pending) 
+  status        MeetingActionStatus @default(Open) 
 
   agendaId      Int      @map("agenda_id")
   agenda        MeetingAgenda @relation(fields: [agendaId], references: [id], onDelete: Cascade)
@@ -525,8 +526,6 @@ enum MeetingStatus {
 }
 
 enum MeetingActionStatus {
-  Pending
-  OnProgress
-  Done
-  Cancelled
+  Open
+  Closed
 }
