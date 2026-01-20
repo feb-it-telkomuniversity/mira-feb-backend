@@ -2,23 +2,29 @@ import { Prisma, PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient()
 
-async function createAdminQuery(username, fullName, hashedPassword) {
-    return await prisma.admins.create({
+async function createUserQuery(username, hashedPassword, name, role) {
+    return await prisma.users.create({
         data: {
             username: username,
-            fullName: fullName,
-            password: hashedPassword
+            password: hashedPassword,
+            name: name,
+            role: role
         }
     })
 }
 
-async function findAdminByUsernameQuery(username) {
-    return await prisma.admins.findUnique({
+async function findUserByUsernameQuery(username) {
+    return await prisma.users.findUnique({
         where: { username: username }
     })
 }
 
+async function getUsersQuery() {
+    return await prisma.users.findMany()
+}
+
 export {
-    createAdminQuery,
-    findAdminByUsernameQuery
+    createUserQuery,
+    findUserByUsernameQuery,
+    getUsersQuery
 }

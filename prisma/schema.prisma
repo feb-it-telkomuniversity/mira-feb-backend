@@ -4,27 +4,34 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url  	    = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Users {
-  id            Int            @id @default(autoincrement())
-  phoneNumber   String         @unique() @db.VarChar(30)
-  name          String?        @db.VarChar(200)
-  role          Role?
-  identifier    String?        @db.VarChar(255)
-  createdAt     DateTime?      @default(now()) @map("created_at") @db.Timestamp(0)
+  id       Int     @id @default(autoincrement())
+  username String? @unique @db.VarChar(100)
+  password String? @db.VarChar(255)
+
+  name String @map("full_name") @db.VarChar(200)
+  role Role   @default(dosen)
+
+  phoneNumber String? @unique @db.VarChar(30)
+  identifier  String? @db.VarChar(255)
+
   conversations Conversation[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("users")
 }
 
 model Admins {
-  id          Int             @id @default(autoincrement())
-  username    String          @unique
-  fullName    String          @map("full_name")
-  password    String
+  id       Int    @id @default(autoincrement())
+  username String @unique
+  fullName String @map("full_name")
+  password String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -73,73 +80,71 @@ model Unresolved {
 }
 
 model Schedule {
-  id                Int             @id @default(autoincrement())
-  eventTitle        String          @map("event_title")
-  eventDescription  String          @db.Text @map("event_description")
-  eventTime         DateTime        @map("event_time")
-  reminderTime      DateTime        @map("reminder_time")
-  status            ScheduleStatus  @default(pending)
-  createdBy         String          @map("created_by")
-  createdAt         DateTime        @default(now()) @map("created_at")
+  id               Int            @id @default(autoincrement())
+  eventTitle       String         @map("event_title")
+  eventDescription String         @map("event_description") @db.Text
+  eventTime        DateTime       @map("event_time")
+  reminderTime     DateTime       @map("reminder_time")
+  status           ScheduleStatus @default(pending)
+  createdBy        String         @map("created_by")
+  createdAt        DateTime       @default(now()) @map("created_at")
 
   // Relasi: Satu Jadwal bisa punya banyak Penerima
-  recipients       ScheduleRecipient[]
+  recipients ScheduleRecipient[]
 
   @@map("schedules")
 }
 
 model ScheduleRecipient {
-  id                Int             @id @default(autoincrement())
-  scheduleId        Int             @map("schedule_id")
-  schedule          Schedule        @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  id         Int      @id @default(autoincrement())
+  scheduleId Int      @map("schedule_id")
+  schedule   Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
 
-  contactId         Int?             @map("contact_id")
-  contact           Contacts?        @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId Int?      @map("contact_id")
+  contact   Contacts? @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
   @@map("schedule_recipients")
 }
 
 model Contacts {
-  id                Int             @id @default(autoincrement())
-  name              String
-  title             String
-  phoneNumber       String          @unique @map("phone_number")
-  notes             String?         @map("notes") @db.Text
+  id          Int     @id @default(autoincrement())
+  name        String
+  title       String
+  phoneNumber String  @unique @map("phone_number")
+  notes       String? @map("notes") @db.Text
 
-  createdAt         DateTime        @default(now()) @map("created_at")
-  updatedAt         DateTime        @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  schedules         ScheduleRecipient[]
+  schedules ScheduleRecipient[]
 
   @@map("contacts")
 }
 
 model PartnershipDocument {
-  id                  Int             @id @default(autoincrement())
-  yearIssued          Int             @map("year_issued")
-  docType             DocType?        @map("doc_type")
-  partnerName         String          @map("partner_name")
-  scope               Scope?
-  
-  picExternal         String?         @map("pic_external")
-  picExternalPhone    String?         @map("pic_external_phone")
-  picInternal         String?         @map("pic_internal")
-  
+  id          Int      @id @default(autoincrement())
+  yearIssued  Int      @map("year_issued")
+  docType     DocType? @map("doc_type")
+  partnerName String   @map("partner_name")
+  scope       Scope?
 
-  docNumberInternal   String?         @unique @map("doc_number_internal")
-  docNumberExternal   String?         @unique @map("doc_number_external")
-  
+  picExternal      String? @map("pic_external")
+  picExternalPhone String? @map("pic_external_phone")
+  picInternal      String? @map("pic_internal")
 
-  partnershipType     PartnershipType? @map("partnership_type")
+  docNumberInternal String? @unique @map("doc_number_internal")
+  docNumberExternal String? @unique @map("doc_number_external")
+
+  partnershipType PartnershipType?      @map("partnership_type")
   // activityType        ActivityType?    @map("activity_type")
-  activities PartnershipActivity[]
-  
-  dateCreated         DateTime?       @map("date_created")
-  signingType         String?         @map("signing_type")
-  dateSigned          DateTime?       @map("date_signed")
-  validUntil          DateTime?       @map("valid_until")
-  duration            String?         @map("duration") 
-  
+  activities      PartnershipActivity[]
+
+  dateCreated DateTime? @map("date_created")
+  signingType String?   @map("signing_type")
+  dateSigned  DateTime? @map("date_signed")
+  validUntil  DateTime? @map("valid_until")
+  duration    String?   @map("duration")
+
   // --- APPROVAL WORKFLOW (Baju Surat) ---
   approvalWadek2      ApprovalStatus? @map("approval_wadek2")
   approvalWadek1      ApprovalStatus? @map("approval_wadek1")
@@ -153,191 +158,193 @@ model PartnershipDocument {
   approvalRektor      ApprovalStatus? @map("approval_rektor")
 
   // --- Arsip & Lainnya ---
-  docLink             String?         @map("doc_link")
-  notes               String?         @db.Text
-  
-  hasHardcopy         Boolean         @default(false) @map("has_hardcopy")
-  hasSoftcopy         Boolean         @default(false) @map("has_softcopy")
+  docLink String? @map("doc_link")
+  notes   String? @db.Text
 
-  createdAt           DateTime        @default(now()) @map("created_at")
-  updatedAt           DateTime        @updatedAt @map("updated_at")
+  hasHardcopy Boolean @default(false) @map("has_hardcopy")
+  hasSoftcopy Boolean @default(false) @map("has_softcopy")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("partnership_documents")
 }
 
 model PartnershipActivity {
-  id            Int               @id @default(autoincrement())
-  type          ActivityType?          
-  status        ActivityStatus?   @default(BelumTerlaksana)
-  notes         String?           @db.Text
-  
+  id     Int             @id @default(autoincrement())
+  type   ActivityType?
+  status ActivityStatus? @default(BelumTerlaksana)
+  notes  String?         @db.Text
+
   // Relasi ke Dokumen
-  documentId    Int               @map("document_id")
-  document      PartnershipDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentId Int                 @map("document_id")
+  document   PartnershipDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   @@map("partnership_activities")
 }
 
 model ContractManagement {
-  id                Int           @id @default(autoincrement())
+  id                         Int                         @id @default(autoincrement())
   ContractManagementCategory ContractManagementCategory?
-  responsibility    String
-  quarterly         String
-  unit              String?
+  responsibility             String
+  quarterly                  String
+  unit                       String?
 
-  weight            Float?
-  target            String?
-  realization       Float?
+  weight      Float?
+  target      String?
+  realization Float?
 
-  max               Float?
-  min               Float?
-  
-  achievement       Float?
-  persReal          Float?         @map("pers_real")
-  value             Float?
+  max Float?
+  min Float?
 
-  Input             String?
-  Monitor           String?
+  achievement Float?
+  persReal    Float? @map("pers_real")
+  value       Float?
 
-  createdAt         DateTime        @default(now()) @map("created_at")
-  updatedAt         DateTime        @updatedAt @map("updated_at")
+  Input   String?
+  Monitor String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("contract_management")
 }
 
 // --- ActivityMonitoring ---
 model ActivityMonitoring {
-  id                  Int             @id @default(autoincrement())
-  title               String
-  description         String?
-  date                DateTime        @db.Date
-  startTime           DateTime
-  endTime             DateTime
-  participants  Int                   @default(0)
+  id           Int      @id @default(autoincrement())
+  title        String
+  description  String?
+  date         DateTime @db.Date
+  startTime    DateTime
+  endTime      DateTime
+  participants Int      @default(0)
 
-  unit          UnitOption
-  room          RoomOption            @default(AulaFEB)
-  locationDetail String?              @map("location_detail")
-  officials     OfficialOption[]
+  unit           UnitOption
+  room           RoomOption       @default(AulaFEB)
+  locationDetail String?          @map("location_detail")
+  officials      OfficialOption[]
 
-  status        ActivityMonitoringStatus  @default(Normal)
+  status ActivityMonitoringStatus @default(Normal)
 
-  createdAt     DateTime              @default(now()) @map("created_at")
-  updatedAt     DateTime              @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("activity_monitoring")
 }
 
 // --- Management Report ---
 model ManagementReport {
-  id            Int      @id @default(autoincrement())
-  
-  indicator     String   @map("indicator")
-  evidenceLink  String?  @map("evidence_link") @db.Text
-  year          Int
-  
-  tw1           Boolean  @default(false) @map("tw_1")
-  tw2           Boolean  @default(false) @map("tw_2")
-  tw3           Boolean  @default(false) @map("tw_3")
-  tw4           Boolean  @default(false) @map("tw_4")
+  id Int @id @default(autoincrement())
 
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  indicator    String  @map("indicator")
+  evidenceLink String? @map("evidence_link") @db.Text
+  year         Int
+
+  tw1 Boolean @default(false) @map("tw_1")
+  tw2 Boolean @default(false) @map("tw_2")
+  tw3 Boolean @default(false) @map("tw_3")
+  tw4 Boolean @default(false) @map("tw_4")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@unique([indicator, year])
-
-  @@index([year]) 
-  @@index([indicator]) 
-  
+  @@index([year])
+  @@index([indicator])
   @@map("management_reports")
 }
 
 model EmployeeTPA {
-  id              Int      @id @default(autoincrement())
-  name            String   @map("name")
-  nip             String   @unique
-  workUnit        String   @map("work_unit")
-  employmentStatus String  @map("employment_status")
+  id               Int    @id @default(autoincrement())
+  name             String @map("name")
+  nip              String @unique
+  workUnit         String @map("work_unit")
+  employmentStatus String @map("employment_status")
 
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("employee_tpa")
 }
 
 model Lecturer {
-  id          Int      @id @default(autoincrement())
-  nip         String   @unique
-  nuptk       String?
-  frontTitle  String?  @map("front_title")
-  name        String
-  backTitle   String?  @map("back_title")
-  prodi       String
-  lecturerCode String? @unique @map("lecturer_code")
-  education   String?
+  id            Int     @id @default(autoincrement())
+  nip           String  @unique
+  nuptk         String?
+  frontTitle    String? @map("front_title")
+  name          String
+  backTitle     String? @map("back_title")
+  prodi         String
+  lecturerCode  String? @unique @map("lecturer_code")
+  education     String?
   jobFunctional String? @map("job_functional")
 
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("lecturers")
 }
 
 model Meeting {
-  id            Int      @id @default(autoincrement())
-  title         String   @map("title")
-  date          DateTime @db.Date
-  startTime     DateTime @map("start_time")
-  endTime       DateTime @map("end_time")
-  leader        String
-  notetaker     String
-  room          RoomOption  
-  locationDetail String?   @map("location_detail")
-  
-  participants  String[] @map("participants") 
+  id             Int        @id @default(autoincrement())
+  title          String     @map("title")
+  date           DateTime   @db.Date
+  startTime      DateTime   @map("start_time")
+  endTime        DateTime   @map("end_time")
+  leader         String
+  notetaker      String
+  room           RoomOption
+  locationDetail String?    @map("location_detail")
+
+  participants String[] @map("participants")
 
   // Relasi ke Anak
-  agendas       MeetingAgenda[]
-  status        MeetingStatus @default(Terjadwal)
+  agendas MeetingAgenda[]
+  status  MeetingStatus   @default(Terjadwal)
 
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("meetings")
 }
 
 model MeetingAgenda {
-  id            Int      @id @default(autoincrement())
-  title         String
-  discussion    String?  @db.Text
-  decision      String?  @db.Text
-  
+  id         Int     @id @default(autoincrement())
+  title      String
+  discussion String? @db.Text
+  decision   String? @db.Text
+
   // Relasi ke Induk
-  meetingId     Int      @map("meeting_id")
-  meeting       Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
-  actionItems   MeetingActionItem[]
+  meetingId   Int                 @map("meeting_id")
+  meeting     Meeting             @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  actionItems MeetingActionItem[]
 
   @@map("meeting_agendas")
 }
 
 model MeetingActionItem {
-  id            Int      @id @default(autoincrement())
-  task          String   @db.Text
-  pic           String
-  deadline      DateTime @db.Date
-  notes         String?  @db.Text
-  
-  status        MeetingActionStatus @default(Open) 
+  id       Int      @id @default(autoincrement())
+  task     String   @db.Text
+  pic      String
+  deadline DateTime @db.Date
+  notes    String?  @db.Text
 
-  agendaId      Int      @map("agenda_id")
-  agenda        MeetingAgenda @relation(fields: [agendaId], references: [id], onDelete: Cascade)
-  
+  status MeetingActionStatus @default(Open)
+
+  agendaId Int           @map("agenda_id")
+  agenda   MeetingAgenda @relation(fields: [agendaId], references: [id], onDelete: Cascade)
+
   @@map("meeting_action_items")
 }
 
 enum Role {
+  admin
   mahasiswa
   dosen
+  dekanat
+  kaur
+  kaprodi
 }
 
 enum Category {
@@ -421,10 +428,11 @@ enum ActivityType {
   // --- Sub Abdimas ---
   JointCommunityService
   SocialProject
-  
+
   // --- Umum ---
   General
 }
+
 enum ActivityStatus {
   Terlaksana
   BelumTerlaksana
@@ -443,7 +451,7 @@ enum ApprovalStatus {
 enum ContractManagementCategory {
   Financial
   NonFinancial
-  InternalBusinessProcess  
+  InternalBusinessProcess
 }
 
 // ======== ENUM START FROM HERE ============
@@ -510,9 +518,10 @@ enum OfficialOption {
   SekprodiS2ManajemenPJJ
   SekprodiS2AdministrasiBisnis
 }
+
 enum ActivityMonitoringStatus {
   Normal
-  RoomConflict 
+  RoomConflict
   OfficialConflict
   DoubleConflict
   Cancelled
