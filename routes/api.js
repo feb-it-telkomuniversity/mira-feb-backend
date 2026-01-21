@@ -77,9 +77,9 @@ route.put('/activity-monitoring/:id', updateActivityMonitoring)
 // ==== Management Report ====
 route.get('/management-reports', getManagementReportList)
 route.post('/management-reports', createManagementReport)
-route.delete('/management-reports/:id', deleteManagementReport)
 route.put('/management-reports/:id', updateManagementReport)
 route.patch('/management-reports/:id/toggle', toggleReportStatus)
+route.delete('/management-reports/:id', deleteManagementReport)
 
 // ==== NOTULENSI MEETING ====
 route.get('/meetings', getMeetingList)
