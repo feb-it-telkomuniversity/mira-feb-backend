@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getTickets, getConversationDetails, assignTicketToAdmin, countDasboardStats, getTicketCategoryStats, getTicketTrends, resolveTicketByAdmin, getConversationRelevantDetails } from "../controller/tickets-controller.js"
-import { signIn, getUsers, registerUser } from '../controller/auth-controller.js'
+import { signIn, getUsers, registerUser, deleteUser, updateUser } from '../controller/auth-controller.js'
 import { handleCreateSchedule, getSchedulesByMonth, handleCancelSchedule, handleDeleteSchedule } from '../controller/schedule-controller.js';
 import { createContact, getContacts, handleDeleteContact } from '../controller/contacts-controller.js';
 import { createPartnershipData, deletePartnershipData, getPartnershipCharts, getPartnershipData, getPartnershipStats, getPartnershipSummaryStats, updatePartnershipData } from '../controller/partnership-controller.js';
@@ -30,6 +30,8 @@ const adminOnly = verifyRole(['admin'])
 
 route.get("/users", adminOnly, getUsers)
 route.post('/register-user', adminOnly, registerUser)
+route.delete('/users/:id', adminOnly, deleteUser)
+route.put('/users/:id', adminOnly, updateUser)
 
 route.get('/tickets', adminOnly, getTickets)
 route.put('/tickets/:id/assign', adminOnly, assignTicketToAdmin)

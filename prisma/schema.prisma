@@ -345,6 +345,7 @@ enum Role {
   dekanat
   kaur
   kaprodi
+  sekprodi
 }
 
 enum Category {

@@ -23,8 +23,28 @@ async function getUsersQuery() {
     return await prisma.users.findMany()
 }
 
+async function updateUserQuery(id, username, password, name, role) {
+    return await prisma.users.update({
+        where: { id: parseInt(id) },
+        data: {
+            username: username,
+            password: password,
+            name: name,
+            role: role
+        }
+    })
+}
+
+async function deleteUserQuery(id) {
+    return await prisma.users.delete({
+        where: { id: parseInt(id) }
+    })
+}
+
 export {
     createUserQuery,
     findUserByUsernameQuery,
-    getUsersQuery
+    getUsersQuery,
+    deleteUserQuery,
+    updateUserQuery
 }

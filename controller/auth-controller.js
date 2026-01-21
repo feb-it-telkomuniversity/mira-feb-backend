@@ -1,50 +1,6 @@
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
-import { createUserQuery, findUserByUsernameQuery, getUsersQuery } from "../model/auth-model.js"
-
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient();
-
-// export const login = async (req, res) => {
-//     try {
-//         const { username, password } = req.body;
-
-//         const user = await prisma.users.findUnique({
-//             where: { username: username }
-//         })
-
-//         if (!user) return res.status(404).json({ success: false, message: "Username tidak ditemukan" })
-
-//         const validPassword = await bcrypt.compare(password, user.password);
-//         if (!validPassword) return res.status(400).json({ success: false, message: "Password salah" })
-
-//         const token = jwt.sign(
-//             {
-//                 id: user.id,
-//                 username: user.username,
-//                 role: user.role
-//             },
-//             process.env.JWT_SECRET,
-//             { expiresIn: '1d' }
-//         )
-
-//         res.json({
-//             success: true,
-//             message: "Login successful",
-//             token: token,
-//             data: {
-//                 id: user.id,
-//                 name: user.name,
-//                 role: user.role
-//             }
-//         });
-
-//     } catch (error) {
-//         console.error("Login Error:", error);
-//         res.status(500).json({ success: false, message: "Server error" })
-//     }
-// }
+import { createUserQuery, deleteUserQuery, findUserByUsernameQuery, getUsersQuery, updateUserQuery } from "../model/auth-model.js"
 
 async function signIn(req, res) {
     try {
@@ -152,4 +108,41 @@ async function getUsers(req, res) {
     }
 }
 
-export { signIn, registerUser, getUsers }
+async function deleteUser(req, res) {
+    try {
+        const { id } = req.params
+        const deletedUser = await deleteUserQuery(id)
+        res.status(200).json({
+            success: true,
+            message: 'User deleted successfully',
+            user: deletedUser
+        })
+    } catch (error) {
+        console.error('Delete user error: ', error)
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        })
+    }
+}
+
+async function updateUser(req, res) {
+    try {
+        const { id } = req.params
+        const { username, name, password, role } = req.body
+        const updatedUser = await updateUserQuery(id, username, password, name, role)
+        res.status(200).json({
+            success: true,
+            message: "User updated successfully",
+            user: updatedUser
+        })
+    } catch (error) {
+        console.error('Update user error: ', error)
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        })
+    }
+}
+
+export { signIn, registerUser, getUsers, deleteUser, updateUser }
