@@ -23,12 +23,12 @@ async function getUsersQuery() {
     return await prisma.users.findMany()
 }
 
-async function updateUserQuery(id, username, password, name, role) {
+async function updateUserQuery(id, username, hashedPassword, name, role) {
     return await prisma.users.update({
         where: { id: parseInt(id) },
         data: {
             username: username,
-            password: password,
+            password: hashedPassword,
             name: name,
             role: role
         }
