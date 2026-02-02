@@ -497,11 +497,16 @@ enum OfficialOption {
   Dekan
   WakilDekanI
   WakilDekanII
+  Dekanat
+  Ponggawa
   KaurSekretariatDekan
   KaurAkademik
   KaurLaboratorium
   KaurSDMKeuangan
   KaurKemahasiswaan
+  KetuaKKAEFS
+  KetuaKKTBM
+  KetuaKKDBE
   KaprodiS1Manajemen
   KaprodiS1AdministrasiBisnis
   KaprodiS1Akuntansi
