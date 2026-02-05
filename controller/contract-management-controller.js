@@ -1,4 +1,4 @@
-import { createContractManagementQuery, getContractManagementByIdQuery, getContractManagementDataQuery, getContractStatsQuery, updateContractManagementQuery } from "../model/contract-management-model.js"
+import { createContractManagementQuery, deleteContractManagementQuery, getContractManagementByIdQuery, getContractManagementDataQuery, getContractStatsQuery, updateContractManagementQuery } from "../model/contract-management-model.js"
 
 export const getContractStats = async (req, res) => {
     try {
@@ -115,12 +115,12 @@ async function getContractManagementById(req, res) {
         console.error("Error fetching meetings:", error);
         if (error.code === 'P2025' || error.message.includes('Int')) {
             return res.status(400).json({ success: false, message: "Format ID tidak valid." });
-       }
+        }
 
-       res.status(500).json({
-           success: false,
-           message: "Terjadi kesalahan server saat memuat data."
-       })
+        res.status(500).json({
+            success: false,
+            message: "Terjadi kesalahan server saat memuat data."
+        })
     }
 }
 
@@ -148,7 +148,7 @@ async function updateContractManagement(req, res) {
     try {
         const { id } = req.params
         const payload = req.body
-        
+
         if (!id) {
             return res.status(400).json({ success: false, message: "ID is required" })
         }
@@ -174,4 +174,27 @@ async function updateContractManagement(req, res) {
     }
 }
 
-export { getContractManagementData, createContractManagement, updateContractManagement, getContractManagementById }
+async function deleteContractManagement(req, res) {
+    try {
+        const { id } = req.params
+        const result = await deleteContractManagementQuery(id)
+
+        res.status(200).json({
+            success: true,
+            message: "Data successfully deleted",
+            data: result
+        })
+    } catch (error) {
+        console.error("Delete KM error:", error)
+
+        if (error.message === "RecordNotFound" || error.code === 'P2025') {
+            return res.status(404).json({ success: false, message: "Data not found" });
+        }
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to delete contract management data"
+        })
+    }
+}
+export { getContractManagementData, createContractManagement, updateContractManagement, getContractManagementById, deleteContractManagement }

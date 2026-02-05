@@ -207,10 +207,10 @@ async function updateContractManagementQuery(id, payload) {
     return await prisma.contractManagement.update({
         where: { id: parseInt(id) },
         data: {
-            responsibility: payload.responsibility, 
+            responsibility: payload.responsibility,
             quarterly: payload.quarterly,
             unit: payload.unit,
-            
+
             weight: mergedData.weight,
             target: mergedData.target,
             realization: mergedData.realization,
@@ -226,4 +226,10 @@ async function updateContractManagementQuery(id, payload) {
     })
 }
 
-export { getContractManagementDataQuery, createContractManagementQuery, updateContractManagementQuery, getContractManagementByIdQuery }
+async function deleteContractManagementQuery(id) {
+    return await prisma.contractManagement.delete({
+        where: { id: parseInt(id) }
+    })
+}
+
+export { getContractManagementDataQuery, createContractManagementQuery, updateContractManagementQuery, getContractManagementByIdQuery, deleteContractManagementQuery }

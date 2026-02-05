@@ -131,6 +131,7 @@ async function createActivityMonitoringQuery(payload) {
             startTime: new Date(payload.startTime),
             endTime: new Date(payload.endTime),
             participants: parseInt(payload.participants),
+            description: payload.description,
 
             unit: payload.unit,
             room: payload.room,
