@@ -14,7 +14,7 @@ app.use(express.json())
 
 app.get("/", (req, res) => {
     res.json({
-        "message": "WA Bot Service is running 🚀"
+        "message": "MIRA FEB Backend is running so quickly 🚀"
     });
 })
 
