@@ -134,6 +134,7 @@ async function createActivityMonitoringQuery(payload) {
             description: payload.description,
 
             unit: payload.unit,
+            otherUnit: payload.otherUnit || null,
             room: payload.room,
             locationDetail: payload.locationDetail || null,
             officials: payload.officials || [],
@@ -204,9 +205,10 @@ async function updateActivityMonitoringQuery(id, payload) {
             description: payload.description,
 
             unit: payload.unit,
+            otherUnit: payload.otherUnit || null,
             room: payload.room,
             locationDetail: payload.locationDetail || null,
-            officials: payload.officials || [],
+            officials: payload.officials,
             status: conflictResult.status
         }
     })

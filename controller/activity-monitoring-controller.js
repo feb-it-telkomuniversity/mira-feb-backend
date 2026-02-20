@@ -181,6 +181,7 @@ async function createActivityMonitoring(req, res) {
             description: raw.description,
 
             unit: unitEnum,
+            otherUnit: raw.otherUnit,
             room: roomEnum,
             locationDetail: raw.locationDetail,
             officials: officialsEnum
@@ -281,6 +282,7 @@ async function updateActivityMonitoring(req, res) {
             description: raw.description,
 
             unit: unitEnum,
+            otherUnit: raw.otherUnit,
             room: roomEnum,
             locationDetail: raw.locationDetail,
             officials: officialsEnum

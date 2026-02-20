@@ -221,6 +221,7 @@ model ActivityMonitoring {
   participants Int      @default(0)
 
   unit           UnitOption
+  otherUnit      String?
   room           RoomOption       @default(AulaFEB)
   locationDetail String?          @map("location_detail")
   officials      OfficialOption[]
@@ -476,6 +477,7 @@ enum UnitOption {
   ProdiS2AdministrasiBisnis
   ProdiS2Akuntansi
   ProdiS3Manajemen
+  Lainnya
 }
 
 enum RoomOption {
