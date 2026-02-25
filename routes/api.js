@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { getTickets, getConversationDetails, assignTicketToAdmin, countDasboardStats, getTicketCategoryStats, getTicketTrends, resolveTicketByAdmin, getConversationRelevantDetails } from "../controller/tickets-controller.js"
 import { signIn, getUsers, registerUser, deleteUser, updateUser } from '../controller/auth-controller.js'
 import { handleCreateSchedule, getSchedulesByMonth, handleCancelSchedule, handleDeleteSchedule } from '../controller/schedule-controller.js';
-import { createContact, getContacts, handleDeleteContact } from '../controller/contacts-controller.js';
+import { createContact, getContacts, handleDeleteContact, updateContact } from '../controller/contacts-controller.js';
 import { createPartnershipData, deletePartnershipData, getPartnershipCharts, getPartnershipData, getPartnershipStats, getPartnershipSummaryStats, updatePartnershipData } from '../controller/partnership-controller.js';
 import { addEvent, getEvents, getGoogleEvents, googleLogin, googleRedirect } from '../controller/google-calendar-controller.js';
 import { createContractManagement, deleteContractManagement, getContractManagementById, getContractManagementData, getContractStats, updateContractManagement } from '../controller/contract-management-controller.js';
@@ -50,6 +50,7 @@ route.put('/schedules/:id/cancel', handleCancelSchedule)
 route.get('/contacts', getContacts)
 route.post('/contacts', createContact)
 route.delete('/contacts/:id', handleDeleteContact)
+route.put('/contacts/:id', updateContact)
 
 // ==== Partnership ====
 route.get('/partnership/stats', getPartnershipSummaryStats)

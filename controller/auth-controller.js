@@ -130,9 +130,17 @@ async function updateUser(req, res) {
     try {
         const { id } = req.params
         const { username, name, password, role } = req.body
-        const hashedPassword = await bcrypt.hash(password, 10)
 
-        const updatedUser = await updateUserQuery(id, username, hashedPassword, name, role)
+        const updateData = {}
+        if (username) updateData.username = username
+        if (name) updateData.name = name
+        if (role) updateData.role = role
+
+        if (password) {
+            updateData.password = await bcrypt.hash(password, 10)
+        }
+
+        const updatedUser = await updateUserQuery(id, updateData)
         res.status(200).json({
             success: true,
             message: "User updated successfully",

@@ -1,4 +1,4 @@
-import { createContactQuery, deleteContactQuery, getContactsQuery } from '../model/contact-model.js'
+import { createContactQuery, deleteContactQuery, getContactsQuery, updateContactQuery } from '../model/contact-model.js'
 
 async function getContacts(req, res) {
     try {
@@ -19,6 +19,19 @@ async function createContact(req, res) {
     }
 }
 
+async function updateContact(req, res) {
+    try {
+        const contacts = await updateContactQuery(req.params.id, req.body)
+        res.status(200).json({
+            success: true,
+            message: "Contact updated successfully",
+            contacts: contacts
+        })
+    } catch (error) {
+        res.status(500).json({ message: error.message })
+    }
+}
+
 async function handleDeleteContact(req, res) {
     try {
         const contactId = parseInt(req.params.id)
@@ -29,4 +42,4 @@ async function handleDeleteContact(req, res) {
     }
 }
 
-export { getContacts, createContact, handleDeleteContact }
+export { getContacts, createContact, updateContact, handleDeleteContact }

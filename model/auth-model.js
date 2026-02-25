@@ -20,18 +20,19 @@ async function findUserByUsernameQuery(username) {
 }
 
 async function getUsersQuery() {
-    return await prisma.users.findMany()
+    return await prisma.users.findMany({
+        where: {
+            role: {
+                not: "admin"
+            }
+        }
+    })
 }
 
-async function updateUserQuery(id, username, hashedPassword, name, role) {
+async function updateUserQuery(id, updateData) {
     return await prisma.users.update({
         where: { id: parseInt(id) },
-        data: {
-            username: username,
-            password: hashedPassword,
-            name: name,
-            role: role
-        }
+        data: updateData
     })
 }
 

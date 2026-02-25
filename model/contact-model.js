@@ -36,7 +36,7 @@ async function deleteContactQuery(scheduleId) {
 async function updateContactQuery(contactId, contactData) {
     // contactData: { name, title, phoneNumber, notes }
     return await prisma.contacts.update({
-        where: { id: contactId },
+        where: { id: parseInt(contactId) },
         data: {
             name: contactData.name,
             title: "",
