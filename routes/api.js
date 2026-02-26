@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getTickets, getConversationDetails, assignTicketToAdmin, countDasboardStats, getTicketCategoryStats, getTicketTrends, resolveTicketByAdmin, getConversationRelevantDetails } from "../controller/tickets-controller.js"
-import { signIn, getUsers, registerUser, deleteUser, updateUser } from '../controller/auth-controller.js'
+import { signIn, getUsers, registerUser, deleteUser, updateUser, getUserById, updateMyProfile, uploadAvatar, deleteAvatar } from '../controller/auth-controller.js'
 import { handleCreateSchedule, getSchedulesByMonth, handleCancelSchedule, handleDeleteSchedule } from '../controller/schedule-controller.js';
 import { createContact, getContacts, handleDeleteContact, updateContact } from '../controller/contacts-controller.js';
 import { createPartnershipData, deletePartnershipData, getPartnershipCharts, getPartnershipData, getPartnershipStats, getPartnershipSummaryStats, updatePartnershipData } from '../controller/partnership-controller.js';
@@ -11,9 +11,17 @@ import { createManagementReport, deleteManagementReport, getManagementReportList
 import { getLecturersList } from '../controller/lecturer-controller.js'
 import { getStaffsList } from '../controller/staff-controller.js'
 import { createMeeting, deleteMeetingById, getMeetingList, getMeetingListById, updateMeeting } from '../controller/meeting-controller.js'
-import { verifyRole, verifyToken } from '../middleware/auth-middleware.js';
+import { verifyRole, verifyToken } from '../middleware/auth-middleware.js'
+import multer from 'multer'
 
 const route = Router()
+
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 5 * 1024 * 1024, // 5mb
+    }
+})
 
 
 // PUBLIC ROUTES
@@ -30,8 +38,12 @@ const adminOnly = verifyRole(['admin'])
 
 route.get("/users", adminOnly, getUsers)
 route.post('/register-user', adminOnly, registerUser)
+route.patch('/users/me', updateMyProfile)
+route.post('/users/upload-avatar', upload.single('avatar'), uploadAvatar)
+route.delete('/users/delete-avatar', deleteAvatar)
 route.delete('/users/:id', adminOnly, deleteUser)
 route.put('/users/:id', adminOnly, updateUser)
+route.get('/users/:id', getUserById)
 
 route.get('/tickets', adminOnly, getTickets)
 route.put('/tickets/:id/assign', adminOnly, assignTicketToAdmin)

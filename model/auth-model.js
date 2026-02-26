@@ -42,10 +42,17 @@ async function deleteUserQuery(id) {
     })
 }
 
+async function getUserByIdQuery(id) {
+    return await prisma.users.findUnique({
+        where: { id: parseInt(id) }
+    })
+}
+
 export {
     createUserQuery,
     findUserByUsernameQuery,
     getUsersQuery,
     deleteUserQuery,
-    updateUserQuery
+    updateUserQuery,
+    getUserByIdQuery
 }

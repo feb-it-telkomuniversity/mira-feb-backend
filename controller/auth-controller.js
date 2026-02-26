@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
-import { createUserQuery, deleteUserQuery, findUserByUsernameQuery, getUsersQuery, updateUserQuery } from "../model/auth-model.js"
+import { createUserQuery, deleteUserQuery, findUserByUsernameQuery, getUserByIdQuery, getUsersQuery, updateUserQuery } from "../model/auth-model.js"
+import { del, put } from "@vercel/blob"
 
 async function signIn(req, res) {
     try {
@@ -155,4 +156,139 @@ async function updateUser(req, res) {
     }
 }
 
-export { signIn, registerUser, getUsers, deleteUser, updateUser }
+async function getUserById(req, res) {
+    try {
+        const { id } = req.params
+        const user = await getUserByIdQuery(id)
+        res.status(200).json({
+            success: true,
+            message: 'User fetched successfully',
+            user: user
+        })
+    } catch (error) {
+        console.error('Get user error: ', error)
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        })
+    }
+}
+
+async function updateMyProfile(req, res) {
+    try {
+        const userId = req.user.id
+        const { username, name, password, avatarUrl } = req.body
+
+        let updateData = {}
+
+        if (name) updateData.name = name
+        if (avatarUrl) updateData.avatarUrl = avatarUrl
+
+        if (username) {
+            const existingUser = await findUserByUsernameQuery(username)
+            if (existingUser && existingUser.id !== userId) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Username already in use, please choose another one"
+                })
+            }
+        }
+        updateData.username = username
+
+        if (password) {
+            updateData.password = await bcrypt.hash(password, 10)
+        }
+
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "No data change"
+            })
+        }
+
+        const updatedUser = await updateUserQuery(userId, updateData)
+        delete updatedUser.password
+
+        res.status(200).json({
+            success: true,
+            message: "Profile updated successfully",
+            user: updatedUser
+        })
+    } catch (error) {
+        console.error('Update profile error: ', error)
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        })
+    }
+}
+
+async function uploadAvatar(req, res) {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'There is no file to upload'
+            });
+        }
+
+        const file = req.file
+
+        const fileName = `profiles/${Date.now()}-${file.originalname}`
+
+        const blob = await put(fileName, file.buffer, {
+            access: 'public',
+            addRandomSuffix: true,
+        })
+
+        res.status(200).json({
+            success: true,
+            message: 'Photo succeded uploaded',
+            url: blob.url
+        })
+    } catch (error) {
+        console.error('Upload avatar error: ', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to upload file to server'
+        })
+    }
+}
+
+async function deleteAvatar(req, res) {
+    try {
+        const userId = req.user.id
+        const { avatarUrl } = req.body
+
+        if (avatarUrl && avatarUrl.includes('vercel-storage.com')) {
+            await del(avatarUrl)
+        }
+
+        const updatedUser = await updateUserQuery(userId, { avatarUrl: null })
+        delete updatedUser.password
+
+        res.status(200).json({
+            success: true,
+            message: 'Profile picture deleted successfully',
+            user: updatedUser
+        })
+    } catch (error) {
+        console.error('Delete avatar error: ', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed delete profile picture'
+        })
+    }
+}
+
+export {
+    signIn,
+    registerUser,
+    getUsers,
+    deleteUser,
+    updateUser,
+    getUserById,
+    updateMyProfile,
+    uploadAvatar,
+    deleteAvatar
+}
