@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
-import { createUserQuery, deleteUserQuery, findUserByUsernameQuery, getUserByIdQuery, getUsersQuery, updateUserQuery } from "../model/auth-model.js"
+import { createUserQuery, deleteUserQuery, findUserByUsernameQuery, getMyProfileQuery, getUsersQuery, updateUserQuery } from "../model/auth-model.js"
 import { del, put } from "@vercel/blob"
 
 async function signIn(req, res) {
@@ -156,17 +156,21 @@ async function updateUser(req, res) {
     }
 }
 
-async function getUserById(req, res) {
+async function getMyProfile(req, res) {
     try {
-        const { id } = req.params
-        const user = await getUserByIdQuery(id)
+        const id = req.user.id
+        const user = await getMyProfileQuery(id)
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' })
+        }
+        delete user.password
         res.status(200).json({
             success: true,
             message: 'User fetched successfully',
             user: user
         })
     } catch (error) {
-        console.error('Get user error: ', error)
+        console.error('Get my profile error: ', error)
         res.status(500).json({
             success: false,
             message: 'Internal server error'
@@ -287,8 +291,9 @@ export {
     getUsers,
     deleteUser,
     updateUser,
-    getUserById,
+    getMyProfile,
     updateMyProfile,
     uploadAvatar,
-    deleteAvatar
+    deleteAvatar,
+    getMyProfileQuery
 }

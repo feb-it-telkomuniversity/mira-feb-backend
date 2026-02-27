@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getTickets, getConversationDetails, assignTicketToAdmin, countDasboardStats, getTicketCategoryStats, getTicketTrends, resolveTicketByAdmin, getConversationRelevantDetails } from "../controller/tickets-controller.js"
-import { signIn, getUsers, registerUser, deleteUser, updateUser, getUserById, updateMyProfile, uploadAvatar, deleteAvatar } from '../controller/auth-controller.js'
+import { signIn, getUsers, registerUser, deleteUser, updateUser, updateMyProfile, uploadAvatar, deleteAvatar, getMyProfile } from '../controller/auth-controller.js'
 import { handleCreateSchedule, getSchedulesByMonth, handleCancelSchedule, handleDeleteSchedule } from '../controller/schedule-controller.js';
 import { createContact, getContacts, handleDeleteContact, updateContact } from '../controller/contacts-controller.js';
 import { createPartnershipData, deletePartnershipData, getPartnershipCharts, getPartnershipData, getPartnershipStats, getPartnershipSummaryStats, updatePartnershipData } from '../controller/partnership-controller.js';
@@ -43,7 +43,7 @@ route.post('/users/upload-avatar', upload.single('avatar'), uploadAvatar)
 route.delete('/users/delete-avatar', deleteAvatar)
 route.delete('/users/:id', adminOnly, deleteUser)
 route.put('/users/:id', adminOnly, updateUser)
-route.get('/users/:id', getUserById)
+route.get('/users/me', getMyProfile)
 
 route.get('/tickets', adminOnly, getTickets)
 route.put('/tickets/:id/assign', adminOnly, assignTicketToAdmin)
