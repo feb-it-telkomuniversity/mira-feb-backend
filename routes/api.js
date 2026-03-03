@@ -13,13 +13,14 @@ import { getStaffsList } from '../controller/staff-controller.js'
 import { createMeeting, deleteMeetingById, getMeetingList, getMeetingListById, updateMeeting } from '../controller/meeting-controller.js'
 import { verifyRole, verifyToken } from '../middleware/auth-middleware.js'
 import multer from 'multer'
+import { loginWithGoogle } from '../controller/login-controller.js';
 
 const route = Router()
 
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
-        fileSize: 5 * 1024 * 1024, // 5mb
+        fileSize: 2 * 1024 * 1024, // 2mb
     }
 })
 
@@ -27,7 +28,8 @@ const upload = multer({
 // PUBLIC ROUTES
 route.post('/sign-in', signIn)
 route.get("/google/login", googleLogin);
-route.get("/google/redirect", googleRedirect);
+route.get("/google/redirect", googleRedirect)
+route.post('/auth/google', loginWithGoogle)
 
 // PROTECTED ROUTES
 route.use(verifyToken)
