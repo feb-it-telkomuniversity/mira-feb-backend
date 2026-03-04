@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getTickets, getConversationDetails, assignTicketToAdmin, countDasboardStats, getTicketCategoryStats, getTicketTrends, resolveTicketByAdmin, getConversationRelevantDetails } from "../controller/tickets-controller.js"
-import { signIn, getUsers, registerUser, deleteUser, updateUser, updateMyProfile, uploadAvatar, deleteAvatar, getMyProfile } from '../controller/auth-controller.js'
+import { signIn, getUsers, registerUser, deleteUser, updateUser, updateMyProfile, uploadAvatar, deleteAvatar, getMyProfile, linkGoogleAccount, unlinkGoogleAccount } from '../controller/auth-controller.js'
 import { handleCreateSchedule, getSchedulesByMonth, handleCancelSchedule, handleDeleteSchedule } from '../controller/schedule-controller.js';
 import { createContact, getContacts, handleDeleteContact, updateContact } from '../controller/contacts-controller.js';
 import { createPartnershipData, deletePartnershipData, getPartnershipCharts, getPartnershipData, getPartnershipStats, getPartnershipSummaryStats, updatePartnershipData } from '../controller/partnership-controller.js';
@@ -37,6 +37,8 @@ route.use(verifyToken)
 const canEditData = verifyRole(['admin', 'dekanat', 'kaur', 'kaprodi'])
 const adminOnly = verifyRole(['admin'])
 
+route.post('/account/link-google', linkGoogleAccount)
+route.post('/account/unlink-google', unlinkGoogleAccount)
 
 route.get("/users", adminOnly, getUsers)
 route.post('/register-user', adminOnly, registerUser)

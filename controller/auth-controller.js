@@ -2,6 +2,11 @@ import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 import { createUserQuery, deleteUserQuery, findUserByUsernameQuery, getMyProfileQuery, getUsersQuery, updateUserQuery } from "../model/auth-model.js"
 import { del, put } from "@vercel/blob"
+import { Prisma, PrismaClient } from "@prisma/client";
+import { OAuth2Client } from "google-auth-library";
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
+const prisma = new PrismaClient()
 
 async function signIn(req, res) {
     try {
@@ -285,6 +290,82 @@ async function deleteAvatar(req, res) {
     }
 }
 
+async function linkGoogleAccount(req, res) {
+    try {
+        const { googleToken, userId, token } = req.body
+
+        if (!googleToken || !userId) {
+            return res.status(400).json({
+                success: false,
+                message: "Your data is incomplete"
+            })
+        }
+
+        const ticket = await googleClient.verifyIdToken({
+            idToken: googleToken,
+            audience: process.env.GOOGLE_CLIENT_ID
+        })
+
+        const payload = ticket.getPayload()
+        const googleEmail = payload.email
+
+        const existingEmail = await prisma.users.findUnique({
+            where: { email: googleEmail }
+        })
+
+        if (existingEmail && existingEmail.id !== userId) {
+            return res.status(400).json({
+                success: false,
+                message: "Email ini telah terhubung dengan akun lain"
+            })
+        }
+
+        const updatedUser = await prisma.users.update({
+            where: { id: userId },
+            data: { email: googleEmail }
+        })
+
+        delete updatedUser.password
+
+        res.status(200).json({
+            success: true,
+            message: "Google account successfully linked",
+            email: updatedUser.email
+        })
+    } catch (error) {
+        console.error('Link Google account error: ', error)
+        res.status(500).json({
+            success: false,
+            message: 'Failed to link Google account'
+        })
+    }
+}
+
+async function unlinkGoogleAccount(req, res) {
+    try {
+        const userId = req.user.id
+
+        const updatedUser = await prisma.users.update({
+            where: { id: userId },
+            data: { email: null }
+        })
+
+        delete updatedUser.password
+
+        res.status(200).json({
+            success: true,
+            message: "Google account successfully unlinked",
+            email: updatedUser.email
+        })
+    } catch (error) {
+        console.error('Unlink Google account error: ', error)
+        res.status(500).json({
+            success: false,
+            message: 'Failed to unlink Google account'
+        })
+    }
+}
+
 export {
     signIn,
     registerUser,
@@ -295,5 +376,7 @@ export {
     updateMyProfile,
     uploadAvatar,
     deleteAvatar,
-    getMyProfileQuery
+    getMyProfileQuery,
+    linkGoogleAccount,
+    unlinkGoogleAccount
 }

@@ -15,12 +15,22 @@ export async function loginWithGoogle(req, res) {
             })
         }
 
-        const ticket = await googleClient.verifyIdToken({
-            idToken: token,
-            audience: process.env.GOOGLE_CLIENT_ID
+        // const ticket = await googleClient.verifyIdToken({
+        //     idToken: token,
+        //     audience: process.env.GOOGLE_CLIENT_ID
+        // })
+
+        const googleResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
         })
 
-        const payload = ticket.getPayload()
+        if (!googleResponse.ok) {
+            throw new Error("Failed to fetch data from google");
+        }
+
+        const payload = await googleResponse.json()
         const googleEmail = payload.email
 
         const user = await prisma.users.findUnique({
