@@ -1,5 +1,5 @@
-import { createActivityMonitoringQuery, getActivityMonitoringListQuery, deleteActivityMonitoringQuery, updateActivityMonitoringQuery } from '../model/activity-monitoring-model.js'
-
+import { createActivityMonitoringQuery, getActivityMonitoringListQuery, deleteActivityMonitoringQuery, updateActivityMonitoringQuery, getActivityMonitoringByIdQuery, patchActivityDatesQuery } from '../model/activity-monitoring-model.js'
+import { PrismaClient } from "@prisma/client";
 const UNIT_MAP = {
     "Dekan": "Dekan",
     "Wakil Dekan I": "WakilDekanI",
@@ -74,6 +74,9 @@ const ACTIVITY_STATUS_MAP = {
     "Normal": "normal",
     "Ada Konflik": "conflict",
 }
+
+
+const prisma = new PrismaClient()
 
 async function getActivityMonitoringList(req, res) {
     try {
@@ -324,4 +327,51 @@ async function updateActivityMonitoring(req, res) {
     }
 }
 
-export { getActivityMonitoringList, createActivityMonitoring, deleteActivityMonitoring, updateActivityMonitoring }
+async function patchActivityDates(req, res) {
+    try {
+        const { id } = req.params
+        const { tanggal } = req.body
+
+        if (!tanggal) {
+            return res.status(400).json({
+                success: false,
+                message: "Tanggal baru harus dikirimkan"
+            })
+        }
+
+        const existingActivity = await getActivityMonitoringByIdQuery(id)
+
+        if (!existingActivity) {
+            return res.status(404).json({
+                success: false,
+                message: "Activity not found"
+            })
+        }
+
+        let newEndDateStr = null;
+        if (existingActivity.endDate) {
+            const oldStart = new Date(existingActivity.date).getTime();
+            const oldEnd = new Date(existingActivity.endDate).getTime();
+            const duration = oldEnd - oldStart;
+
+            // Tambahkan durasi ke tanggal baru
+            newEndDateStr = new Date(new Date(tanggal).getTime() + duration).toISOString();
+        }
+
+        const updatedActivity = await patchActivityDatesQuery(id, tanggal, newEndDateStr);
+        res.status(200).json({
+            success: true,
+            message: "Activity Date successfully updated",
+            data: updatedActivity
+        });
+
+    } catch (error) {
+        console.error('Patch Activity Dates Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update activity date'
+        });
+    }
+}
+
+export { getActivityMonitoringList, createActivityMonitoring, deleteActivityMonitoring, updateActivityMonitoring, patchActivityDates }

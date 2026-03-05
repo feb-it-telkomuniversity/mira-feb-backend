@@ -222,4 +222,67 @@ async function updateActivityMonitoringQuery(id, payload) {
     }
 }
 
-export { getActivityMonitoringListQuery, createActivityMonitoringQuery, deleteActivityMonitoringQuery, updateActivityMonitoringQuery }
+async function getActivityMonitoringByIdQuery(id) {
+    return await prisma.activityMonitoring.findUnique({
+        where: { id: parseInt(id) }
+    })
+}
+
+async function patchActivityDatesQuery(id, newDateStr, newEndDateStr = null) {
+    const existingActivity = await prisma.activityMonitoring.findUnique({
+        where: { id: parseInt(id) }
+    })
+
+    if (!existingActivity) throw new Error("Kegiatan tidak ditemukan")
+
+    const targetDate = new Date(newDateStr)
+    const targetEndDate = newEndDateStr ? new Date(newEndDateStr) : null
+
+    const timeFilter = {
+        date: targetDate,
+        AND: [
+            { startTime: { lt: existingActivity.endTime } },
+            { endTime: { gt: existingActivity.startTime } }
+        ],
+        status: { not: 'Cancelled' },
+        id: { not: parseInt(id) }
+    }
+
+    const roomConflict = await prisma.activityMonitoring.findFirst({
+        where: { ...timeFilter, room: existingActivity.room }
+    })
+
+    let officialConflict = null;
+    if (existingActivity.officials && existingActivity.officials.length > 0) {
+        officialConflict = await prisma.activityMonitoring.findFirst({
+            where: {
+                ...timeFilter,
+                officials: { hasSome: existingActivity.officials }
+            }
+        });
+    }
+
+    // 5. Kalkulasi Status Baru di Hari yang Baru
+    let newStatus = 'Normal';
+    if (roomConflict && officialConflict) newStatus = 'DoubleConflict';
+    else if (roomConflict) newStatus = 'RoomConflict';
+    else if (officialConflict) newStatus = 'OfficialConflict';
+
+    return await prisma.activityMonitoring.update({
+        where: { id: parseInt(id) },
+        data: {
+            date: targetDate,
+            endDate: targetEndDate,
+            status: newStatus
+        }
+    })
+}
+
+export {
+    getActivityMonitoringListQuery,
+    createActivityMonitoringQuery,
+    deleteActivityMonitoringQuery,
+    updateActivityMonitoringQuery,
+    getActivityMonitoringByIdQuery,
+    patchActivityDatesQuery
+}
