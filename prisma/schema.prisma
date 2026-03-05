@@ -204,13 +204,14 @@ model ContractManagement {
 
 // --- ActivityMonitoring ---
 model ActivityMonitoring {
-  id           Int      @id @default(autoincrement())
+  id           Int       @id @default(autoincrement())
   title        String
   description  String?
-  date         DateTime @db.Date
+  date         DateTime  @db.Date
+  endDate      DateTime? @map("end_date") @db.Date
   startTime    DateTime
   endTime      DateTime
-  participants Int      @default(0)
+  participants Int       @default(0)
 
   unit           UnitOption
   otherUnit      String?

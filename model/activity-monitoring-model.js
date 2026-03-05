@@ -128,6 +128,7 @@ async function createActivityMonitoringQuery(payload) {
         data: {
             title: payload.title,
             date: new Date(payload.date),
+            endDate: payload.endDate ? new Date(payload.endDate) : null,
             startTime: new Date(payload.startTime),
             endTime: new Date(payload.endTime),
             participants: parseInt(payload.participants),
@@ -157,10 +158,11 @@ async function deleteActivityMonitoringQuery(activityId) {
 }
 
 async function updateActivityMonitoringQuery(id, payload) {
-    const { room, officials, startTime, endTime, date } = payload
+    const { room, officials, startTime, endTime, date, endDate } = payload
     const start = new Date(startTime)
     const end = new Date(endTime)
     const targetDate = new Date(date)
+    const targetEndDate = new Date(endDate)
     const conflictPayload = { ...payload, id: id }
     const conflictResult = await detectConflicts(conflictPayload);
 
@@ -199,6 +201,7 @@ async function updateActivityMonitoringQuery(id, payload) {
         data: {
             title: payload.title,
             date: targetDate,
+            endDate: payload.endDate ? new Date(payload.endDate) : null,
             startTime: start,
             endTime: end,
             participants: parseInt(payload.participants),

@@ -175,6 +175,7 @@ async function createActivityMonitoring(req, res) {
         const payload = {
             title: raw.title,
             date: raw.date,
+            endDate: raw.endDate,
             startTime: raw.startTime,
             endTime: raw.endTime,
             participants: raw.participants,
@@ -276,6 +277,7 @@ async function updateActivityMonitoring(req, res) {
         const payload = {
             title: raw.title,
             date: raw.date,
+            endDate: raw.endDate,
             startTime: raw.startTime,
             endTime: raw.endTime,
             participants: raw.participants,
