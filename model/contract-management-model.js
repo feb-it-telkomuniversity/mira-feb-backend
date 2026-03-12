@@ -171,6 +171,7 @@ async function createContractManagementQuery(data) {
     } = data;
 
     const calculated = calculateKM({
+        responsibility: data.responsibility,
         weight,
         target,
         realization,
@@ -196,6 +197,7 @@ async function updateContractManagementQuery(id, payload) {
     }
 
     const mergedData = {
+        responsibility: payload.responsibility !== undefined ? payload.responsibility : fetchData.responsibility,
         weight: payload.weight !== undefined ? payload.weight : fetchData.weight,
         target: payload.target !== undefined ? payload.target : fetchData.target,
         realization: payload.realization !== undefined ? payload.realization : fetchData.realization,

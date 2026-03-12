@@ -2,9 +2,9 @@
 -- PostgreSQL database dump
 --
 
-\restrict DTWNx9rYqr1am76mD7ceD9Wg13mvZzrUDl2CxNKsowrzikq2OPeSQOvmgToRtiU
+\restrict Ja1eecEFELDPvlsfhaAdnzwV4UHxVJJvVBMt3qQgMBaUz40Eg2ZJXKz9PLmCnoI
 
--- Dumped from database version 17.7 (bdd1736)
+-- Dumped from database version 17.8 (6108b59)
 -- Dumped by pg_dump version 17.8 (Ubuntu 17.8-1.pgdg24.04+1)
 
 SET statement_timeout = 0;
@@ -363,7 +363,8 @@ CREATE TYPE public."UnitOption" AS ENUM (
     'ProdiS2ManajemenPJJ',
     'ProdiS2AdministrasiBisnis',
     'ProdiS2Akuntansi',
-    'ProdiS3Manajemen'
+    'ProdiS3Manajemen',
+    'Lainnya'
 );
 
 
@@ -372,44 +373,6 @@ ALTER TYPE public."UnitOption" OWNER TO neondb_owner;
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
-
---
--- Name: Admins; Type: TABLE; Schema: public; Owner: neondb_owner
---
-
-CREATE TABLE public."Admins" (
-    id integer NOT NULL,
-    username text NOT NULL,
-    full_name text NOT NULL,
-    password text NOT NULL,
-    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "updatedAt" timestamp(3) without time zone NOT NULL
-);
-
-
-ALTER TABLE public."Admins" OWNER TO neondb_owner;
-
---
--- Name: Admins_id_seq; Type: SEQUENCE; Schema: public; Owner: neondb_owner
---
-
-CREATE SEQUENCE public."Admins_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE public."Admins_id_seq" OWNER TO neondb_owner;
-
---
--- Name: Admins_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: neondb_owner
---
-
-ALTER SEQUENCE public."Admins_id_seq" OWNED BY public."Admins".id;
-
 
 --
 -- Name: _prisma_migrations; Type: TABLE; Schema: public; Owner: neondb_owner
@@ -447,7 +410,9 @@ CREATE TABLE public.activity_monitoring (
     status public."ActivityMonitoringStatus" DEFAULT 'Normal'::public."ActivityMonitoringStatus" NOT NULL,
     created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at timestamp(3) without time zone NOT NULL,
-    location_detail text
+    location_detail text,
+    "otherUnit" text,
+    end_date date
 );
 
 
@@ -1113,7 +1078,9 @@ CREATE TABLE public.users (
     full_name character varying(200) NOT NULL,
     password character varying(255),
     updated_at timestamp(3) without time zone NOT NULL,
-    username character varying(100)
+    username character varying(100),
+    "avatarUrl" text,
+    email text
 );
 
 
@@ -1139,13 +1106,6 @@ ALTER SEQUENCE public.users_id_seq OWNER TO neondb_owner;
 --
 
 ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
-
-
---
--- Name: Admins id; Type: DEFAULT; Schema: public; Owner: neondb_owner
---
-
-ALTER TABLE ONLY public."Admins" ALTER COLUMN id SET DEFAULT nextval('public."Admins_id_seq"'::regclass);
 
 
 --
@@ -1268,17 +1228,6 @@ ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_
 
 
 --
--- Data for Name: Admins; Type: TABLE DATA; Schema: public; Owner: neondb_owner
---
-
-COPY public."Admins" (id, username, full_name, password, "createdAt", "updatedAt") FROM stdin;
-1	nyomanpaul	Nyoman Paul Kristian	$2b$10$1btcd5mCSQ8KvtA8hKEa4OgNgOyCcPs0AFeAKxYjpJ6ykPkBFWxeG	2025-10-24 08:16:37.32	2025-10-24 08:16:37.32
-2	mtyaspawitra	Mohammad Tyas Pawitra	$2b$10$uiEMTQpymwKo0XJYcI43UuuXpt.KCcU5EnPPiV7d.GWWBNtVI/4e2	2025-10-29 03:54:50.711	2025-10-29 03:54:50.711
-3	uat_admin	UAT Administrator	$2b$10$xzFTVd0wiawyRPDsA/5e9.nrrwYpKC2UWXTbZpemxTAca8A.fs/h6	2026-01-05 08:29:40.99	2026-01-05 08:29:40.99
-\.
-
-
---
 -- Data for Name: _prisma_migrations; Type: TABLE DATA; Schema: public; Owner: neondb_owner
 --
 
@@ -1320,15 +1269,28 @@ aae00fdb-b192-4c79-9bb9-8d2b522c6ca9	ff455fe168579aae662e490607f7cd8d1e978f7e20b
 -- Data for Name: activity_monitoring; Type: TABLE DATA; Schema: public; Owner: neondb_owner
 --
 
-COPY public.activity_monitoring (id, title, description, date, "startTime", "endTime", participants, unit, room, officials, status, created_at, updated_at, location_detail) FROM stdin;
-25	Rapat AIM-6 	Rapat persiapan AIM yang akan dijadwalkan pada perkuliahan minggu ke-7 dan 9 Semester Genap 25/26	2026-01-27	2026-01-27 06:00:00	2026-01-27 08:00:00	9	ProdiS1Akuntansi	RuangRapatMiossuLt2	{KaprodiS1Akuntansi,SekprodiS1Akuntansi}	Normal	2026-01-21 07:15:37.152	2026-01-21 08:03:24.599	\N
-17	Rapat Manajemen		2026-01-07	2026-01-07 08:30:00	2026-01-07 12:00:00	30	Dekan	RuangRapatManterawuLt2	{KaurSDMKeuangan,Ponggawa}	Normal	2026-01-05 08:31:12.526	2026-02-18 03:58:12.1	\N
-36	One-Day Workshop AACSB	08.30 – 09.00 \tSetting the Emotional Tone\n09.00 – 10.00\tThe Philosophy Behind AACSB \n10.00 – 11.30\tUnderstanding AACSB Through Games\n11.30 – 13.00 \tIsoma\n13.00 – 13.30\tPenjelasan SLO dan Kompetensi Fakultas\n13.30 – 14.00\tDiskusi penentuan kompetensi prodi\n14.00 – 15.00\tFinalisasi kompetensi prodi \n15.00 – 15.30\tClosing — Emotional Anchor \n\nGAMES\nWaktu Main: 60 Menit\nTim 1 (Koordinator: Prof Anton, Bu Winda)\n1. Dekan\n2. Kaprodi MM\n3. Kaprodi MBA\n4. Kaprodi S1 Akuntansi\n5. Sekprodi MBTI Reguler\n6. Sekprodi S1 Adbis Inter\n7. Ketua KK TBM\n8. Kaur Akademik\nTim 2 (Koordinator: Bu Nurafni, Bu Citra)\n1. WD1\n2. Kaprodi MM PJJ\n3. Kaprodi S1 Adbis\n4. Kaprodi S1 LM\n5. Sekprodi MBTI Inter\n6. Sekprodi S1 Akuntansi\n7. Ketua KK DBES\n8. Kaur SDM\nTim 3 (Koordinator: Bu Dian, Bu Siska)\n1. WD2\n2. Kaprodi MAKSI\n3. Kaprodi S1 MBTI\n4. Kaprodi S1 Bisdi\n5. Sekprodi MM\n6. Sekprodi S1 Adbis Reguler\n7. Sekprodi MM PJJ\n8. Ketua KK AEFS	2026-02-20	2026-02-20 01:30:00	2026-02-20 08:30:00	50	Dekan	RuangRapatManterawuLt2	{Ponggawa}	Normal	2026-02-18 03:55:00.28	2026-02-19 02:11:10.909	\N
-37	Rapat Senat		2026-02-25	2026-02-25 06:00:00	2026-02-25 09:00:00	30	Dekan	AulaManterawu	{Dekanat}	Normal	2026-02-19 04:46:41.741	2026-02-19 04:46:41.741	\N
-27	Pelantikan Pengurus KAFEGAMA Jawa Barat	Pelantikan pengurus KAFEGAMA dan seminar	2026-02-03	2026-02-03 05:00:00	2026-02-03 08:30:00	50	Dekan	Lainnya	{Rektor,Ponggawa,Dekan}	Normal	2026-02-04 03:08:11.285	2026-02-04 03:09:37.462	Gedung Bangkit, Ruang Multimedia
-34	Munggahan		2026-02-18	2026-02-18 04:30:00	2026-02-18 06:30:00	70	Dekan	RuangRapatManterawuLt2	{Ponggawa}	Normal	2026-02-18 03:51:43.724	2026-02-18 03:51:43.724	\N
-35	Pemantauan Akreditasi LAMEMBA	Agenda: Rapat Koordinasi Rencana Pemantauan LAMEMBA Tahun 2026 di FEB\nPenyelenggara: SPM\n	2026-02-19	2026-02-19 03:00:00	2026-02-19 04:00:00	50	Dekan	Lainnya	{Ponggawa}	Normal	2026-02-18 03:53:29.16	2026-02-18 03:53:29.16	zoom
-24	Rapat Pengampuan FEB		2026-02-02	2026-02-02 02:00:00	2026-02-02 05:00:00	150	Dekan	AulaFEB	{SekprodiS1ICTBusiness,Ponggawa}	Normal	2026-01-21 02:07:17.031	2026-02-20 02:40:26.354	\N
+COPY public.activity_monitoring (id, title, description, date, "startTime", "endTime", participants, unit, room, officials, status, created_at, updated_at, location_detail, "otherUnit", end_date) FROM stdin;
+25	Rapat AIM-6 	Rapat persiapan AIM yang akan dijadwalkan pada perkuliahan minggu ke-7 dan 9 Semester Genap 25/26	2026-01-27	2026-01-27 06:00:00	2026-01-27 08:00:00	9	ProdiS1Akuntansi	RuangRapatMiossuLt2	{KaprodiS1Akuntansi,SekprodiS1Akuntansi}	Normal	2026-01-21 07:15:37.152	2026-01-21 08:03:24.599	\N	\N	\N
+17	Rapat Manajemen		2026-01-07	2026-01-07 08:30:00	2026-01-07 12:00:00	30	Dekan	RuangRapatManterawuLt2	{KaurSDMKeuangan,Ponggawa}	Normal	2026-01-05 08:31:12.526	2026-02-18 03:58:12.1	\N	\N	\N
+36	One-Day Workshop AACSB	08.30 – 09.00 \tSetting the Emotional Tone\n09.00 – 10.00\tThe Philosophy Behind AACSB \n10.00 – 11.30\tUnderstanding AACSB Through Games\n11.30 – 13.00 \tIsoma\n13.00 – 13.30\tPenjelasan SLO dan Kompetensi Fakultas\n13.30 – 14.00\tDiskusi penentuan kompetensi prodi\n14.00 – 15.00\tFinalisasi kompetensi prodi \n15.00 – 15.30\tClosing — Emotional Anchor \n\nGAMES\nWaktu Main: 60 Menit\nTim 1 (Koordinator: Prof Anton, Bu Winda)\n1. Dekan\n2. Kaprodi MM\n3. Kaprodi MBA\n4. Kaprodi S1 Akuntansi\n5. Sekprodi MBTI Reguler\n6. Sekprodi S1 Adbis Inter\n7. Ketua KK TBM\n8. Kaur Akademik\nTim 2 (Koordinator: Bu Nurafni, Bu Citra)\n1. WD1\n2. Kaprodi MM PJJ\n3. Kaprodi S1 Adbis\n4. Kaprodi S1 LM\n5. Sekprodi MBTI Inter\n6. Sekprodi S1 Akuntansi\n7. Ketua KK DBES\n8. Kaur SDM\nTim 3 (Koordinator: Bu Dian, Bu Siska)\n1. WD2\n2. Kaprodi MAKSI\n3. Kaprodi S1 MBTI\n4. Kaprodi S1 Bisdi\n5. Sekprodi MM\n6. Sekprodi S1 Adbis Reguler\n7. Sekprodi MM PJJ\n8. Ketua KK AEFS	2026-02-20	2026-02-20 01:30:00	2026-02-20 08:30:00	50	Dekan	RuangRapatManterawuLt2	{Ponggawa}	Normal	2026-02-18 03:55:00.28	2026-02-19 02:11:10.909	\N	\N	\N
+37	Rapat Senat		2026-02-25	2026-02-25 06:00:00	2026-02-25 09:00:00	30	Dekan	AulaManterawu	{Dekanat}	Normal	2026-02-19 04:46:41.741	2026-02-19 04:46:41.741	\N	\N	\N
+27	Pelantikan Pengurus KAFEGAMA Jawa Barat	Pelantikan pengurus KAFEGAMA dan seminar	2026-02-03	2026-02-03 05:00:00	2026-02-03 08:30:00	50	Dekan	Lainnya	{Rektor,Ponggawa,Dekan}	Normal	2026-02-04 03:08:11.285	2026-02-04 03:09:37.462	Gedung Bangkit, Ruang Multimedia	\N	\N
+34	Munggahan		2026-02-18	2026-02-18 04:30:00	2026-02-18 06:30:00	70	Dekan	RuangRapatManterawuLt2	{Ponggawa}	Normal	2026-02-18 03:51:43.724	2026-02-18 03:51:43.724	\N	\N	\N
+35	Pemantauan Akreditasi LAMEMBA	Agenda: Rapat Koordinasi Rencana Pemantauan LAMEMBA Tahun 2026 di FEB\nPenyelenggara: SPM\n	2026-02-19	2026-02-19 03:00:00	2026-02-19 04:00:00	50	Dekan	Lainnya	{Ponggawa}	Normal	2026-02-18 03:53:29.16	2026-02-18 03:53:29.16	zoom	\N	\N
+24	Rapat Pengampuan FEB		2026-02-02	2026-02-02 02:00:00	2026-02-02 05:00:00	150	Dekan	AulaFEB	{SekprodiS1ICTBusiness,Ponggawa}	Normal	2026-01-21 02:07:17.031	2026-02-20 02:40:26.354	\N	\N	\N
+39	Audit Eksternal		2026-03-04	2026-03-04 01:30:00	2026-03-04 09:00:00	50	Dekan	RuangRapatManterawuLt2	{Ponggawa}	Normal	2026-02-25 02:37:15.506	2026-02-25 02:37:15.506	\N	\N	\N
+40	Workshop Persiapan Audit External		2026-02-27	2026-02-27 02:00:00	2026-02-27 08:00:00	50	Dekan	RuangRapatManterawuLt2	{Ponggawa}	Normal	2026-02-25 09:17:55.933	2026-02-25 09:17:55.933	\N	\N	\N
+42	Buka Bersama FEB	Agenda:\n1. Ceramah\n2. Buka bersama	2026-03-11	2026-03-11 09:00:00	2026-03-11 12:00:00	80	Dekan	AulaFEB	{Ponggawa}	Normal	2026-02-26 05:53:42.692	2026-02-26 05:54:29.697	\N	\N	\N
+56	Closing Meeting Audit Surveillance Audit II ISO 21001:2018		2026-03-06	2026-03-06 03:00:00	2026-03-06 04:00:00	0	Lainnya	Lainnya	{Dekan,WakilDekanI}	OfficialConflict	2026-03-05 08:08:47.103	2026-03-05 08:08:47.103	Gedung Bangkit, Ruang Rapat lt. 5	SAI	2026-03-06
+43	Opening Meeting Audit		2026-03-02	2026-03-02 02:00:00	2026-03-02 03:00:00	0	Lainnya	Lainnya	{Dekan,WakilDekanI}	Normal	2026-03-02 01:44:32.776	2026-03-02 01:44:32.776	Ruang Rapat Pimpinan, Lt. 5, Gedung Bangkit 	SAI	\N
+48	Buka Bersama Rapim		2026-03-03	2026-03-03 11:00:00	2026-03-03 12:00:00	0	Lainnya	Lainnya	{Dekan}	Normal	2026-03-03 03:18:33.646	2026-03-03 03:19:27.688	Gedung Bangkit, Ruang Rapat lt. 5	Rektor	\N
+47	Rapat Pimpinan	Agenda Rapim Ke-6 2026\n1. Sambutan dan Arahan Rektor\n2. Redevelopment I-Gracias Bidang II - Direktorat PUTI\n3. Kajian  Perubahan Aturan Pengelolaan Dosen Luar Biasa - Bidang II - Direktorat SDM\n4. Peninjauan SK Penghargaan Wisudawan/Wisudawati Berprestasi Bidang Inovasi & Entrepreneurship - Bidang IV - Direktorat BTP\n5. Laporan Kunjungan Asean IVO Top Meeting dan NICT Jepang 10-11 Maret 2026 - Bidang IV - Direktorat PPM\n6. Optimalisasi Digital Payment 2026 - PADMI\n7. Laporan 2025 & Sosialisasi Endowment Fund 2026 - PDA	2026-03-03	2026-03-03 01:00:00	2026-03-03 09:00:00	0	Lainnya	Lainnya	{Dekan}	Normal	2026-03-03 03:16:58.656	2026-03-03 03:17:36.494	Gedung Bangkit, Ruang Rapat lt. 5	Rektor	\N
+52	Tabligh Akbar Gebyar Nuzulul Qur'an Ramadhan 1447H	Dresscode : Baju Koko/Atasan Putih	2026-03-09	2026-03-09 02:00:00	2026-03-09 04:00:00	100	Lainnya	Lainnya	{Ponggawa}	Normal	2026-03-05 04:58:57.161	2026-03-05 04:58:57.161	Masjid Syamsul Ulum (MSU) - Telkom University Bandung	Rektor	2026-03-09
+53	Pelantikan ORMAWA FEB		2026-03-06	2026-03-06 07:00:00	2026-03-06 08:00:00	100	UrusanKemahasiswaan	AulaFEB	{Dekan,WakilDekanII,KaurKemahasiswaan}	Normal	2026-03-05 06:26:02.168	2026-03-05 06:26:02.168	\N	\N	2026-03-06
+55	Rapat Senat Komisi-C Pengembangan	Agenda : \n1. Pengajuan Pembukaan Prodi S2 Artificial Intelligence \n2. Pengajuan Pembukaan Prodi S1 Entrepreneurship \n3. Pengajuan Pembukaan Prodi S1 Antropologi\n4. Dlll	2026-03-06	2026-03-06 02:00:00	2026-03-06 04:00:00	30	Lainnya	Lainnya	{Dekan,WakilDekanI}	OfficialConflict	2026-03-05 08:05:12.634	2026-03-06 01:46:47.549	TULT 16.04 lantai 16	Ketua Komisi-C Senat Bidang Pengembangan Telkom University	2026-03-06
+54	Tausiah Ramadhan Keluarga Besar FEB		2026-03-05	2026-03-05 06:30:00	2026-03-05 07:30:00	0	WakilDekanII	Lainnya	{Ponggawa}	Normal	2026-03-05 06:45:15.479	2026-03-05 06:45:37.981	zoom	\N	2026-03-05
+51	Testing lagi		2026-03-03	2026-03-04 02:06:00	2026-03-04 05:06:00	0	WakilDekanI	AulaManterawu	{KaprodiS1LeisureManagement,KaprodiS2Manajemen,KaprodiS2AdministrasiBisnis,WakilDekanI}	Normal	2026-03-05 02:06:25.983	2026-03-06 03:43:43.185	\N	\N	2026-03-04
+41	Rapat Manajemen 6 2026	Agenda: \n1. Pengesahan MOA FEB - MarkPlus\n2. Arahan Dekan\n3. dll.	2026-03-11	2026-03-11 01:30:00	2026-03-11 08:00:00	30	Dekan	RuangRapatManterawuLt2	{Ponggawa}	Normal	2026-02-26 05:51:37.079	2026-03-05 03:33:28.903	\N	\N	\N
 \.
 
 
@@ -1337,11 +1299,11 @@ COPY public.activity_monitoring (id, title, description, date, "startTime", "end
 --
 
 COPY public.contacts (id, name, title, phone_number, notes, created_at, updated_at) FROM stdin;
-20	Mohammad Tyas Pawitra	Nama kegiatan tidak diisi	6285221885685@c.us	\N	2025-11-14 09:38:31.741	2025-11-14 09:38:31.741
 40	Prof. Farida Titik K		6281394982607@c.us	Dekan FEB	2025-12-04 04:02:27.626	2025-12-04 04:02:27.626
 41	Deannes Isynuwardhana		6281320028400@c.us	Wakil Dekan 2	2025-12-05 06:36:10.29	2025-12-05 06:36:10.29
 42	Irni Yunita		628122171430@c.us	Wakil Dekan 1	2025-12-05 06:36:52.961	2025-12-05 06:36:52.961
-43	Rofi		6285157455205@c.us	TLH DEKANAT	2026-02-05 07:31:59.461	2026-02-05 07:31:59.461
+20	Mohammad Tyas Pawitra		6285221885685@c.us	Kaur	2025-11-14 09:38:31.741	2026-02-25 07:15:10.75
+44	Rofi		6285157455205@c.us	Programmer	2026-02-25 06:59:02.316	2026-02-25 07:15:33.877
 \.
 
 
@@ -1357,7 +1319,6 @@ COPY public.contract_management (id, "ContractManagementCategory", responsibilit
 1188	Financial	Operating Ratio & Cash Collection Telkom University (Common Indikator)	TW-1	%	120	80	\N	\N	\N	\N	2026-01-07 03:41:52.504	2026-01-07 03:41:52.504	2.5	100	114.46	\N
 1189	Financial	Operating Ratio & Cash Collection Telkom University (Common Indikator)	TW-2	%	120	80	\N	\N	\N	\N	2026-01-07 03:41:52.504	2026-01-07 03:41:52.504	2.5	100	106.23	\N
 1190	Financial	Operating Ratio & Cash Collection Telkom University (Common Indikator)	TW-3	%	120	80	\N	\N	\N	\N	2026-01-07 03:41:52.504	2026-01-07 03:41:52.504	2.5	100,00	106.17	\N
-1191	Financial	Operating Ratio & Cash Collection Telkom University (Common Indikator)	TW-4	%	120	80	\N	\N	\N	\N	2026-01-07 03:41:52.504	2026-01-07 03:41:52.504	2.5	RKA	\N	\N
 1192	NonFinancial	Kepuasan Mahasiswa (EDOM)	TW-1	%	\N	\N	\N	\N	\N	\N	2026-01-07 03:41:52.504	2026-01-07 03:41:52.504	\N	\N	\N	\N
 1193	NonFinancial	Kepuasan Mahasiswa (EDOM)	TW-2	%	105	80	\N	\N	\N	\N	2026-01-07 03:41:52.504	2026-01-07 03:41:52.504	3	82	85.1	\N
 1194	NonFinancial	Kepuasan Mahasiswa (EDOM)	TW-3	%	\N	\N	\N	\N	\N	\N	2026-01-07 03:41:52.504	2026-01-07 03:41:52.504	\N	\N	\N	\N
@@ -1494,6 +1455,7 @@ COPY public.contract_management (id, "ContractManagementCategory", responsibilit
 1325	InternalBusinessProcess	Kelengkapan Lapman	TW-2	%	105	80	\N	\N	Kelengkapan Lapman	\N	2026-01-07 03:41:52.504	2026-01-07 03:41:52.504	3	90	100	\N
 1326	InternalBusinessProcess	Kelengkapan Lapman	TW-3	%	105	80	\N	\N	Kelengkapan Lapman	\N	2026-01-07 03:41:52.504	2026-01-07 03:41:52.504	3	90	100	\N
 1327	InternalBusinessProcess	Kelengkapan Lapman	TW-4	%	105	80	\N	\N	Kelengkapan Lapman	\N	2026-01-07 03:41:52.504	2026-01-07 03:41:52.504	3	90	100	\N
+1191	Financial	Operating Ratio & Cash Collection Telkom University (Common Indikator)	TW-4	%	120	80	80	2			2026-01-07 03:41:52.504	2026-03-04 03:01:39.116	2.5	48,76	38.31	78.57
 \.
 
 
@@ -1769,13 +1731,15 @@ COPY public.management_reports (id, indicator, evidence_link, year, tw_1, tw_2, 
 --
 
 COPY public.meeting_action_items (id, task, pic, deadline, agenda_id, status, notes) FROM stdin;
-63	Menyesuaikan dengan kompetensi Dosen, beban tugas Dosen, beban sks tiap matkul	Wadek I	2026-01-14	102	Open	1. Memetakan Dosen berdasarkan status dan tugas tambahan dosen biasa, Dosen dengan status tugas belajar dan dosen kontrak\n2. Memperhatikan batas maksimal Dosen mengajar sesuai pedoman operasional beban kerja dosen\n3. Pelimpahan mata kuliah kepada /Dosen prodi lainnya, tetap menjaga beban mengajar Dosen prodi agar tidak berlebih
-64	Koordinasi  dengan PPM, BTP, Ketua KK untuk pencapaian target KM TW 4 - 2025	Kaur Sekdek	2026-01-07	103	Open	Pengisian target KM TW 4 - 2025 secara lengkap dengan evidence
-65	Koordinasi dengan BTP untuk mencari tim startup lainnya dan mendaftarkan tim startup dari S1 Adbis	Kaur Sekdek	2026-01-07	103	Open	BA tim startup FEB dari BTP
-66	TRL Penelitian Dosen	Kaur Sekdek	2026-01-07	103	Open	Menggunakan data PPM (TRL >=3 masuk kedalam laporan)
 88	Menyelesaikan dokumen Renstra	M Tyas Pawitra	2026-01-23	145	Open	
 67	Buat SK Insentif Baru	Kaur SDM	2026-02-26	104	Open	Contoh catatan 1
 68	Sosialisasi ke Dosen	Kaprodi	2026-03-02	104	Open	Contoh catatan 2
+63	Menyesuaikan dengan kompetensi Dosen, beban tugas Dosen, beban sks tiap matkul	Wadek I	2026-01-13	102	Open	1. Memetakan Dosen berdasarkan status dan tugas tambahan dosen biasa, Dosen dengan status tugas belajar dan dosen kontrak\n2. Memperhatikan batas maksimal Dosen mengajar sesuai pedoman operasional beban kerja dosen\n3. Pelimpahan mata kuliah kepada /Dosen prodi lainnya, tetap menjaga beban mengajar Dosen prodi agar tidak berlebih
+64	Koordinasi  dengan PPM, BTP, Ketua KK untuk pencapaian target KM TW 4 - 2025	Kaur Sekdek	2026-01-06	103	Open	Pengisian target KM TW 4 - 2025 secara lengkap dengan evidence
+65	Koordinasi dengan BTP untuk mencari tim startup lainnya dan mendaftarkan tim startup dari S1 Adbis	Kaur Sekdek	2026-01-06	103	Open	BA tim startup FEB dari BTP
+66	TRL Penelitian Dosen	Kaur Sekdek	2026-01-06	103	Open	Menggunakan data PPM (TRL >=3 masuk kedalam laporan)
+89	Penjadwalan Asprak	Asep Sudrajat	2026-03-13	146	Open	
+90	Signage Content - Display Asprak mk Implementasi Perpajakan	Ravi	2026-03-13	146	Open	
 \.
 
 
@@ -1788,6 +1752,7 @@ COPY public.meeting_agendas (id, title, discussion, decision, meeting_id) FROM s
 104	Evaluasi Kinerja 2025	\N	\N	15
 102	Plotting Dosen	Melakukan draft ploting Dosen	\N	18
 103	Kontrak Manajemen  FEB TW 4 - 2025	Kelengkapan KM FEB  guna meningkatkan capaian target KM TW 4 - 2025	\N	18
+146	Evaluasi Rekrutmen dan Penjadwalan Praktikum	Evaluasi Rekrutmen dan Penjadwalan Praktikum\n- Menggunakan FET dan Google Workspace	Lanjutgan	21
 \.
 
 
@@ -1796,9 +1761,10 @@ COPY public.meeting_agendas (id, title, discussion, decision, meeting_id) FROM s
 --
 
 COPY public.meetings (id, title, date, start_time, end_time, leader, notetaker, participants, created_at, updated_at, status, location_detail, room) FROM stdin;
-18	Rapat Manajemen 1 2026	2026-01-07	2026-01-07 12:30:00	2026-01-07 21:00:00	Dekan	Kaur Sekdek	{Ponggawa}	2026-01-21 07:18:17.878	2026-01-21 07:28:24.801	Selesai	Ruang Rapat Manterawu lt. 2	Lainnya
 19	Rapat Manajemen 2 2026	2026-02-05	2026-02-05 06:08:00	2026-02-05 10:30:00	Dekan	Adam Solihun	{Dekanat,"M Tyas Pawitra"}	2026-02-05 07:47:41.251	2026-02-05 09:25:29.099	Terjadwal		RuangRapatMiossuLt2
 15	Rapat Kerja Tahunan 2026	2026-02-20	2026-02-20 01:00:00	2026-02-20 07:00:00	Dekan	Sekretaris Dekanat	{"Wakil Dekan 1",Kaprodi,"Manajer SDM"}	2026-01-13 02:22:09.639	2026-02-10 03:38:07.508	Terjadwal	Hotel Savoy Homann Bandung	Lainnya
+18	Rapat Manajemen 1 2026	2026-01-07	2026-01-07 00:30:00	2026-01-07 09:00:00	Dekan	Kaur Sekdek	{Ponggawa}	2026-01-21 07:18:17.878	2026-02-23 04:06:56.139	Terjadwal	Ruang Rapat Manterawu lt. 2	Lainnya
+21	Rapat Persiapan Praktikum Genap 25-26	2026-03-05	2026-03-05 07:30:00	2026-03-05 08:00:00	Ka. Ur. Laboratorium	Nensi Damayanti	{}	2026-03-05 08:08:39.524	2026-03-05 08:11:56.336	Terjadwal	Ruang Rapat TUK	Lainnya
 \.
 
 
@@ -1815,8 +1781,8 @@ COPY public.messages (id, conversation_id, sender, message_text, need_human, fee
 --
 
 COPY public.partnership_activities (id, type, status, document_id, notes) FROM stdin;
-59	JointDegree	Terlaksana	846	paling mantap
-60	DoubleDegree	Terlaksana	846	cukup mantap
+59	JointDegree	BelumTerlaksana	846	paling mantap
+60	DoubleDegree	BelumTerlaksana	846	cukup mantap
 61	JointClass	BelumTerlaksana	846	\N
 62	StudentExchange	BelumTerlaksana	846	\N
 \.
@@ -1827,7 +1793,6 @@ COPY public.partnership_activities (id, type, status, document_id, notes) FROM s
 --
 
 COPY public.partnership_documents (id, year_issued, doc_type, partner_name, scope, pic_external, pic_internal, doc_number_internal, doc_number_external, date_created, signing_type, date_signed, valid_until, notes, has_hardcopy, has_softcopy, created_at, updated_at, partnership_type, approval_dekan, approval_dir_spio, approval_dir_sps, approval_kabag_kst, approval_kabag_sekpim, approval_kaur_legal, approval_rektor, approval_wadek1, approval_wadek2, approval_warek1, doc_link, duration, pic_external_phone) FROM stdin;
-846	2024	MoU	Tamara Fulton	national	Qui dolor nobis odit	Cillum dolores irure	945	740	2024-02-12 00:00:00	Commodi et iure culp	2024-10-07 00:00:00	2025-12-11 00:00:00	Sint voluptates reru	f	t	2026-01-28 02:33:28.279	2026-02-09 02:03:25.666	Akademik	Approved	Approved	Skipped	Approved	Skipped	Pending	Pending	Returned	Returned	Skipped	Sint similique sapie	Libero aperiam est 	0851234567
 750	2024	MoA	Association of Chartered Certified Accountants (ACCA)	international	\N	Ruri Octari Dinata	172/SAM4/EB-DEK/2024	\N	2024-06-20 17:00:00	\N	2024-06-30 17:00:00	2027-01-06 17:00:00	\N	f	f	2025-12-15 09:14:37.448	2025-12-15 09:14:37.448	\N	Approved	Approved	Approved	Approved	Approved	Approved	\N	Approved	Approved	\N	\N	3 tahun	\N
 751	2024	MoA	Hannan Medispa Sdn. Bhd.	international	\N	\N	299/SAM4/EB-DEK/2024	001/HM/UT/10/2024	2024-09-24 17:00:00	\N	\N	\N	\N	f	f	2025-12-15 09:14:38.711	2025-12-15 09:14:38.711	\N	Approved	Approved	Approved	Approved	Approved	Approved	\N	Approved	Approved	\N	\N	\N	\N
 752	2024	MoU	Insititute of Singapore Chartered Accountants (ISCA) Singapore	international	\N	Prodi Akuntansi	311/SAM4/EB-DEK/2024	\N	\N	\N	\N	\N	Dokumen di Prodi	f	f	2025-12-15 09:14:38.963	2025-12-15 09:14:38.963	\N	\N	Approved	\N	Approved	Approved	Approved	\N	Approved	Approved	\N	\N	\N	\N
@@ -1922,6 +1887,7 @@ COPY public.partnership_documents (id, year_issued, doc_type, partner_name, scop
 841	2025	MoA	PT. Dinova Kanaya Pratama	national	\N	S1 Bisnis Digital	\N	\N	\N	\N	2025-11-25 17:00:00	\N	PENDIDIKAN, PENELITIAN, PENGABDIAN KEPADA MASYARAKAT, DAN PENGEMBANGAN SUMBER DAYA INSTITUSI	f	f	2025-12-15 09:15:05.77	2025-12-15 09:15:05.77	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
 842	2025	MoA	Badan Riset Inovasi Nasional (BRIN)	national	Anugerah Yuka Asmara	Maya Ariyanti	173/SAM5/EB-DEK/2025	329/V/KS/08/2025	\N	\N	\N	\N	Penguatan Sistem Inovasi Daerah Melalui Kolaborasi Triple Helix pada Industri Kecil Menengah Sektor Pangan di Kabupaten Bandung	f	f	2025-12-15 09:15:06.066	2025-12-15 09:15:06.066	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	1 Tahun	\N
 843	2025	IA	Universitas Lambung Mangkurat	national	Ahmad Yunani	Galuh Tresna Murti	328/SAM5/EB-DEK/2025	\N	\N	\N	\N	\N	SCBTII	f	f	2025-12-15 09:15:06.328	2025-12-15 09:19:52.912	Akademik	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
+846	2024	MoU	Tamara Fulton	national	Qui dolor nobis odit	Cillum dolores irure	945	740	2024-02-12 00:00:00	Commodi et iure culp	2024-10-07 00:00:00	2025-12-11 00:00:00	Sint voluptates reru	f	t	2026-01-28 02:33:28.279	2026-02-23 04:07:50.305	Akademik	Approved	Approved	Skipped	Approved	Skipped	Approved	Approved	Returned	Returned	Approved	Sint similique sapie	Libero aperiam est 	0851234567
 \.
 
 
@@ -1992,35 +1958,28 @@ COPY public.unresolved (id, message_id, status, assigned_to, created_at, updated
 -- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: neondb_owner
 --
 
-COPY public.users (id, "phoneNumber", role, identifier, created_at, full_name, password, updated_at, username) FROM stdin;
-7	\N	kaprodi	\N	2026-01-20 09:31:19.449	Kaprodi MBTI	$2b$10$xmo8LcaPbfjMHFnx/Gn78.kly0RnQK5kmPkdynVIxslwmqZURmEjS	2026-01-20 09:31:19.449	kaprodimbti
-8	\N	kaprodi	\N	2026-01-21 02:16:52.44	Para Kaprodi	$2b$10$.DJqgJREszDl24otzxpvD.2FGWqaE2vd6o76oStVIlIaMYFdNt1h2	2026-01-21 02:16:52.44	kaprodi
-9	\N	kaur	\N	2026-01-21 03:49:54.316	Para Kaur	$2b$10$Fa8mBWE9/fd1sUSUsqt6oe3nLC1vx50DwCl2w8ermVdtdcX8gjppe	2026-01-21 03:49:54.316	kaur
-3	\N	admin	\N	2026-01-19 08:23:21.126	UAT Administrator	$2b$10$rPKYXyhgX1hwm2mXHOqBregVcGC6Mq0NO7DLdXTzr36gvV89rjsx2	2026-01-21 05:20:58.08	uat_admin
-10	\N	sekprodi	\N	2026-01-21 06:44:40.944	Para Sekprodi	$2b$10$xOuidoMDzgExvSlVUhDTXe0uN.m/uTh/uFkg51Q04L8jjUaPEWGJ2	2026-01-21 06:44:40.944	sekprodi
-4	\N	dosen	\N	2026-01-20 04:43:12.377	Dosen saja	$2b$10$Reim9jhW92gV3qRotvxxBO14pAtAl2Hcnmbpj3/LXdDm4HsSfddlq	2026-01-28 08:53:43.395	dosensaja
+COPY public.users (id, "phoneNumber", role, identifier, created_at, full_name, password, updated_at, username, "avatarUrl", email) FROM stdin;
+7	\N	kaprodi	\N	2026-01-20 09:31:19.449	Kaprodi MBTI	$2b$10$xmo8LcaPbfjMHFnx/Gn78.kly0RnQK5kmPkdynVIxslwmqZURmEjS	2026-01-20 09:31:19.449	kaprodimbti	\N	\N
+8	\N	kaprodi	\N	2026-01-21 02:16:52.44	Para Kaprodi	$2b$10$.DJqgJREszDl24otzxpvD.2FGWqaE2vd6o76oStVIlIaMYFdNt1h2	2026-01-21 02:16:52.44	kaprodi	\N	\N
+9	\N	kaur	\N	2026-01-21 03:49:54.316	Para Kaur	$2b$10$Fa8mBWE9/fd1sUSUsqt6oe3nLC1vx50DwCl2w8ermVdtdcX8gjppe	2026-01-21 03:49:54.316	kaur	\N	\N
+10	\N	sekprodi	\N	2026-01-21 06:44:40.944	Para Sekprodi	$2b$10$xOuidoMDzgExvSlVUhDTXe0uN.m/uTh/uFkg51Q04L8jjUaPEWGJ2	2026-01-21 06:44:40.944	sekprodi	\N	\N
+4	\N	dosen	\N	2026-01-20 04:43:12.377	Para Dosen	$2b$10$7uHBQIcTMMOOCPumZJ35PepOJdPdvucFhfqZjDq0D/BSdFRL6Ynke	2026-03-04 07:49:52.506	paradosen	https://xhmcrtzxodtqb9su.public.blob.vercel-storage.com/profiles/1772164686441-3183100-wt0LMI7bIRKVnwenzr32XBi5qzDXS9.png	\N
+3	\N	admin	\N	2026-01-19 08:23:21.126	UAT Administrator	$2b$10$rPKYXyhgX1hwm2mXHOqBregVcGC6Mq0NO7DLdXTzr36gvV89rjsx2	2026-03-06 03:52:47.466	uat_admin	https://xhmcrtzxodtqb9su.public.blob.vercel-storage.com/profiles/1772426523752-4341249-1u9NEitrrg2fvpGtD6sAIHGObq7xIA.png	\N
 \.
-
-
---
--- Name: Admins_id_seq; Type: SEQUENCE SET; Schema: public; Owner: neondb_owner
---
-
-SELECT pg_catalog.setval('public."Admins_id_seq"', 3, true);
 
 
 --
 -- Name: activity_monitoring_id_seq; Type: SEQUENCE SET; Schema: public; Owner: neondb_owner
 --
 
-SELECT pg_catalog.setval('public.activity_monitoring_id_seq', 38, true);
+SELECT pg_catalog.setval('public.activity_monitoring_id_seq', 56, true);
 
 
 --
 -- Name: contacts_id_seq; Type: SEQUENCE SET; Schema: public; Owner: neondb_owner
 --
 
-SELECT pg_catalog.setval('public.contacts_id_seq', 43, true);
+SELECT pg_catalog.setval('public.contacts_id_seq', 44, true);
 
 
 --
@@ -2062,21 +2021,21 @@ SELECT pg_catalog.setval('public.management_reports_id_seq', 15, true);
 -- Name: meeting_action_items_id_seq; Type: SEQUENCE SET; Schema: public; Owner: neondb_owner
 --
 
-SELECT pg_catalog.setval('public.meeting_action_items_id_seq', 88, true);
+SELECT pg_catalog.setval('public.meeting_action_items_id_seq', 90, true);
 
 
 --
 -- Name: meeting_agendas_id_seq; Type: SEQUENCE SET; Schema: public; Owner: neondb_owner
 --
 
-SELECT pg_catalog.setval('public.meeting_agendas_id_seq', 145, true);
+SELECT pg_catalog.setval('public.meeting_agendas_id_seq', 146, true);
 
 
 --
 -- Name: meetings_id_seq; Type: SEQUENCE SET; Schema: public; Owner: neondb_owner
 --
 
-SELECT pg_catalog.setval('public.meetings_id_seq', 20, true);
+SELECT pg_catalog.setval('public.meetings_id_seq', 21, true);
 
 
 --
@@ -2126,14 +2085,6 @@ SELECT pg_catalog.setval('public.unresolved_id_seq', 2, true);
 --
 
 SELECT pg_catalog.setval('public.users_id_seq', 10, true);
-
-
---
--- Name: Admins Admins_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
---
-
-ALTER TABLE ONLY public."Admins"
-    ADD CONSTRAINT "Admins_pkey" PRIMARY KEY (id);
 
 
 --
@@ -2281,13 +2232,6 @@ ALTER TABLE ONLY public.users
 
 
 --
--- Name: Admins_username_key; Type: INDEX; Schema: public; Owner: neondb_owner
---
-
-CREATE UNIQUE INDEX "Admins_username_key" ON public."Admins" USING btree (username);
-
-
---
 -- Name: contacts_phone_number_key; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -2369,6 +2313,13 @@ CREATE UNIQUE INDEX partnership_documents_doc_number_internal_key ON public.part
 --
 
 CREATE INDEX user_id ON public.conversations USING btree (user_id);
+
+
+--
+-- Name: users_email_key; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
+CREATE UNIQUE INDEX users_email_key ON public.users USING btree (email);
 
 
 --
@@ -2474,5 +2425,5 @@ ALTER DEFAULT PRIVILEGES FOR ROLE cloud_admin IN SCHEMA public GRANT ALL ON TABL
 -- PostgreSQL database dump complete
 --
 
-\unrestrict DTWNx9rYqr1am76mD7ceD9Wg13mvZzrUDl2CxNKsowrzikq2OPeSQOvmgToRtiU
+\unrestrict Ja1eecEFELDPvlsfhaAdnzwV4UHxVJJvVBMt3qQgMBaUz40Eg2ZJXKz9PLmCnoI
 
