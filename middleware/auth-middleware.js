@@ -22,8 +22,7 @@ export const verifyToken = (req, res, next) => {
             })
         }
 
-        // 🔥 PENTING: Tempel data user ke request
-        // Jadi di controller nanti bisa panggil req.user.id atau req.user.role
+        // controller bisa panggil req.user.id atau req.user.role
         req.user = decoded
         next()
     })

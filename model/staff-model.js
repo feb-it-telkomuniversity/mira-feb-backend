@@ -9,9 +9,9 @@ async function getStaffsListQuery(search = "") {
         ]
     } : {};
 
-    const data = await prisma.EmployeeTPA.findMany({
+    const data = await prisma.employeeTPA.findMany({
         where: whereClause,
-        orderBy: { name: 'asc' }
+        orderBy: { workUnit: 'asc' }
     })
 
     return {

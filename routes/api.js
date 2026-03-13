@@ -77,8 +77,8 @@ route.put('/partnership/:id', updatePartnershipData)
 route.delete('/partnership/:id', deletePartnershipData)
 
 // ==== Google Calendar ====
-route.get("/google/events", getGoogleEvents);
-route.post("/google/events", addEvent);
+route.get("/google/events", getGoogleEvents)
+route.post("/google/events", addEvent)
 
 // ==== Contract Management ====
 route.get('/contract-management', getContractManagementData)
