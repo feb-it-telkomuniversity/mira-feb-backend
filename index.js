@@ -14,7 +14,7 @@ app.use(express.json())
 
 app.get("/", (req, res) => {
     res.json({
-        "message": "MIRA FEB Backend running so quickly 🚀"
+        "message": "MIRA FEB Backend running quickly 🚀"
     });
 })
 

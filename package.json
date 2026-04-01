@@ -1,5 +1,5 @@
 {
-  "name": "wa-bot",
+  "name": "mira-feb-backend",
   "module": "index.js",
   "type": "module",
   "private": true,
