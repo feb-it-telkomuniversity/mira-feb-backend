@@ -4,6 +4,7 @@ import { createUserQuery, deleteUserQuery, findUserByUsernameQuery, getMyProfile
 import { del, put } from "@vercel/blob"
 import { Prisma, PrismaClient } from "@prisma/client";
 import { OAuth2Client } from "google-auth-library";
+import { sendOtpEmail } from "../services/email-service.js";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 const prisma = new PrismaClient()
@@ -366,6 +367,96 @@ async function unlinkGoogleAccount(req, res) {
     }
 }
 
+const requestOtp = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        // Validasi domain email
+        if (!email.endsWith('@student.telkomuniversity.ac.id') && !email.endsWith('@telkomuniversity.ac.id')) {
+            return res.status(403).json({ success: false, message: "Gunakan email resmi Telkom University!" });
+        }
+
+        // Generate 6 digit angka random
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        // Set kadaluarsa 5 menit dari sekarang
+        const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+        // Simpan/Update OTP di database
+        await prisma.otpRequest.upsert({
+            where: { email: email },
+            update: { otp: otpCode, expiresAt: expiresAt },
+            create: { email: email, otp: otpCode, expiresAt: expiresAt }
+        });
+
+        // Kirim email
+        const isSent = await sendOtpEmail(email, otpCode);
+
+        if (!isSent) {
+            return res.status(500).json({ success: false, message: "Gagal mengirim email OTP." });
+        }
+
+        res.status(200).json({ success: true, message: "OTP berhasil dikirim ke email Anda." });
+
+    } catch (error) {
+        console.error("Error request OTP:", error);
+        res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." });
+    }
+}
+
+const verifyOtp = async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+
+        // Cari OTP di database
+        const otpRecord = await prisma.otpRequest.findUnique({ where: { email } });
+
+        if (!otpRecord) {
+            return res.status(404).json({ success: false, message: "Silakan request OTP terlebih dahulu." });
+        }
+
+        // Cek apakah OTP salah atau kadaluarsa
+        if (otpRecord.otp !== otp) {
+            return res.status(400).json({ success: false, message: "Kode OTP salah!" });
+        }
+        if (new Date() > otpRecord.expiresAt) {
+            return res.status(400).json({ success: false, message: "Kode OTP sudah kadaluarsa!" });
+        }
+
+        // OTP Valid! Hapus OTP dari database agar tidak bisa dipakai ulang
+        await prisma.otpRequest.delete({ where: { email } });
+
+        // Proses Auto-Registration / Get User
+        let user = await prisma.users.findUnique({ where: { email } });
+
+        if (!user) {
+            const isStudent = email.endsWith('@student.telkomuniversity.ac.id');
+            user = await prisma.users.create({
+                data: {
+                    email: email,
+                    name: email.split('@')[0], // Nama sementara dari email
+                    username: email.split('@')[0],
+                    role: isStudent ? "mahasiswa" : "dosen"
+                }
+            })
+        }
+
+        // Generate JWT Token (Persis seperti fungsi Google Login kamu)
+        const jwtPayload = { id: user.id, username: user.username, role: user.role };
+        const authToken = jwt.sign(jwtPayload, process.env.JWT_SECRET_KEY, { expiresIn: '1d' });
+
+        res.status(200).json({
+            success: true,
+            message: 'Login successful',
+            token: authToken,
+            user: { id: user.id, name: user.name, username: user.username, role: user.role }
+        });
+
+    } catch (error) {
+        console.error("Error verify OTP:", error);
+        res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." });
+    }
+}
+
 export {
     signIn,
     registerUser,
@@ -378,5 +469,7 @@ export {
     deleteAvatar,
     getMyProfileQuery,
     linkGoogleAccount,
-    unlinkGoogleAccount
+    unlinkGoogleAccount,
+    requestOtp,
+    verifyOtp
 }

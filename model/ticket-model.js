@@ -51,7 +51,7 @@ async function findRelevantConversationSegment(conversationId) {
         where: {
             message: { conversationId: parseInt(conversationId) },
             status: {
-                in: [ 'open', 'in_progress' ]
+                in: ['open', 'in_progress']
             }
         },
         orderBy: { createdAt: 'desc' },
@@ -74,7 +74,7 @@ async function findRelevantConversationSegment(conversationId) {
         where: {
             conversationId: parseInt(conversationId),
             // Ambil pesan dari sebelum tiket dibuat sampai pesan tiket itu sendiri
-            id: { lte: activeTicket.messageId }, 
+            id: { lte: activeTicket.messageId },
         },
         orderBy: { createdAt: 'asc' },
         include: { unresolved: true } // Tetap sertakan data tiket
@@ -105,10 +105,10 @@ async function assignTicketToAdminQuery(ticketId, adminName) {
 async function resolveTicketByAdminQuery(ticketId) {
     const ticket = await prisma.unresolved.findUnique({
         where: { id: parseInt(ticketId) },
-        include: { 
+        include: {
             message: {
-                select: { conversationId: true } 
-            } 
+                select: { conversationId: true }
+            }
         },
     })
 
@@ -134,7 +134,7 @@ async function countDasboardStatsQuery() {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    const [ openTickets, inProgressTickets, totalUsers, resolvedToday  ] = await Promise.all([
+    const [openTickets, inProgressTickets, totalUsers, resolvedToday] = await Promise.all([
         prisma.unresolved.count({
             where: { status: 'open' }
         }),
@@ -196,7 +196,7 @@ async function getTicketTrendsQuery(periodInDays = 7) {
         const date = new Date()
         date.setDate(date.getDate() - i)
         const dateString = date.toISOString().split('T')[0]
-        
+
         trends.push({
             date: dateString,
             count: dateMap.get(dateString) || 0
@@ -206,13 +206,43 @@ async function getTicketTrendsQuery(periodInDays = 7) {
     return trends.reverse()
 }
 
-export { 
-    findTickets, 
-    findConversationById, 
-    assignTicketToAdminQuery, 
-    resolveTicketByAdminQuery, 
+// ==== HaloDekan Pengaduan ====
+async function createComplaintTicketQuery(userId, data) {
+    const { category, description, attachmentUrl } = data;
+
+    // AUTO-GENERATE TICKET CODE (Format: HD-TAHUN-000X)
+    const ticketCount = await prisma.complainmentTicket.count();
+    const currentYear = new Date().getFullYear();
+    const ticketCode = `HD-${currentYear}-${(ticketCount + 1).toString().padStart(4, '0')}`;
+
+    return await prisma.complainmentTicket.create({
+        data: {
+            ticketCode,
+            userId,
+            category,
+            description,
+            attachmentUrl,
+            status: 'Submitted'
+        }
+    })
+}
+
+async function getMyTicketsQuery(userId) {
+    return await prisma.complainmentTicket.findMany({
+        where: { userId: userId },
+        orderBy: { createdAt: 'desc' }
+    })
+}
+
+export {
+    findTickets,
+    findConversationById,
+    assignTicketToAdminQuery,
+    resolveTicketByAdminQuery,
     countDasboardStatsQuery,
     getTicketCategoryStatsQuery,
     getTicketTrendsQuery,
-    findRelevantConversationSegment
+    findRelevantConversationSegment,
+    createComplaintTicketQuery,
+    getMyTicketsQuery
 }

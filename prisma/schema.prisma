@@ -9,10 +9,11 @@ datasource db {
 }
 
 model Users {
-  id       Int     @id @default(autoincrement())
-  username String? @unique @db.VarChar(100)
-  password String? @db.VarChar(255)
-  email    String? @unique
+  id          Int     @id @default(autoincrement())
+  username    String? @unique @db.VarChar(100)
+  password    String? @db.VarChar(255)
+  email       String? @unique
+  googleEmail String? @unique @map("google_email")
 
   name String @map("full_name") @db.VarChar(200)
   role Role   @default(dosen)
@@ -23,8 +24,9 @@ model Users {
 
   conversations Conversation[]
 
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+  complainmentTickets ComplainmentTicket[]
 
   @@map("users")
 }
@@ -332,6 +334,35 @@ model MeetingActionItem {
   @@map("meeting_action_items")
 }
 
+model ComplainmentTicket {
+  id         Int    @id @default(autoincrement())
+  ticketCode String @unique
+
+  userId Int
+  user   Users @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  category      ComplainmentCategory
+  description   String               @db.Text
+  attachmentUrl String?
+
+  status ComplainmentTicketStatus @default(Submitted)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("complainment_ticket")
+}
+
+model OtpRequest {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  otp       String
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("otp_requests")
+}
+
 enum Role {
   admin
   mahasiswa
@@ -538,4 +569,20 @@ enum MeetingStatus {
 enum MeetingActionStatus {
   Open
   Closed
+}
+
+enum ComplainmentCategory {
+  Akademik
+  Kemahasiswaan
+  Keuangan
+  Fasilitas
+  SumberDaya
+  Lainnya
+}
+
+enum ComplainmentTicketStatus {
+  Submitted
+  InProgress
+  Resolved
+  Cancelled
 }

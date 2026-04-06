@@ -33,15 +33,28 @@ export async function loginWithGoogle(req, res) {
         const payload = await googleResponse.json()
         const googleEmail = payload.email
 
-        const user = await prisma.users.findUnique({
+        let user = await prisma.users.findUnique({
             where: { email: googleEmail }
         })
 
         if (!user) {
-            return res.status(403).json({
-                success: false,
-                message: "Email in this user are not found in MIRA system"
-            })
+            const isStudent = googleEmail.endsWith('@student.telkomuniversity.ac.id')
+
+            if (isStudent) {
+                user = await prisma.users.create({
+                    data: {
+                        email: googleEmail,
+                        name: payload.name,
+                        username: googleEmail.split('@')[0],
+                        role: 'mahasiswa',
+                    }
+                })
+            } else {
+                return res.status(403).json({
+                    success: false,
+                    message: "Email Anda belum terdaftar dan bukan email resmi Telkom University."
+                })
+            }
         }
 
         const jwtPayload = {

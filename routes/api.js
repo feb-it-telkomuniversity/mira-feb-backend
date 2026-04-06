@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { getTickets, getConversationDetails, assignTicketToAdmin, countDasboardStats, getTicketCategoryStats, getTicketTrends, resolveTicketByAdmin, getConversationRelevantDetails } from "../controller/tickets-controller.js"
-import { signIn, getUsers, registerUser, deleteUser, updateUser, updateMyProfile, uploadAvatar, deleteAvatar, getMyProfile, linkGoogleAccount, unlinkGoogleAccount } from '../controller/auth-controller.js'
+import { getTickets, getConversationDetails, assignTicketToAdmin, countDasboardStats, getTicketCategoryStats, getTicketTrends, resolveTicketByAdmin, getConversationRelevantDetails, createComplaintTicket, getMyTickets } from "../controller/tickets-controller.js"
+import { signIn, getUsers, registerUser, deleteUser, updateUser, updateMyProfile, uploadAvatar, deleteAvatar, getMyProfile, linkGoogleAccount, unlinkGoogleAccount, requestOtp, verifyOtp } from '../controller/auth-controller.js'
 import { handleCreateSchedule, getSchedulesByMonth, handleCancelSchedule, handleDeleteSchedule } from '../controller/schedule-controller.js';
 import { createContact, getContacts, handleDeleteContact, updateContact } from '../controller/contacts-controller.js';
 import { createPartnershipData, deletePartnershipData, getPartnershipCharts, getPartnershipData, getPartnershipStats, getPartnershipSummaryStats, updatePartnershipData } from '../controller/partnership-controller.js';
@@ -30,6 +30,8 @@ route.post('/sign-in', signIn)
 route.get("/google/login", googleLogin);
 route.get("/google/redirect", googleRedirect)
 route.post('/auth/google', loginWithGoogle)
+route.post('/auth/otp/request', requestOtp)
+route.post('/auth/otp/verify', verifyOtp)
 
 // PROTECTED ROUTES
 route.use(verifyToken)
@@ -112,5 +114,9 @@ route.delete('/meetings/:id', deleteMeetingById)
 // ==== DATA TPA dan DATA DOSEN ====
 route.get('/lecturers', getLecturersList)
 route.get('/staffs', getStaffsList)
+
+// ==== HaloDekan ====
+route.get('/halodekan/tickets', getMyTickets)
+route.post('/halodekan/tickets', createComplaintTicket)
 
 export default route

@@ -1,5 +1,5 @@
 
-import { findConversationById, findTickets, assignTicketToAdminQuery, countDasboardStatsQuery, getTicketCategoryStatsQuery, getTicketTrendsQuery, resolveTicketByAdminQuery, findRelevantConversationSegment } from "../model/ticket-model.js"
+import { findConversationById, findTickets, assignTicketToAdminQuery, countDasboardStatsQuery, getTicketCategoryStatsQuery, getTicketTrendsQuery, resolveTicketByAdminQuery, findRelevantConversationSegment, createComplaintTicketQuery, getMyTicketsQuery } from "../model/ticket-model.js"
 
 async function getTickets(req, res) {
     try {
@@ -28,7 +28,7 @@ async function getConversationDetails(req, res) {
                 }
             }
         }
-        res.json({...conversation, activeTicket})
+        res.json({ ...conversation, activeTicket })
     } catch (error) {
         res.status(500).json({ message: "Error fetching Conversation details", error: error.message })
     }
@@ -102,13 +102,65 @@ async function getTicketTrends(req, res) {
     }
 }
 
-export { 
-    getTickets, 
-    getConversationDetails, 
-    assignTicketToAdmin, 
+async function createComplaintTicket(req, res) {
+    try {
+        const userId = req.user.id;
+        const { category, description, attachmentUrl } = req.body;
+
+        if (!category || !description) {
+            return res.status(400).json({
+                success: false,
+                message: "Category and description is mandatory"
+            })
+        }
+
+        const newTicket = await createComplaintTicketQuery(userId, {
+            category,
+            description,
+            attachmentUrl
+        })
+
+        res.status(201).json({
+            success: true,
+            message: "Pengaduan berhasil dikirim!",
+            data: newTicket
+        })
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error creating complaint ticket.",
+            error: error.message
+        })
+    }
+}
+
+async function getMyTickets(req, res) {
+    try {
+        const userId = req.user.id;
+        const tickets = await getMyTicketsQuery(userId);
+        res.status(200).json({
+            success: true,
+            data: tickets
+        })
+    } catch (error) {
+        console.error("Error fetching tickets:", error.message);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching tickets.",
+            error: error.message
+        })
+    }
+}
+
+export {
+    getTickets,
+    getConversationDetails,
+    assignTicketToAdmin,
     resolveTicketByAdmin,
-    countDasboardStats, 
+    countDasboardStats,
     getTicketCategoryStats,
     getTicketTrends,
-    getConversationRelevantDetails
+    getConversationRelevantDetails,
+    createComplaintTicket,
+    getMyTickets
 }
