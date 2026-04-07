@@ -369,10 +369,12 @@ async function unlinkGoogleAccount(req, res) {
 
 const requestOtp = async (req, res) => {
     try {
-        const { email } = req.body;
+        const { email } = req.body
+
+        const normalizedEmail = email.toLowerCase().trim()
 
         // Validasi domain email
-        if (!email.endsWith('@student.telkomuniversity.ac.id') && !email.endsWith('@telkomuniversity.ac.id')) {
+        if (!normalizedEmail.endsWith('@student.telkomuniversity.ac.id') && !normalizedEmail.endsWith('@telkomuniversity.ac.id')) {
             return res.status(403).json({ success: false, message: "Gunakan email resmi Telkom University!" });
         }
 
@@ -383,13 +385,13 @@ const requestOtp = async (req, res) => {
 
         // Simpan/Update OTP di database
         await prisma.otpRequest.upsert({
-            where: { email: email },
+            where: { email: normalizedEmail },
             update: { otp: otpCode, expiresAt: expiresAt },
-            create: { email: email, otp: otpCode, expiresAt: expiresAt }
+            create: { email: normalizedEmail, otp: otpCode, expiresAt: expiresAt }
         });
 
         // Kirim email
-        const isSent = await sendOtpEmail(email, otpCode);
+        const isSent = await sendOtpEmail(normalizedEmail, otpCode);
 
         if (!isSent) {
             return res.status(500).json({ success: false, message: "Gagal mengirim email OTP." });
@@ -405,10 +407,12 @@ const requestOtp = async (req, res) => {
 
 const verifyOtp = async (req, res) => {
     try {
-        const { email, otp } = req.body;
+        const { email, otp } = req.body
+
+        const normalizedEmail = email.toLowerCase().trim()
 
         // Cari OTP di database
-        const otpRecord = await prisma.otpRequest.findUnique({ where: { email } });
+        const otpRecord = await prisma.otpRequest.findUnique({ where: { email: normalizedEmail } });
 
         if (!otpRecord) {
             return res.status(404).json({ success: false, message: "Silakan request OTP terlebih dahulu." });
@@ -423,18 +427,28 @@ const verifyOtp = async (req, res) => {
         }
 
         // OTP Valid! Hapus OTP dari database agar tidak bisa dipakai ulang
-        await prisma.otpRequest.delete({ where: { email } });
+        await prisma.otpRequest.delete({ where: { email: normalizedEmail } });
 
         // Proses Auto-Registration / Get User
-        let user = await prisma.users.findUnique({ where: { email } });
+        let user = await prisma.users.findUnique({ where: { email: normalizedEmail } });
 
         if (!user) {
-            const isStudent = email.endsWith('@student.telkomuniversity.ac.id');
+            const isStudent = email.endsWith('@student.telkomuniversity.ac.id')
+            let baseUsername = normalizedEmail.split('@')[0]
+            let finalUsername = baseUsername
+            let isUsernameTaken = await prisma.users.findUnique({ where: { username: finalUsername } })
+
+            while (isUsernameTaken) {
+                const randomSuffix = Math.floor(1000 + Math.random() * 9000)
+                finalUsername = `${baseUsername}_${randomSuffix}`
+                isUsernameTaken = await prisma.users.findUnique({ where: { username: finalUsername } })
+            }
+
             user = await prisma.users.create({
                 data: {
-                    email: email,
-                    name: email.split('@')[0], // Nama sementara dari email
-                    username: email.split('@')[0],
+                    email: normalizedEmail,
+                    name: baseUsername,
+                    username: finalUsername,
                     role: isStudent ? "mahasiswa" : "dosen"
                 }
             })
