@@ -293,7 +293,7 @@ async function deleteAvatar(req, res) {
 
 async function linkGoogleAccount(req, res) {
     try {
-        const { googleToken, userId, token } = req.body
+        const { googleToken, userId } = req.body
 
         if (!googleToken || !userId) {
             return res.status(400).json({
@@ -311,7 +311,7 @@ async function linkGoogleAccount(req, res) {
         const googleEmail = payload.email
 
         const existingEmail = await prisma.users.findUnique({
-            where: { email: googleEmail }
+            where: { googleEmail: googleEmail }
         })
 
         if (existingEmail && existingEmail.id !== userId) {
@@ -323,7 +323,7 @@ async function linkGoogleAccount(req, res) {
 
         const updatedUser = await prisma.users.update({
             where: { id: userId },
-            data: { email: googleEmail }
+            data: { googleEmail: googleEmail }
         })
 
         delete updatedUser.password
@@ -331,7 +331,7 @@ async function linkGoogleAccount(req, res) {
         res.status(200).json({
             success: true,
             message: "Google account successfully linked",
-            email: updatedUser.email
+            email: updatedUser.googleEmail
         })
     } catch (error) {
         console.error('Link Google account error: ', error)
@@ -348,7 +348,7 @@ async function unlinkGoogleAccount(req, res) {
 
         const updatedUser = await prisma.users.update({
             where: { id: userId },
-            data: { email: null }
+            data: { googleEmail: null }
         })
 
         delete updatedUser.password
@@ -356,7 +356,7 @@ async function unlinkGoogleAccount(req, res) {
         res.status(200).json({
             success: true,
             message: "Google account successfully unlinked",
-            email: updatedUser.email
+            email: updatedUser.googleEmail
         })
     } catch (error) {
         console.error('Unlink Google account error: ', error)

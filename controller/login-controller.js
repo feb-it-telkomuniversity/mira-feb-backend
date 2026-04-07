@@ -33,8 +33,13 @@ export async function loginWithGoogle(req, res) {
         const payload = await googleResponse.json()
         const googleEmail = payload.email
 
-        let user = await prisma.users.findUnique({
-            where: { email: googleEmail }
+        let user = await prisma.users.findFirst({
+            where: {
+                OR: [
+                    { email: googleEmail },
+                    { googleEmail: googleEmail }
+                ]
+            }
         })
 
         if (!user) {
@@ -44,6 +49,7 @@ export async function loginWithGoogle(req, res) {
                 user = await prisma.users.create({
                     data: {
                         email: googleEmail,
+                        googleEmail: googleEmail,
                         name: payload.name,
                         username: googleEmail.split('@')[0],
                         role: 'mahasiswa',
