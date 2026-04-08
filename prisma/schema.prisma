@@ -24,9 +24,11 @@ model Users {
 
   conversations Conversation[]
 
-  createdAt           DateTime             @default(now()) @map("created_at")
-  updatedAt           DateTime             @updatedAt @map("updated_at")
-  complainmentTickets ComplainmentTicket[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  reportedTickets ComplainmentTicket[] @relation("ReportedTickets")
+  assignedTickets ComplainmentTicket[] @relation("AssignedTickets")
 
   @@map("users")
 }
@@ -339,11 +341,17 @@ model ComplainmentTicket {
   ticketCode String @unique
 
   userId Int
-  user   Users @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   Users @relation("ReportedTickets", fields: [userId], references: [id], onDelete: Cascade)
+
+  assignedToId Int?
+  assignedTo   Users? @relation("AssignedTickets", fields: [assignedToId], references: [id])
 
   category      ComplainmentCategory
   description   String               @db.Text
   attachmentUrl String[]             @map("attachment_url")
+
+  resolutionProofUrls String[] @map("resolution_proof_urls")
+  resolutionNote      String?  @map("resolution_note") @db.Text
 
   status     ComplainmentTicketStatus @default(Submitted)
   actionNote String?                  @db.Text
@@ -583,8 +591,12 @@ enum ComplainmentCategory {
 
 enum ComplainmentTicketStatus {
   Submitted
+  Rejected
   InProgress
   EscalatedToDean
+  AssignedToUnit
+  WaitingDeanApproval
+  RevisionNeeded
   Resolved
   Cancelled
   Close

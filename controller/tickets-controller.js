@@ -1,5 +1,5 @@
 
-import { findConversationById, findTickets, assignTicketToAdminQuery, countDasboardStatsQuery, getTicketCategoryStatsQuery, getTicketTrendsQuery, resolveTicketByAdminQuery, findRelevantConversationSegment, createComplaintTicketQuery, getMyTicketsQuery, getTicketsForAdminQuery, verifyTicketQuery, getTicketComplaintDetailQuery } from "../model/ticket-model.js"
+import { findConversationById, findTickets, assignTicketToAdminQuery, countDasboardStatsQuery, getTicketCategoryStatsQuery, getTicketTrendsQuery, resolveTicketByAdminQuery, findRelevantConversationSegment, createComplaintTicketQuery, getMyTicketsQuery, getTicketsForAdminQuery, verifyTicketQuery, getTicketComplaintDetailQuery, assignTicketQuery, submitResolutionQuery, updateTicketStatusQuery } from "../model/ticket-model.js"
 import { put } from "@vercel/blob"
 import multer from 'multer';
 
@@ -197,6 +197,9 @@ async function getTicketsForAdmin(req, res) {
     }
 }
 
+// ==========================================
+// 1. ADMIN: Verifikasi Laporan Masuk
+// ==========================================
 async function verifyTicket(req, res) {
     try {
         const { id } = req.params
@@ -221,6 +224,84 @@ async function verifyTicket(req, res) {
     } catch (error) {
         console.error("Error triage ticket:", error.message);
         res.status(500).json({ success: false, message: "Error triage ticket." })
+    }
+}
+
+// ==========================================
+// 2. DEKAN: Menugaskan ke Unit Terkait
+// ==========================================
+async function assignTicket(req, res) {
+    try {
+        const { id } = req.params;
+        const { assignedToId, actionNote } = req.body
+
+        if (!assignedToId) {
+            return res.status(400).json({ success: false, message: "Unit penanggung jawab (assignedToId) harus diisi!" })
+        }
+
+        const updatedTicket = await assignTicketQuery(id, assignedToId, actionNote);
+
+        res.status(200).json({
+            success: true,
+            message: "Tiket berhasil ditugaskan ke Unit terkait.",
+            data: updatedTicket
+        });
+    } catch (error) {
+        console.error("Error assign ticket:", error);
+        res.status(500).json({ success: false, message: "Gagal menugaskan tiket." });
+    }
+}
+
+// ==========================================
+// 3. UNIT: Mengirim Bukti Penyelesaian
+// ==========================================
+async function resolveTicketByUnit(req, res) {
+    try {
+        const { id } = req.params;
+        const { resolutionNote, resolutionProofUrls } = req.body;
+
+        // Pastikan Unit menyertakan setidaknya 1 foto/dokumen bukti
+        if (!resolutionProofUrls || resolutionProofUrls.length === 0) {
+            return res.status(400).json({ success: false, message: "Wajib menyertakan minimal 1 bukti penyelesaian!" });
+        }
+
+        const updatedTicket = await submitResolutionQuery(id, resolutionNote, resolutionProofUrls);
+
+        res.status(200).json({
+            success: true,
+            message: "Bukti penyelesaian berhasil dikirim ke Dekan.",
+            data: updatedTicket
+        });
+    } catch (error) {
+        console.error("Error resolve ticket:", error);
+        res.status(500).json({ success: false, message: "Gagal mengirim bukti penyelesaian." });
+    }
+}
+
+// ==========================================
+// 4. DEKAN: ACC atau Tolak Bukti dari Unit
+// ==========================================
+async function approveTicketResolution(req, res) {
+    try {
+        const { id } = req.params;
+        const { status, actionNote } = req.body;
+
+        // Validasi: Dekan hanya boleh ACC (Resolved) atau Minta Revisi
+        const validStatuses = ['Resolved', 'RevisionNeeded']
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({ success: false, message: "Status persetujuan tidak valid!" })
+        }
+
+        const updatedTicket = await updateTicketStatusQuery(id, status, actionNote)
+
+        res.status(200).json({
+            success: true,
+            message: status === 'Resolved' ? "Tiket dinyatakan Selesai!" : "Tiket dikembalikan ke Unit untuk direvisi.",
+            data: updatedTicket
+        });
+    } catch (error) {
+        console.error("Error approve ticket:", error);
+        res.status(500).json({ success: false, message: "Gagal memproses persetujuan Dekan." });
     }
 }
 
@@ -322,4 +403,7 @@ export {
     getTicketComplaintDetail,
     getTicketsForAdmin,
     verifyTicket,
+    assignTicket,
+    resolveTicketByUnit,
+    approveTicketResolution
 }

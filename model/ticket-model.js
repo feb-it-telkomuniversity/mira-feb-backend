@@ -271,6 +271,41 @@ async function getTicketComplaintDetailQuery(ticketId) {
     })
 }
 
+// 1. Query untuk Dekan menugaskan tiket ke Unit
+async function assignTicketQuery(ticketId, assignedToId, actionNote) {
+    return await prisma.complainmentTicket.update({
+        where: { id: parseInt(ticketId) },
+        data: {
+            status: 'AssignedToUnit',
+            assignedToId: parseInt(assignedToId),
+            actionNote: actionNote
+        }
+    })
+}
+
+// 2. Query untuk Unit mengirimkan bukti penyelesaian
+async function submitResolutionQuery(ticketId, resolutionNote, resolutionProofUrls) {
+    return await prisma.complainmentTicket.update({
+        where: { id: parseInt(ticketId) },
+        data: {
+            status: 'WaitingDeanApproval',
+            resolutionNote: resolutionNote,
+            resolutionProofUrls: resolutionProofUrls
+        }
+    })
+}
+
+// 3. Query Umum untuk ganti status (Admin tolak, Dekan ACC, dll)
+async function updateTicketStatusQuery(ticketId, status, actionNote) {
+    return await prisma.complainmentTicket.update({
+        where: { id: parseInt(ticketId) },
+        data: {
+            status: status,
+            actionNote: actionNote
+        }
+    })
+}
+
 export {
     findTickets,
     findConversationById,
@@ -286,4 +321,7 @@ export {
     getTicketComplaintDetailQuery,
     getTicketsForAdminQuery,
     verifyTicketQuery,
+    assignTicketQuery,
+    submitResolutionQuery,
+    updateTicketStatusQuery
 }
