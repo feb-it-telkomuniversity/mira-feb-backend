@@ -234,6 +234,43 @@ async function getMyTicketsQuery(userId) {
     })
 }
 
+async function getTicketsForAdminQuery(statusFilter) {
+    const whereClause = statusFilter ? { status: statusFilter } : {}
+
+    return await prisma.complainmentTicket.findMany({
+        where: whereClause,
+        orderBy: { createdAt: 'desc' },
+        include: {
+            user: {
+                select: { name: true, email: true, role: true }
+            }
+        }
+    })
+}
+
+async function verifyTicketQuery(ticketId, data) {
+    const { status, actionNote } = data
+
+    return await prisma.complainmentTicket.update({
+        where: { id: parseInt(ticketId) },
+        data: {
+            status: status,
+            actionNote: actionNote
+        }
+    })
+}
+
+async function getTicketComplaintDetailQuery(ticketId) {
+    return await prisma.complainmentTicket.findUnique({
+        where: { id: parseInt(ticketId) },
+        include: {
+            user: {
+                select: { name: true, username: true, email: true }
+            }
+        }
+    })
+}
+
 export {
     findTickets,
     findConversationById,
@@ -243,6 +280,10 @@ export {
     getTicketCategoryStatsQuery,
     getTicketTrendsQuery,
     findRelevantConversationSegment,
+    // HaloDekan
     createComplaintTicketQuery,
-    getMyTicketsQuery
+    getMyTicketsQuery,
+    getTicketComplaintDetailQuery,
+    getTicketsForAdminQuery,
+    verifyTicketQuery,
 }

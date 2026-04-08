@@ -345,7 +345,8 @@ model ComplainmentTicket {
   description   String               @db.Text
   attachmentUrl String?
 
-  status ComplainmentTicketStatus @default(Submitted)
+  status     ComplainmentTicketStatus @default(Submitted)
+  actionNote String?                  @db.Text
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -583,6 +584,8 @@ enum ComplainmentCategory {
 enum ComplainmentTicketStatus {
   Submitted
   InProgress
+  EscalatedToDean
   Resolved
   Cancelled
+  Close
 }

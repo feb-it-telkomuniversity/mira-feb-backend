@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getTickets, getConversationDetails, assignTicketToAdmin, countDasboardStats, getTicketCategoryStats, getTicketTrends, resolveTicketByAdmin, getConversationRelevantDetails, createComplaintTicket, getMyTickets } from "../controller/tickets-controller.js"
+import { getTickets, getConversationDetails, assignTicketToAdmin, countDasboardStats, getTicketCategoryStats, getTicketTrends, resolveTicketByAdmin, getConversationRelevantDetails, createComplaintTicket, getMyTickets, getTicketsForAdmin, verifyTicket, getTicketComplaintDetail } from "../controller/tickets-controller.js"
 import { signIn, getUsers, registerUser, deleteUser, updateUser, updateMyProfile, uploadAvatar, deleteAvatar, getMyProfile, linkGoogleAccount, unlinkGoogleAccount, requestOtp, verifyOtp } from '../controller/auth-controller.js'
 import { handleCreateSchedule, getSchedulesByMonth, handleCancelSchedule, handleDeleteSchedule } from '../controller/schedule-controller.js';
 import { createContact, getContacts, handleDeleteContact, updateContact } from '../controller/contacts-controller.js';
@@ -116,7 +116,13 @@ route.get('/lecturers', getLecturersList)
 route.get('/staffs', getStaffsList)
 
 // ==== HaloDekan ====
+// Mahasiswa
 route.get('/halodekan/tickets', getMyTickets)
+route.get('/halodekan/tickets/:id', getTicketComplaintDetail)
 route.post('/halodekan/tickets', createComplaintTicket)
+
+// Admin
+route.get('/halodekan/admin/tickets', getTicketsForAdmin)
+route.patch('/halodekan/admin/tickets/:id/triage', verifyTicket)
 
 export default route

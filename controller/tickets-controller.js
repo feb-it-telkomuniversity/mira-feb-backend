@@ -1,5 +1,5 @@
 
-import { findConversationById, findTickets, assignTicketToAdminQuery, countDasboardStatsQuery, getTicketCategoryStatsQuery, getTicketTrendsQuery, resolveTicketByAdminQuery, findRelevantConversationSegment, createComplaintTicketQuery, getMyTicketsQuery } from "../model/ticket-model.js"
+import { findConversationById, findTickets, assignTicketToAdminQuery, countDasboardStatsQuery, getTicketCategoryStatsQuery, getTicketTrendsQuery, resolveTicketByAdminQuery, findRelevantConversationSegment, createComplaintTicketQuery, getMyTicketsQuery, getTicketsForAdminQuery, verifyTicketQuery, getTicketComplaintDetailQuery } from "../model/ticket-model.js"
 
 async function getTickets(req, res) {
     try {
@@ -152,6 +152,85 @@ async function getMyTickets(req, res) {
     }
 }
 
+async function getTicketsForAdmin(req, res) {
+    try {
+        const status = req.query
+
+        const tickets = await getTicketsForAdminQuery(status)
+
+        res.status(200).json({
+            success: true,
+            message: "Tickets successfully fetched",
+            data: tickets
+        })
+    } catch (error) {
+        console.error("Error fetching admin tickets:", error.message);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching admin tickets.",
+            error: error.message
+        })
+    }
+}
+
+async function verifyTicket(req, res) {
+    try {
+        const { id } = req.params
+        const { status, actionNote } = req.body
+
+        const validStatuses = ['InProgress', 'EscalatedToDean', 'Resolved', 'Cancelled']
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: "Ticket status invalid!"
+            })
+        }
+
+        const updatedTicket = await verifyTicketQuery(id, { status, actionNote })
+
+        res.status(200).json({
+            success: true,
+            message: `Ticket successfully updated to status: ${status}`,
+            data: updatedTicket
+        })
+
+    } catch (error) {
+        console.error("Error triage ticket:", error.message);
+        res.status(500).json({ success: false, message: "Error triage ticket." })
+    }
+}
+
+async function getTicketComplaintDetail(req, res) {
+    try {
+        const { id } = req.params
+        const userId = req.user.id
+        const userRole = req.user.role
+
+        const ticket = await getTicketComplaintDetailQuery(id)
+
+        if (!ticket) {
+            return res.status(404).json({ success: false, message: "Ticket not found!" })
+        }
+
+        const isAdminOrDekan = ['ADMIN', 'DEKANAT'].includes(userRole.toUpperCase())
+        if (!isAdminOrDekan && ticket.userId !== userId) {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied! You don't have permission to view this ticket."
+            })
+        }
+
+        res.status(200).json({
+            success: true,
+            data: ticket
+        })
+
+    } catch (error) {
+        console.error("Error fetching ticket detail:", error.message)
+        res.status(500).json({ success: false, message: "Error fetching ticket detail." })
+    }
+}
+
 export {
     getTickets,
     getConversationDetails,
@@ -162,5 +241,9 @@ export {
     getTicketTrends,
     getConversationRelevantDetails,
     createComplaintTicket,
-    getMyTickets
+    // HaloDekan
+    getMyTickets,
+    getTicketComplaintDetail,
+    getTicketsForAdmin,
+    verifyTicket,
 }
