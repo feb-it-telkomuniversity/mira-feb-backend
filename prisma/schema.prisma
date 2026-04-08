@@ -343,7 +343,7 @@ model ComplainmentTicket {
 
   category      ComplainmentCategory
   description   String               @db.Text
-  attachmentUrl String?
+  attachmentUrl String[]             @map("attachment_url")
 
   status     ComplainmentTicketStatus @default(Submitted)
   actionNote String?                  @db.Text

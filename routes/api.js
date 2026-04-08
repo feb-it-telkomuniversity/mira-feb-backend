@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getTickets, getConversationDetails, assignTicketToAdmin, countDasboardStats, getTicketCategoryStats, getTicketTrends, resolveTicketByAdmin, getConversationRelevantDetails, createComplaintTicket, getMyTickets, getTicketsForAdmin, verifyTicket, getTicketComplaintDetail } from "../controller/tickets-controller.js"
+import { getTickets, getConversationDetails, assignTicketToAdmin, countDasboardStats, getTicketCategoryStats, getTicketTrends, resolveTicketByAdmin, getConversationRelevantDetails, createComplaintTicket, getMyTickets, getTicketsForAdmin, verifyTicket, getTicketComplaintDetail, uploadComplaintTicketFiles } from "../controller/tickets-controller.js"
 import { signIn, getUsers, registerUser, deleteUser, updateUser, updateMyProfile, uploadAvatar, deleteAvatar, getMyProfile, linkGoogleAccount, unlinkGoogleAccount, requestOtp, verifyOtp } from '../controller/auth-controller.js'
 import { handleCreateSchedule, getSchedulesByMonth, handleCancelSchedule, handleDeleteSchedule } from '../controller/schedule-controller.js';
 import { createContact, getContacts, handleDeleteContact, updateContact } from '../controller/contacts-controller.js';
@@ -23,7 +23,6 @@ const upload = multer({
         fileSize: 2 * 1024 * 1024, // 2mb
     }
 })
-
 
 // PUBLIC ROUTES
 route.post('/sign-in', signIn)
@@ -120,6 +119,7 @@ route.get('/staffs', getStaffsList)
 route.get('/halodekan/tickets', getMyTickets)
 route.get('/halodekan/tickets/:id', getTicketComplaintDetail)
 route.post('/halodekan/tickets', createComplaintTicket)
+route.post('/halodekan/tickets/upload-attachments', uploadComplaintTicketFiles)
 
 // Admin
 route.get('/halodekan/admin/tickets', getTicketsForAdmin)

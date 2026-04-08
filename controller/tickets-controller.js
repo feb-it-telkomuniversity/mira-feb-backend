@@ -1,5 +1,29 @@
 
 import { findConversationById, findTickets, assignTicketToAdminQuery, countDasboardStatsQuery, getTicketCategoryStatsQuery, getTicketTrendsQuery, resolveTicketByAdminQuery, findRelevantConversationSegment, createComplaintTicketQuery, getMyTicketsQuery, getTicketsForAdminQuery, verifyTicketQuery, getTicketComplaintDetailQuery } from "../model/ticket-model.js"
+import { put } from "@vercel/blob"
+import multer from 'multer';
+
+const allowedMimeTypes = [
+    'image/jpeg', 'image/png', 'image/webp',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'text/csv'
+]
+
+const uploadTicketFiles = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 1 * 1024 * 1024, files: 3 },
+    fileFilter: (req, file, cb) => {
+        if (allowedMimeTypes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('INVALID_FILE_TYPE'), false)
+        }
+    }
+})
 
 async function getTickets(req, res) {
     try {
@@ -231,6 +255,57 @@ async function getTicketComplaintDetail(req, res) {
     }
 }
 
+async function uploadComplaintTicketFiles(req, res) {
+    const uploadProcess = uploadTicketFiles.array('attachments', 3);
+
+    uploadProcess(req, res, async function (err) {
+        // ==========================================
+        // FASE 1: TANGKAP SEMUA ERROR DARI MULTER DI SINI
+        // ==========================================
+        if (err instanceof multer.MulterError) {
+            if (err.code === 'LIMIT_FILE_SIZE') {
+                return res.status(400).json({ success: false, message: 'Ukuran file terlalu besar! Maksimal 1MB per file.' })
+            }
+            return res.status(400).json({ success: false, message: `Upload Error: ${err.message}` })
+        } else if (err) {
+            if (err.message === 'INVALID_FILE_TYPE') {
+                return res.status(400).json({ success: false, message: 'Format file tidak didukung! Harap unggah gambar, PDF, Word, atau Excel.' })
+            }
+            return res.status(500).json({ success: false, message: `Server Error: ${err.message}` })
+        }
+
+        // ==========================================
+        // FASE 2: LANJUTKAN KE VERCEL BLOB JIKA AMAN
+        // ==========================================
+        try {
+            if (!req.files || req.files.length === 0) {
+                return res.status(400).json({ success: false, message: 'Tidak ada file yang diunggah' })
+            }
+
+            const uploadPromises = req.files.map((file) => {
+                const fileName = `tickets/${Date.now()}-${file.originalname}`
+                return put(fileName, file.buffer, {
+                    access: 'public',
+                    addRandomSuffix: true,
+                })
+            })
+
+            const blobResults = await Promise.all(uploadPromises)
+            const urls = blobResults.map(blob => blob.url)
+
+            res.status(200).json({
+                success: true,
+                message: 'Semua lampiran berhasil diunggah',
+                urls: urls
+            })
+
+        } catch (error) {
+            console.error('Vercel Blob Upload Error: ', error)
+            res.status(500).json({ success: false, message: 'Gagal menyimpan lampiran ke Vercel Blob' })
+        }
+    })
+}
+
 export {
     getTickets,
     getConversationDetails,
@@ -243,6 +318,7 @@ export {
     createComplaintTicket,
     // HaloDekan
     getMyTickets,
+    uploadComplaintTicketFiles,
     getTicketComplaintDetail,
     getTicketsForAdmin,
     verifyTicket,
