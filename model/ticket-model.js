@@ -306,6 +306,27 @@ async function updateTicketStatusQuery(ticketId, status, actionNote) {
     })
 }
 
+async function getTicketsForRoleQuery(statusFilter) {
+    // Jika statusFilter yang dikirim adalah array, gunakan operator 'in'
+    // Contoh: ['EscalatedToDean', 'WaitingDeanApproval']
+    const whereClause = statusFilter
+        ? { status: { in: Array.isArray(statusFilter) ? statusFilter : [statusFilter] } }
+        : {};
+
+    return await prisma.complainmentTicket.findMany({
+        where: whereClause,
+        orderBy: { updatedAt: 'desc' },
+        include: {
+            user: {
+                select: { name: true, email: true, role: true }
+            },
+            assignedTo: {
+                select: { name: true }
+            }
+        }
+    });
+}
+
 export {
     findTickets,
     findConversationById,
@@ -323,5 +344,6 @@ export {
     verifyTicketQuery,
     assignTicketQuery,
     submitResolutionQuery,
-    updateTicketStatusQuery
+    updateTicketStatusQuery,
+    getTicketsForRoleQuery
 }

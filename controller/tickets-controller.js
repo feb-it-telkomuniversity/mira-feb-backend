@@ -1,5 +1,5 @@
 
-import { findConversationById, findTickets, assignTicketToAdminQuery, countDasboardStatsQuery, getTicketCategoryStatsQuery, getTicketTrendsQuery, resolveTicketByAdminQuery, findRelevantConversationSegment, createComplaintTicketQuery, getMyTicketsQuery, getTicketsForAdminQuery, verifyTicketQuery, getTicketComplaintDetailQuery, assignTicketQuery, submitResolutionQuery, updateTicketStatusQuery } from "../model/ticket-model.js"
+import { findConversationById, findTickets, assignTicketToAdminQuery, countDasboardStatsQuery, getTicketCategoryStatsQuery, getTicketTrendsQuery, resolveTicketByAdminQuery, findRelevantConversationSegment, createComplaintTicketQuery, getMyTicketsQuery, getTicketsForAdminQuery, verifyTicketQuery, getTicketComplaintDetailQuery, assignTicketQuery, submitResolutionQuery, updateTicketStatusQuery, getTicketsForRoleQuery } from "../model/ticket-model.js"
 import { put } from "@vercel/blob"
 import multer from 'multer';
 
@@ -205,7 +205,7 @@ async function verifyTicket(req, res) {
         const { id } = req.params
         const { status, actionNote } = req.body
 
-        const validStatuses = ['InProgress', 'EscalatedToDean', 'Resolved', 'Cancelled']
+        const validStatuses = ['InProgress', 'EscalatedToDean', 'Resolved', 'Cancelled', 'Rejected']
         if (!validStatuses.includes(status)) {
             return res.status(400).json({
                 success: false,
@@ -248,7 +248,7 @@ async function assignTicket(req, res) {
         });
     } catch (error) {
         console.error("Error assign ticket:", error);
-        res.status(500).json({ success: false, message: "Gagal menugaskan tiket." });
+        res.status(500).json({ success: false, message: "Gagal menugaskan tiket." })
     }
 }
 
@@ -387,6 +387,50 @@ async function uploadComplaintTicketFiles(req, res) {
     })
 }
 
+async function getDekanatTickets(req, res) {
+    try {
+        const statuses = ['EscalatedToDean', 'WaitingDeanApproval'];
+
+        const tickets = await getTicketsForRoleQuery(statuses);
+
+        res.status(200).json({
+            success: true,
+            data: tickets
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Gagal memuat data disposisi." });
+    }
+}
+
+async function getDekanatTicketDetail(req, res) {
+    try {
+        const { id } = req.params;
+
+        const ticket = await getTicketComplaintDetailQuery(id);
+
+        if (!ticket) {
+            return res.status(404).json({ success: false, message: "Ticket not found!" });
+        }
+
+        const allowedStatuses = ['EscalatedToDean', 'WaitingDeanApproval'];
+        if (!allowedStatuses.includes(ticket.status)) {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied! This ticket is not in the Dean's disposition or approval stage."
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: ticket
+        });
+
+    } catch (error) {
+        console.error("Error fetching dekanat ticket detail:", error.message);
+        res.status(500).json({ success: false, message: "Gagal mengambil detail tiket." });
+    }
+}
+
 export {
     getTickets,
     getConversationDetails,
@@ -405,5 +449,7 @@ export {
     verifyTicket,
     assignTicket,
     resolveTicketByUnit,
-    approveTicketResolution
+    approveTicketResolution,
+    getDekanatTickets,
+    getDekanatTicketDetail
 }

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getTickets, getConversationDetails, assignTicketToAdmin, countDasboardStats, getTicketCategoryStats, getTicketTrends, resolveTicketByAdmin, getConversationRelevantDetails, createComplaintTicket, getMyTickets, getTicketsForAdmin, verifyTicket, getTicketComplaintDetail, uploadComplaintTicketFiles, resolveTicketByUnit, approveTicketResolution, assignTicket } from "../controller/tickets-controller.js"
+import { getTickets, getConversationDetails, assignTicketToAdmin, countDasboardStats, getTicketCategoryStats, getTicketTrends, resolveTicketByAdmin, getConversationRelevantDetails, createComplaintTicket, getMyTickets, getTicketsForAdmin, verifyTicket, getTicketComplaintDetail, uploadComplaintTicketFiles, resolveTicketByUnit, approveTicketResolution, assignTicket, getDekanatTickets, getDekanatTicketDetail } from "../controller/tickets-controller.js"
 import { signIn, getUsers, registerUser, deleteUser, updateUser, updateMyProfile, uploadAvatar, deleteAvatar, getMyProfile, linkGoogleAccount, unlinkGoogleAccount, requestOtp, verifyOtp } from '../controller/auth-controller.js'
 import { handleCreateSchedule, getSchedulesByMonth, handleCancelSchedule, handleDeleteSchedule } from '../controller/schedule-controller.js';
 import { createContact, getContacts, handleDeleteContact, updateContact } from '../controller/contacts-controller.js';
@@ -41,7 +41,7 @@ const adminOnly = verifyRole(['admin'])
 route.post('/account/link-google', linkGoogleAccount)
 route.post('/account/unlink-google', unlinkGoogleAccount)
 
-route.get("/users", adminOnly, getUsers)
+route.get("/users", getUsers)
 route.post('/register-user', adminOnly, registerUser)
 route.patch('/users/me', updateMyProfile)
 route.post('/users/upload-avatar', upload.single('avatar'), uploadAvatar)
@@ -126,10 +126,12 @@ route.get('/halodekan/admin/tickets', getTicketsForAdmin)
 route.patch('/halodekan/admin/tickets/:id/triage', verifyTicket)
 
 // Dekan
-route.patch('/halodekan/tickets/:id/assign', assignTicket)
-route.patch('/halodekan/tickets/:id/approve', approveTicketResolution)
+route.get('/halodekan/dekan/tickets', getDekanatTickets)
+route.get('/halodekan/dekan/tickets/:id', getDekanatTicketDetail)
+route.patch('/halodekan/dekan/tickets/:id/assign', assignTicket)
+route.patch('/halodekan/dekan/tickets/:id/approve', approveTicketResolution)
 // Unit (Wadek, LAA, SDM, dll)
-route.patch('/halodekan/tickets/:id/resolve', resolveTicketByUnit)
+route.patch('/halodekan/unit/tickets/:id/resolve', resolveTicketByUnit)
 
 
 export default route
