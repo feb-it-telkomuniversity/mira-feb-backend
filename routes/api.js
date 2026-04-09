@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getTickets, getConversationDetails, assignTicketToAdmin, countDasboardStats, getTicketCategoryStats, getTicketTrends, resolveTicketByAdmin, getConversationRelevantDetails, createComplaintTicket, getMyTickets, getTicketsForAdmin, verifyTicket, getTicketComplaintDetail, uploadComplaintTicketFiles, resolveTicketByUnit, approveTicketResolution, assignTicket, getDekanatTickets, getDekanatTicketDetail } from "../controller/tickets-controller.js"
+import { getTickets, getConversationDetails, assignTicketToAdmin, countDasboardStats, getTicketCategoryStats, getTicketTrends, resolveTicketByAdmin, getConversationRelevantDetails, createComplaintTicket, getMyTickets, getTicketsForAdmin, verifyTicket, getTicketComplaintDetail, uploadComplaintTicketFiles, resolveTicketByUnit, approveTicketResolution, assignTicket, getDekanatTickets, getDekanatTicketDetail, getUnitTickets, getUnitTicketDetail } from "../controller/tickets-controller.js"
 import { signIn, getUsers, registerUser, deleteUser, updateUser, updateMyProfile, uploadAvatar, deleteAvatar, getMyProfile, linkGoogleAccount, unlinkGoogleAccount, requestOtp, verifyOtp } from '../controller/auth-controller.js'
 import { handleCreateSchedule, getSchedulesByMonth, handleCancelSchedule, handleDeleteSchedule } from '../controller/schedule-controller.js';
 import { createContact, getContacts, handleDeleteContact, updateContact } from '../controller/contacts-controller.js';
@@ -50,6 +50,7 @@ route.delete('/users/:id', adminOnly, deleteUser)
 route.put('/users/:id', adminOnly, updateUser)
 route.get('/users/me', getMyProfile)
 
+// ============== NEED WHATSAPP : HANDLE LATER ==============
 route.get('/tickets', adminOnly, getTickets)
 route.put('/tickets/:id/assign', adminOnly, assignTicketToAdmin)
 route.put('/tickets/:id/resolve', adminOnly, resolveTicketByAdmin)
@@ -63,6 +64,7 @@ route.get('/schedules', getSchedulesByMonth)
 route.post('/schedules', handleCreateSchedule)
 route.delete('/schedules/:id', handleDeleteSchedule)
 route.put('/schedules/:id/cancel', handleCancelSchedule)
+// ============== NEED WHATSAPP : HANDLE LATER ==============
 
 route.get('/contacts', getContacts)
 route.post('/contacts', createContact)
@@ -130,8 +132,10 @@ route.get('/halodekan/dekan/tickets', getDekanatTickets)
 route.get('/halodekan/dekan/tickets/:id', getDekanatTicketDetail)
 route.patch('/halodekan/dekan/tickets/:id/assign', assignTicket)
 route.patch('/halodekan/dekan/tickets/:id/approve', approveTicketResolution)
+
 // Unit (Wadek, LAA, SDM, dll)
 route.patch('/halodekan/unit/tickets/:id/resolve', resolveTicketByUnit)
-
+route.get('/halodekan/unit/tickets', getUnitTickets)
+route.get('/halodekan/unit/tickets/:id', getUnitTicketDetail)
 
 export default route

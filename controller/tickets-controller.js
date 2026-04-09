@@ -1,5 +1,5 @@
 
-import { findConversationById, findTickets, assignTicketToAdminQuery, countDasboardStatsQuery, getTicketCategoryStatsQuery, getTicketTrendsQuery, resolveTicketByAdminQuery, findRelevantConversationSegment, createComplaintTicketQuery, getMyTicketsQuery, getTicketsForAdminQuery, verifyTicketQuery, getTicketComplaintDetailQuery, assignTicketQuery, submitResolutionQuery, updateTicketStatusQuery, getTicketsForRoleQuery } from "../model/ticket-model.js"
+import { findConversationById, findTickets, assignTicketToAdminQuery, countDasboardStatsQuery, getTicketCategoryStatsQuery, getTicketTrendsQuery, resolveTicketByAdminQuery, findRelevantConversationSegment, createComplaintTicketQuery, getMyTicketsQuery, getTicketsForAdminQuery, verifyTicketQuery, getTicketComplaintDetailQuery, assignTicketQuery, submitResolutionQuery, updateTicketStatusQuery, getTicketsForRoleQuery, getTicketsForUnitQuery } from "../model/ticket-model.js"
 import { put } from "@vercel/blob"
 import multer from 'multer';
 
@@ -271,7 +271,7 @@ async function resolveTicketByUnit(req, res) {
             success: true,
             message: "Bukti penyelesaian berhasil dikirim ke Dekan.",
             data: updatedTicket
-        });
+        })
     } catch (error) {
         console.error("Error resolve ticket:", error);
         res.status(500).json({ success: false, message: "Gagal mengirim bukti penyelesaian." });
@@ -431,6 +431,46 @@ async function getDekanatTicketDetail(req, res) {
     }
 }
 
+async function getUnitTickets(req, res) {
+    try {
+        const unitUserId = req.user.id; // Ambil ID dari token user yang login
+
+        const statuses = ['AssignedToUnit', 'RevisionNeeded', 'WaitingDeanApproval']
+
+        const tickets = await getTicketsForUnitQuery(unitUserId, statuses)
+
+        res.status(200).json({ success: true, data: tickets })
+    } catch (error) {
+        console.error("Error fetching unit tickets:", error.message)
+        res.status(500).json({ success: false, message: "Gagal memuat daftar tugas unit." })
+    }
+}
+
+async function getUnitTicketDetail(req, res) {
+    try {
+        const { id } = req.params;
+        const unitUserId = req.user.id;
+
+        const ticket = await getTicketComplaintDetailQuery(id);
+
+        if (!ticket) {
+            return res.status(404).json({ success: false, message: "Assignment not found" });
+        }
+
+        if (ticket.assignedToId !== unitUserId) {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied! This ticket is not assigned to you."
+            });
+        }
+
+        res.status(200).json({ success: true, data: ticket });
+    } catch (error) {
+        console.error("Error fetching unit ticket detail:", error.message);
+        res.status(500).json({ success: false, message: "Gagal mengambil detail tugas." });
+    }
+}
+
 export {
     getTickets,
     getConversationDetails,
@@ -451,5 +491,7 @@ export {
     resolveTicketByUnit,
     approveTicketResolution,
     getDekanatTickets,
-    getDekanatTicketDetail
+    getDekanatTicketDetail,
+    getUnitTickets,
+    getUnitTicketDetail
 }

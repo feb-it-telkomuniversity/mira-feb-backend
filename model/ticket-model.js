@@ -243,6 +243,9 @@ async function getTicketsForAdminQuery(statusFilter) {
         include: {
             user: {
                 select: { name: true, email: true, role: true }
+            },
+            assignedTo: {
+                select: { name: true }
             }
         }
     })
@@ -266,6 +269,9 @@ async function getTicketComplaintDetailQuery(ticketId) {
         include: {
             user: {
                 select: { name: true, username: true, email: true }
+            },
+            assignedTo: {
+                select: { name: true }
             }
         }
     })
@@ -324,7 +330,22 @@ async function getTicketsForRoleQuery(statusFilter) {
                 select: { name: true }
             }
         }
-    });
+    })
+}
+
+async function getTicketsForUnitQuery(unitUserId, statusFilters) {
+    return await prisma.complainmentTicket.findMany({
+        where: {
+            assignedToId: parseInt(unitUserId),
+            status: { in: statusFilters }
+        },
+        orderBy: { updatedAt: 'desc' },
+        include: {
+            user: {
+                select: { name: true, email: true } // Info mahasiswa pelapor
+            }
+        }
+    })
 }
 
 export {
@@ -345,5 +366,6 @@ export {
     assignTicketQuery,
     submitResolutionQuery,
     updateTicketStatusQuery,
-    getTicketsForRoleQuery
+    getTicketsForRoleQuery,
+    getTicketsForUnitQuery
 }
