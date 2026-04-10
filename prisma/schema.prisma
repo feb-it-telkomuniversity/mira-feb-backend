@@ -29,6 +29,8 @@ model Users {
 
   reportedTickets ComplainmentTicket[] @relation("ReportedTickets")
   assignedTickets ComplainmentTicket[] @relation("AssignedTickets")
+  ticketComments  TicketComment[] @relation("UserComments")
+  histories  TicketHistory[] @relation("UserHistories")
 
   @@map("users")
 }
@@ -356,10 +358,53 @@ model ComplainmentTicket {
   status     ComplainmentTicketStatus @default(Submitted)
   actionNote String?                  @db.Text
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  ticketComments TicketComment[] @relation("TicketComments")
+  histories  TicketHistory[] @relation("TicketHistories")
 
   @@map("complainment_ticket")
+}
+
+model TicketComment {
+  id Int @id @default(autoincrement())
+
+  // Relasi ke Tiket mana komentar ini berada
+  ticketId Int
+  ticket   ComplainmentTicket @relation("TicketComments", fields: [ticketId], references: [id], onDelete: Cascade)
+
+  // Siapa yang ngetik pesan ini? (Bisa Admin, Dekan, Unit, atau Mahasiswa)
+  senderId Int
+  sender   Users @relation("UserComments", fields: [senderId], references: [id], onDelete: Cascade)
+
+  message String @db.Text
+  attachmentUrls String[] @map("attachment_urls")
+
+  createdAt      DateTime @default(now())
+
+  @@map("ticket_comment")
+}
+
+model TicketHistory {
+  id          Int      @id @default(autoincrement())
+  
+  ticketId    Int
+  ticket      ComplainmentTicket @relation("TicketHistories", fields: [ticketId], references: [id], onDelete: Cascade)
+
+  // Siapa yang melakukan aksi ini? (Bisa sistem, bisa User)
+  actorId     Int
+  actor       Users    @relation("UserHistories", fields: [actorId], references: [id])
+
+  // Aksi apa yang dilakukan? (Misal: "SUBMITTED", "ASSIGNED", "COMMENTED")
+  actionType  String   
+
+  // (Bisa actionNote atau resolutionNote)
+  message     String?  @db.Text
+  
+  createdAt   DateTime @default(now())
+
+  @@map("ticket_history")
 }
 
 model OtpRequest {

@@ -391,7 +391,7 @@ async function getDekanatTickets(req, res) {
     try {
         const statuses = ['EscalatedToDean', 'WaitingDeanApproval'];
 
-        const tickets = await getTicketsForRoleQuery(statuses);
+        const tickets = await getTicketsForRoleQuery();
 
         res.status(200).json({
             success: true,
@@ -437,7 +437,7 @@ async function getUnitTickets(req, res) {
 
         const statuses = ['AssignedToUnit', 'RevisionNeeded', 'WaitingDeanApproval']
 
-        const tickets = await getTicketsForUnitQuery(unitUserId, statuses)
+        const tickets = await getTicketsForUnitQuery(unitUserId)
 
         res.status(200).json({ success: true, data: tickets })
     } catch (error) {
