@@ -70,11 +70,6 @@ const OFFICIAL_MAP = {
     "Kaprodi S3 Manajemen": "KaprodiS3Manajemen"
 }
 
-const ACTIVITY_STATUS_MAP = {
-    "Normal": "normal",
-    "Ada Konflik": "conflict",
-}
-
 
 const prisma = new PrismaClient()
 
@@ -363,14 +358,14 @@ async function patchActivityDates(req, res) {
             success: true,
             message: "Activity Date successfully updated",
             data: updatedActivity
-        });
+        })
 
     } catch (error) {
         console.error('Patch Activity Dates Error:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to update activity date'
-        });
+        })
     }
 }
 

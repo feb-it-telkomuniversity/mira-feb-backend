@@ -23,7 +23,7 @@ async function detectConflicts(payload) {
 
     // 1. Cek Konflik Ruangan
     let roomConflict = null
-    if (roomConflict !== "Lainnya") {
+    if (room !== "Lainnya") {
         roomConflict = await prisma.activityMonitoring.findFirst({
             where: {
                 ...timeFilter,
@@ -51,9 +51,13 @@ async function detectConflicts(payload) {
     }
 
     let status = 'Normal'
-    if (roomConflict && officialConflict) status = 'DoubleConflict';
-    if (roomConflict) status = 'RoomConflict';
-    if (officialConflict) status = 'OfficialConflict';
+    if (roomConflict && officialConflict) {
+        status = 'DoubleConflict';
+    } else if (roomConflict) {
+        status = 'RoomConflict';
+    } else if (officialConflict) {
+        status = 'OfficialConflict';
+    }
 
     return {
         status: status,
