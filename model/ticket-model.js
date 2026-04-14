@@ -294,7 +294,7 @@ async function submitResolutionQuery(ticketId, resolutionNote, resolutionProofUr
     return await prisma.complainmentTicket.update({
         where: { id: parseInt(ticketId) },
         data: {
-            status: 'WaitingDeanApproval',
+            status: 'WaitingApproval',
             resolutionNote: resolutionNote,
             resolutionProofUrls: resolutionProofUrls
         }
@@ -314,7 +314,6 @@ async function updateTicketStatusQuery(ticketId, status, actionNote) {
 
 async function getTicketsForRoleQuery() {
     // Jika statusFilter yang dikirim adalah array, gunakan operator 'in'
-    // Contoh: ['EscalatedToDean', 'WaitingDeanApproval']
     // const whereClause = statusFilter
     //     ? { status: { in: Array.isArray(statusFilter) ? statusFilter : [statusFilter] } }
     //     : {};
