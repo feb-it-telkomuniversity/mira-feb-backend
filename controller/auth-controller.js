@@ -65,7 +65,7 @@ async function signIn(req, res) {
 
 async function registerUser(req, res) {
     try {
-        const { username, password, name, role } = req.body
+        const { username, password, name, role, supervisorId } = req.body
         if (!username || !name || !password || !role) {
             return res.status(400).json({
                 success: false,
@@ -83,7 +83,7 @@ async function registerUser(req, res) {
 
         const hashedPassword = await bcrypt.hash(password, 10)
 
-        const newUser = await createUserQuery(username, hashedPassword, name, role)
+        const newUser = await createUserQuery(username, hashedPassword, name, role, supervisorId)
         res.status(201).json({
             success: true,
             message: "User created successfuly",
@@ -136,12 +136,13 @@ async function deleteUser(req, res) {
 async function updateUser(req, res) {
     try {
         const { id } = req.params
-        const { username, name, password, role } = req.body
+        const { username, name, password, role, supervisorId } = req.body
 
         const updateData = {}
         if (username) updateData.username = username
         if (name) updateData.name = name
         if (role) updateData.role = role
+        if (supervisorId) updateData.supervisorId = supervisorId
 
         if (password) {
             updateData.password = await bcrypt.hash(password, 10)

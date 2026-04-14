@@ -389,8 +389,6 @@ async function uploadComplaintTicketFiles(req, res) {
 
 async function getDekanatTickets(req, res) {
     try {
-        const statuses = ['EscalatedToDean', 'WaitingDeanApproval'];
-
         const tickets = await getTicketsForRoleQuery();
 
         res.status(200).json({
@@ -412,18 +410,10 @@ async function getDekanatTicketDetail(req, res) {
             return res.status(404).json({ success: false, message: "Ticket not found!" });
         }
 
-        const allowedStatuses = ['EscalatedToDean', 'WaitingDeanApproval'];
-        if (!allowedStatuses.includes(ticket.status)) {
-            return res.status(403).json({
-                success: false,
-                message: "Access denied! This ticket is not in the Dean's disposition or approval stage."
-            });
-        }
-
         res.status(200).json({
             success: true,
             data: ticket
-        });
+        })
 
     } catch (error) {
         console.error("Error fetching dekanat ticket detail:", error.message);
@@ -433,11 +423,9 @@ async function getDekanatTicketDetail(req, res) {
 
 async function getUnitTickets(req, res) {
     try {
-        const unitUserId = req.user.id; // Ambil ID dari token user yang login
+        const user = req.user
 
-        const statuses = ['AssignedToUnit', 'RevisionNeeded', 'WaitingDeanApproval']
-
-        const tickets = await getTicketsForUnitQuery(unitUserId)
+        const tickets = await getTicketsForUnitQuery(user)
 
         res.status(200).json({ success: true, data: tickets })
     } catch (error) {
@@ -449,22 +437,27 @@ async function getUnitTickets(req, res) {
 async function getUnitTicketDetail(req, res) {
     try {
         const { id } = req.params;
-        const unitUserId = req.user.id;
-
+        const user = req.user;
         const ticket = await getTicketComplaintDetailQuery(id);
-
         if (!ticket) {
             return res.status(404).json({ success: false, message: "Assignment not found" });
         }
 
-        if (ticket.assignedToId !== unitUserId) {
+        const subordinates = await prisma.users.findMany({
+            where: { supervisorId: user.id },
+            select: { id: true }
+        })
+
+        const allowedIds = [user.id, ...subordinates.map(sub => sub.id)]
+        if (!allowedIds.includes(ticket.assignedToId)) {
             return res.status(403).json({
                 success: false,
-                message: "Access denied! This ticket is not assigned to you."
+                message: "Access denied! Laporan ini bukan wewenang Anda atau tim Anda."
             });
         }
 
-        res.status(200).json({ success: true, data: ticket });
+        res.status(200).json({ success: true, data: ticket })
+
     } catch (error) {
         console.error("Error fetching unit ticket detail:", error.message);
         res.status(500).json({ success: false, message: "Gagal mengambil detail tugas." });

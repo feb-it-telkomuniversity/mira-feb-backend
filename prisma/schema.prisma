@@ -29,8 +29,12 @@ model Users {
 
   reportedTickets ComplainmentTicket[] @relation("ReportedTickets")
   assignedTickets ComplainmentTicket[] @relation("AssignedTickets")
-  ticketComments  TicketComment[] @relation("UserComments")
-  histories  TicketHistory[] @relation("UserHistories")
+  ticketComments  TicketComment[]      @relation("UserComments")
+  histories       TicketHistory[]      @relation("UserHistories")
+
+  supervisorId Int?    @map("supervisor_id")
+  supervisor   Users?  @relation("UserHierarchy", fields: [supervisorId], references: [id])
+  subordinates Users[] @relation("UserHierarchy")
 
   @@map("users")
 }
@@ -358,11 +362,11 @@ model ComplainmentTicket {
   status     ComplainmentTicketStatus @default(Submitted)
   actionNote String?                  @db.Text
 
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   ticketComments TicketComment[] @relation("TicketComments")
-  histories  TicketHistory[] @relation("TicketHistories")
+  histories      TicketHistory[] @relation("TicketHistories")
 
   @@map("complainment_ticket")
 }
@@ -378,31 +382,31 @@ model TicketComment {
   senderId Int
   sender   Users @relation("UserComments", fields: [senderId], references: [id], onDelete: Cascade)
 
-  message String @db.Text
+  message        String   @db.Text
   attachmentUrls String[] @map("attachment_urls")
 
-  createdAt      DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@map("ticket_comment")
 }
 
 model TicketHistory {
-  id          Int      @id @default(autoincrement())
-  
-  ticketId    Int
-  ticket      ComplainmentTicket @relation("TicketHistories", fields: [ticketId], references: [id], onDelete: Cascade)
+  id Int @id @default(autoincrement())
+
+  ticketId Int
+  ticket   ComplainmentTicket @relation("TicketHistories", fields: [ticketId], references: [id], onDelete: Cascade)
 
   // Siapa yang melakukan aksi ini? (Bisa sistem, bisa User)
-  actorId     Int
-  actor       Users    @relation("UserHistories", fields: [actorId], references: [id])
+  actorId Int
+  actor   Users @relation("UserHistories", fields: [actorId], references: [id])
 
   // Aksi apa yang dilakukan? (Misal: "SUBMITTED", "ASSIGNED", "COMMENTED")
-  actionType  String   
+  actionType String
 
   // (Bisa actionNote atau resolutionNote)
-  message     String?  @db.Text
-  
-  createdAt   DateTime @default(now())
+  message String? @db.Text
+
+  createdAt DateTime @default(now())
 
   @@map("ticket_history")
 }
@@ -421,8 +425,14 @@ enum Role {
   admin
   mahasiswa
   dosen
-  dekanat
-  kaur
+  dekan
+  wadek_1
+  wadek_2
+  kaur_sekdek
+  kaur_laa
+  kaur_lab
+  kaur_sdm
+  kaur_kemahasiswaan
   kaprodi
   sekprodi
 }
@@ -636,13 +646,12 @@ enum ComplainmentCategory {
 
 enum ComplainmentTicketStatus {
   Submitted
-  Rejected
   InProgress
-  EscalatedToDean
   AssignedToUnit
-  WaitingDeanApproval
+  WaitingApproval
   RevisionNeeded
   Resolved
   Cancelled
+  Rejected
   Close
 }

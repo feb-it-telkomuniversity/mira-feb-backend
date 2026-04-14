@@ -333,16 +333,24 @@ async function getTicketsForRoleQuery() {
     })
 }
 
-async function getTicketsForUnitQuery(unitUserId) {
+async function getTicketsForUnitQuery(user) {
+    const subordinates = await prisma.users.findMany({
+        where: { supervisorId: user.id },
+        select: { id: true }
+    })
+    const targetIds = [user.id, ...subordinates.map(sub => sub.id)]
+
     return await prisma.complainmentTicket.findMany({
         where: {
-            assignedToId: parseInt(unitUserId),
-            // status: { in: statusFilters }
+            assignedToId: { in: targetIds },
         },
         orderBy: { updatedAt: 'desc' },
         include: {
             user: {
                 select: { name: true, email: true } // Info mahasiswa pelapor
+            },
+            assignedTo: {
+                select: { id: true, name: true, role: true }
             }
         }
     })
@@ -357,6 +365,7 @@ export {
     getTicketCategoryStatsQuery,
     getTicketTrendsQuery,
     findRelevantConversationSegment,
+
     // HaloDekan
     createComplaintTicketQuery,
     getMyTicketsQuery,
