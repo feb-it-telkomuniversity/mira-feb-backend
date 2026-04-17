@@ -1,4 +1,4 @@
-import { createContractManagementQuery, deleteContractManagementQuery, getContractManagementByIdQuery, getContractManagementDataQuery, getContractStatsQuery, updateContractManagementQuery } from "../model/contract-management-model.js"
+import { createContractManagementQuery, createContractManagementQueryWithAssignment, deleteContractManagementQuery, getContractManagementByIdQuery, getContractManagementDataQuery, getContractStatsQuery, updateContractManagementQuery } from "../model/contract-management-model.js"
 
 export const getContractStats = async (req, res) => {
     try {
@@ -70,7 +70,7 @@ async function getContractManagementData(req, res) {
         const filters = {
             category: req.query.category || null,
             quarterly: req.query.quarterly || null,
-            unit: req.query.unit || null
+            unitId: parseInt(req.query.unit) || null // Ubah jadi unitId (angka)
         }
 
         if (page < 1 || limit < 1) {
@@ -144,6 +144,56 @@ async function createContractManagement(req, res) {
     }
 }
 
+async function createContractManagementWithAssignment(req, res) {
+    try {
+        const {
+            ContractManagementCategory,
+            responsibility,
+            quarterly,
+            unitOfMeasurement,
+            weight,
+            target,
+            min,
+            max,
+            unitIds
+        } = req.body;
+
+        if (!responsibility || !quarterly) {
+            return res.status(400).json({
+                success: false,
+                message: "Responsibility and quarterly are required fields"
+            });
+        }
+
+        // 3. Susun payload bersih untuk dikirim ke Model
+        const cleanPayload = {
+            ContractManagementCategory: ContractManagementCategory || null,
+            responsibility,
+            quarterly,
+            unitOfMeasurement: unitOfMeasurement || null,
+            weight: weight ? parseFloat(weight) : null,
+            target: target || null,
+            min: min ? parseFloat(min) : null,
+            max: max ? parseFloat(max) : null,
+            unitIds: unitIds || []
+        };
+
+        const result = await createContractManagementQueryWithAssignment(cleanPayload);
+
+        res.status(201).json({
+            success: true,
+            message: "Successfully created Contract Management Data",
+            data: result,
+        });
+    } catch (error) {
+        console.error("Create KM error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to create contract management data",
+        });
+    }
+}
+
 async function updateContractManagement(req, res) {
     try {
         const { id } = req.params
@@ -197,4 +247,4 @@ async function deleteContractManagement(req, res) {
         })
     }
 }
-export { getContractManagementData, createContractManagement, updateContractManagement, getContractManagementById, deleteContractManagement }
+export { getContractManagementData, createContractManagement, updateContractManagement, getContractManagementById, deleteContractManagement, createContractManagementWithAssignment }

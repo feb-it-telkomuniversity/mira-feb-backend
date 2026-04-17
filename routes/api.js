@@ -5,12 +5,13 @@ import { handleCreateSchedule, getSchedulesByMonth, handleCancelSchedule, handle
 import { createContact, getContacts, handleDeleteContact, updateContact } from '../controller/contacts-controller.js';
 import { createPartnershipData, deletePartnershipData, getPartnershipCharts, getPartnershipData, getPartnershipStats, getPartnershipSummaryStats, updatePartnershipData } from '../controller/partnership-controller.js';
 import { addEvent, getEvents, getGoogleEvents, googleLogin, googleRedirect } from '../controller/google-calendar-controller.js';
-import { createContractManagement, deleteContractManagement, getContractManagementById, getContractManagementData, getContractStats, updateContractManagement } from '../controller/contract-management-controller.js';
+import { createContractManagement, createContractManagementWithAssignment, deleteContractManagement, getContractManagementById, getContractManagementData, getContractStats, updateContractManagement } from '../controller/contract-management-controller.js';
 import { createActivityMonitoring, getActivityMonitoringList, deleteActivityMonitoring, updateActivityMonitoring, patchActivityDates } from '../controller/activity-monitoring-controller.js'
 import { createManagementReport, deleteManagementReport, getManagementReportList, toggleReportStatus, updateManagementReport } from '../controller/management-report-controller.js'
 import { getLecturersList } from '../controller/lecturer-controller.js'
 import { getStaffsList } from '../controller/staff-controller.js'
 import { createMeeting, deleteMeetingById, getMeetingList, getMeetingListById, updateMeeting } from '../controller/meeting-controller.js'
+import { createUnit, getUnits, updateUnit, deleteUnit } from '../controller/unit-controller.js'
 import { verifyRole, verifyToken } from '../middleware/auth-middleware.js'
 import multer from 'multer'
 import { loginWithGoogle } from '../controller/login-controller.js';
@@ -87,7 +88,7 @@ route.post("/google/events", addEvent)
 route.get('/contract-management', getContractManagementData)
 route.get('/contract-management/stats', getContractStats)
 route.get('/contract-management/:id', getContractManagementById)
-route.post('/contract-management', createContractManagement)
+route.post('/contract-management', createContractManagementWithAssignment)
 route.put('/contract-management/:id', updateContractManagement)
 route.delete('/contract-management/:id', deleteContractManagement)
 
@@ -137,5 +138,15 @@ route.patch('/halodekan/dekan/tickets/:id/approve', approveTicketResolution)
 route.patch('/halodekan/unit/tickets/:id/resolve', resolveTicketByUnit)
 route.get('/halodekan/unit/tickets', getUnitTickets)
 route.get('/halodekan/unit/tickets/:id', getUnitTicketDetail)
+// ==== HaloDekan ====
+
+
+// ==== Unit ====
+route.get('/units', getUnits)
+route.post('/units', createUnit)
+route.put('/units/:id', updateUnit)
+route.delete('/units/:id', deleteUnit)
+// ==== Unit ====
+
 
 export default route

@@ -33,20 +33,20 @@ export const getContractStatsQuery = async (currentQuarter, year) => {
     ] = await prisma.$transaction([
         prisma.contractManagement.count({ where: whereCurrent }),
 
-        prisma.contractManagement.aggregate({
+        prisma.contractAssignment.aggregate({
             _avg: { achievement: true },
-            where: whereCurrent
+            where: { contract: whereCurrent }
         }),
 
         // Target Tercapai (Achievement >= 100)
-        prisma.contractManagement.count({
-            where: { ...whereCurrent, achievement: { gte: 100 } }
+        prisma.contractAssignment.count({
+            where: { contract: whereCurrent, achievement: { gte: 100 } }
         }),
 
         // Total Nilai
-        prisma.contractManagement.aggregate({
+        prisma.contractAssignment.aggregate({
             _sum: { value: true },
-            where: whereCurrent
+            where: { contract: whereCurrent }
         })
     ]);
 
@@ -57,16 +57,16 @@ export const getContractStatsQuery = async (currentQuarter, year) => {
     if (prevQuarter) {
         const [prevCount, prevAvg, prevMet, prevSum] = await prisma.$transaction([
             prisma.contractManagement.count({ where: wherePrev }),
-            prisma.contractManagement.aggregate({ _avg: { achievement: true }, where: wherePrev }),
-            prisma.contractManagement.count({ where: { ...wherePrev, achievement: { gte: 100 } } }),
-            prisma.contractManagement.aggregate({ _sum: { value: true }, where: wherePrev })
+            prisma.contractAssignment.aggregate({ _avg: { achievement: true }, where: { contract: wherePrev } }),
+            prisma.contractAssignment.count({ where: { contract: wherePrev, achievement: { gte: 100 } } }),
+            prisma.contractAssignment.aggregate({ _sum: { value: true }, where: { contract: wherePrev } })
         ]);
 
         prevStats = {
             count: prevCount,
-            avgAch: Number(prevAvg._avg.achievement) || 0,
+            avgAch: Number(prevAvg?._avg?.achievement) || 0,
             targetMet: prevMet,
-            totalVal: Number(prevSum._sum.value) || 0
+            totalVal: Number(prevSum?._sum?.value) || 0
         };
     }
 
@@ -84,9 +84,9 @@ export const getContractStatsQuery = async (currentQuarter, year) => {
 
     const currValues = {
         count: currCount,
-        avgAch: Number(currAvgAchivement._avg.achievement) || 0,
+        avgAch: Number(currAvgAchivement?._avg?.achievement) || 0,
         targetMet: currTargetMet,
-        totalVal: Number(currTotalValue._sum.value) || 0
+        totalVal: Number(currTotalValue?._sum?.value) || 0
     };
 
     return {
@@ -99,14 +99,18 @@ export const getContractStatsQuery = async (currentQuarter, year) => {
 
 async function getContractManagementDataQuery(page = 1, limit = 15, search = "", filters = {}) {
     const skip = (page - 1) * limit
-
     const andConditions = []
 
+    // 1. Search berdasarkan Nama KPI ATAU Nama Unit yang di-assign
     if (search) {
         andConditions.push({
             OR: [
                 { responsibility: { contains: search, mode: "insensitive" } },
-                { unit: { contains: search, mode: "insensitive" } },
+                {
+                    assignments: {
+                        some: { unit: { name: { contains: search, mode: "insensitive" } } }
+                    }
+                }
             ]
         })
     }
@@ -119,12 +123,10 @@ async function getContractManagementDataQuery(page = 1, limit = 15, search = "",
         andConditions.push({ quarterly: filters.quarterly })
     }
 
-    if (filters.unit) {
+    // 2. Filter spesifik berdasarkan ID Unit
+    if (filters.unitId) {
         andConditions.push({
-            OR: [
-                { unit: filters.unit },
-                { unit: null }
-            ]
+            assignments: { some: { unitId: filters.unitId } }
         })
     }
 
@@ -135,13 +137,29 @@ async function getContractManagementDataQuery(page = 1, limit = 15, search = "",
             where: whereClause,
             skip: skip,
             take: limit,
-            orderBy: {
-                updatedAt: 'desc'
+            orderBy: { updatedAt: 'desc' },
+            select: {
+                id: true,
+                ContractManagementCategory: true,
+                responsibility: true,
+                quarterly: true,
+                unitOfMeasurement: true,
+                weight: true,
+                target: true,
+                assignments: {
+                    select: {
+                        unit: {
+                            select: {
+                                id: true,
+                                name: true,
+                                category: true // Penting untuk Frontend misahin kolom Prodi, KK, Kaur
+                            }
+                        }
+                    }
+                }
             }
         }),
-        prisma.contractManagement.count({
-            where: whereClause
-        })
+        prisma.contractManagement.count({ where: whereClause })
     ])
 
     return {
@@ -162,6 +180,8 @@ async function getContractManagementByIdQuery(id) {
 }
 
 async function createContractManagementQuery(data) {
+    const { unitIds, ...contractData } = payload
+
     const {
         weight,
         target,
@@ -184,6 +204,32 @@ async function createContractManagementQuery(data) {
             ...data,
             ...calculated,
         },
+    });
+}
+
+async function createContractManagementQueryWithAssignment(payload) {
+    const { unitIds, ...contractData } = payload;
+
+    return await prisma.contractManagement.create({
+        data: {
+            ...contractData,
+
+            // Bikin baris kosong di ContractAssignment untuk setiap Prodi/Unit yang ditugaskan
+            assignments: {
+                create: Array.isArray(unitIds)
+                    ? unitIds.map(id => ({ unitId: id }))
+                    : []
+            }
+        },
+        include: {
+            assignments: {
+                select: {
+                    unit: {
+                        select: { name: true, category: true }
+                    }
+                }
+            }
+        }
     });
 }
 
@@ -234,4 +280,4 @@ async function deleteContractManagementQuery(id) {
     })
 }
 
-export { getContractManagementDataQuery, createContractManagementQuery, updateContractManagementQuery, getContractManagementByIdQuery, deleteContractManagementQuery }
+export { getContractManagementDataQuery, createContractManagementQuery, updateContractManagementQuery, getContractManagementByIdQuery, deleteContractManagementQuery, createContractManagementQueryWithAssignment }

@@ -18,15 +18,16 @@ model Users {
   name String @map("full_name") @db.VarChar(200)
   role Role   @default(dosen)
 
+  unitId Int?  @map("unit_id")
+  unit   Unit? @relation(fields: [unitId], references: [id])
+
   phoneNumber String? @unique @db.VarChar(30)
   identifier  String? @db.VarChar(255)
   avatarUrl   String?
 
   conversations Conversation[]
 
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
+  // === Relasi ke Halo Dekan === 
   reportedTickets ComplainmentTicket[] @relation("ReportedTickets")
   assignedTickets ComplainmentTicket[] @relation("AssignedTickets")
   ticketComments  TicketComment[]      @relation("UserComments")
@@ -35,6 +36,11 @@ model Users {
   supervisorId Int?    @map("supervisor_id")
   supervisor   Users?  @relation("UserHierarchy", fields: [supervisorId], references: [id])
   subordinates Users[] @relation("UserHierarchy")
+
+  contractInputs ContractAssignment[] @relation("UserInputs")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("users")
 }
@@ -185,31 +191,51 @@ model PartnershipActivity {
   @@map("partnership_activities")
 }
 
+// ==== Contract Management ====
 model ContractManagement {
   id                         Int                         @id @default(autoincrement())
   ContractManagementCategory ContractManagementCategory?
   responsibility             String
   quarterly                  String
-  unit                       String?
-
-  weight      Float?
-  target      String?
-  realization Float?
-
-  max Float?
-  min Float?
-
-  achievement Float?
-  persReal    Float? @map("pers_real")
-  value       Float?
-
-  Input   String?
-  Monitor String?
+  unitOfMeasurement          String?                     @map("unit_of_measurement")
+  weight                     Float?
+  target                     String?
+  max                        Float?
+  min                        Float?
+  strategy                   String?                     @db.Text
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  assignments ContractAssignment[]
+
   @@map("contract_management")
+}
+
+model ContractAssignment {
+  id         Int @id @default(autoincrement())
+  contractId Int @map("contract_id")
+  unitId     Int @map("unit_id")
+
+  realization Float?
+  achievement Float?
+  persReal    Float?  @map("pers_real")
+  value       Float?
+  inputNote   String? @map("input_note") @db.Text
+  monitorNote String? @map("monitor_note") @db.Text
+
+  contract ContractManagement @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  unit     Unit               @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  userId Int?   @map("user_id")
+  user   Users? @relation("UserInputs", fields: [userId], references: [id])
+
+  // Constraint: 1 KPI tidak boleh di-assign dua kali ke Unit yang sama
+  @@unique([contractId, unitId])
+  @@map("contract_assignments")
 }
 
 // --- ActivityMonitoring ---
@@ -411,6 +437,17 @@ model TicketHistory {
   @@map("ticket_history")
 }
 
+model Unit {
+  id       Int          @id @default(autoincrement())
+  name     String       @db.VarChar(100)
+  category UnitCategory
+
+  users       Users[] // Relasi ke User yang ada di unit ini
+  assignments ContractAssignment[] // Relasi ke KPI yang diberikan ke unit ini
+
+  @@map("units")
+}
+
 model OtpRequest {
   id        Int      @id @default(autoincrement())
   email     String   @unique
@@ -419,22 +456,6 @@ model OtpRequest {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("otp_requests")
-}
-
-enum Role {
-  admin
-  mahasiswa
-  dosen
-  dekan
-  wadek_1
-  wadek_2
-  kaur_sekdek
-  kaur_laa
-  kaur_lab
-  kaur_sdm
-  kaur_kemahasiswaan
-  kaprodi
-  sekprodi
 }
 
 enum Category {
@@ -536,6 +557,22 @@ enum ApprovalStatus {
   Skipped
 }
 
+enum Role {
+  admin
+  mahasiswa
+  dosen
+  dekan
+  wadek_1
+  wadek_2
+  kaur_sekdek
+  kaur_laa
+  kaur_lab
+  kaur_sdm
+  kaur_kemahasiswaan
+  kaprodi
+  sekprodi
+}
+
 // --- Contract Management ---
 
 enum ContractManagementCategory {
@@ -544,7 +581,11 @@ enum ContractManagementCategory {
   InternalBusinessProcess
 }
 
-// ======== ENUM START FROM HERE ============
+enum UnitCategory {
+  Prodi
+  KK
+  Fakultas
+}
 
 enum UnitOption {
   Dekan
