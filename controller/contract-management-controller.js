@@ -67,11 +67,26 @@ async function getContractManagementData(req, res) {
         const limit = parseInt(req.query.limit) || 15
         const search = req.query.search || ""
 
+        const userRole = req.user.role
+        const userUnitId = req.user.unitId
+        let unitFilterId = null
+
+        if (userRole === "admin") {
+            unitFilterId = req.query.unitId ? parseInt(req.query.unitId) : null;
+        } else if (userRole === "kaur" || userRole === "kaprodi" || userRole === "dekanat") {
+            unitFilterId = userUnitId
+        } else {
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized"
+            })
+        }
+
         const filters = {
             category: req.query.category || null,
             quarterly: req.query.quarterly || null,
-            unitId: parseInt(req.query.unit) || null // Ubah jadi unitId (angka)
-        }
+            unitId: unitFilterId
+        };
 
         if (page < 1 || limit < 1) {
             return res.status(400).json({

@@ -147,12 +147,20 @@ async function getContractManagementDataQuery(page = 1, limit = 15, search = "",
                 weight: true,
                 target: true,
                 assignments: {
+                    where: filters.unitId ? { unitId: filters.unitId } : undefined,
                     select: {
+                        id: true,
+                        unitId: true,
+                        realization: true,
+                        achievement: true,
+                        persReal: true,
+                        value: true,
+                        inputNote: true,
+                        monitorNote: true,
                         unit: {
                             select: {
-                                id: true,
                                 name: true,
-                                category: true // Penting untuk Frontend misahin kolom Prodi, KK, Kaur
+                                category: true
                             }
                         }
                     }

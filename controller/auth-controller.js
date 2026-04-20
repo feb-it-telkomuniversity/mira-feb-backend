@@ -38,7 +38,8 @@ async function signIn(req, res) {
             {
                 id: user.id,
                 username: user.username,
-                role: user.role
+                role: user.role,
+                unitId: user.unitId
             }, process.env.JWT_SECRET_KEY,
             { expiresIn: '1d' }
         )
@@ -456,7 +457,7 @@ const verifyOtp = async (req, res) => {
         }
 
         // Generate JWT Token (Persis seperti fungsi Google Login kamu)
-        const jwtPayload = { id: user.id, username: user.username, role: user.role };
+        const jwtPayload = { id: user.id, username: user.username, role: user.role, unitId: user.unitId };
         const authToken = jwt.sign(jwtPayload, process.env.JWT_SECRET_KEY, { expiresIn: '1d' });
 
         res.status(200).json({
