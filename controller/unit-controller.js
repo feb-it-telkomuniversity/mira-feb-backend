@@ -36,8 +36,8 @@ export const getUnits = async (req, res) => {
         return res.status(200).json({
             success: true,
             message: "Units fetched successfully",
-            data: units
-        });
+            units
+        })
     } catch (error) {
         console.error("Error fetching units:", error);
         return res.status(500).json({

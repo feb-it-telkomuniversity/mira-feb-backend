@@ -1,4 +1,7 @@
+import { PrismaClient } from "@prisma/client";
 import { createContractManagementQuery, createContractManagementQueryWithAssignment, deleteContractManagementQuery, getContractManagementByIdQuery, getContractManagementDataQuery, getContractStatsQuery, updateContractManagementQuery } from "../model/contract-management-model.js"
+
+const prisma = new PrismaClient()
 
 export const getContractStats = async (req, res) => {
     try {
@@ -170,7 +173,8 @@ async function createContractManagementWithAssignment(req, res) {
             target,
             min,
             max,
-            unitIds
+            unitIds,
+            strategy
         } = req.body;
 
         if (!responsibility || !quarterly) {
@@ -179,8 +183,6 @@ async function createContractManagementWithAssignment(req, res) {
                 message: "Responsibility and quarterly are required fields"
             });
         }
-
-        // 3. Susun payload bersih untuk dikirim ke Model
         const cleanPayload = {
             ContractManagementCategory: ContractManagementCategory || null,
             responsibility,
@@ -190,9 +192,23 @@ async function createContractManagementWithAssignment(req, res) {
             target: target || null,
             min: min ? parseFloat(min) : null,
             max: max ? parseFloat(max) : null,
-            unitIds: unitIds || []
-        };
+            unitIds: Array.isArray(unitIds) ? unitIds : [],
+            strategy: strategy || null
+        }
 
+        if (cleanPayload.unitIds.length > 0) {
+            const existingUnitsCount = await prisma.unit.count({
+                where: {
+                    id: { in: cleanPayload.unitIds }
+                }
+            })
+            if (existingUnitsCount !== cleanPayload.unitIds.length) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Validasi Gagal: Satu atau lebih ID Unit yang dipilih sudah tidak valid/tidak ditemukan."
+                })
+            }
+        }
         const result = await createContractManagementQueryWithAssignment(cleanPayload);
 
         res.status(201).json({
@@ -217,12 +233,26 @@ async function updateContractManagement(req, res) {
         if (!id) {
             return res.status(400).json({ success: false, message: "ID is required" })
         }
+        const cleanPayload = {}
 
-        const updatedData = await updateContractManagementQuery(id, payload)
+        if (payload.ContractManagementCategory) cleanPayload.ContractManagementCategory = payload.ContractManagementCategory;
+        if (payload.responsibility) cleanPayload.responsibility = payload.responsibility;
+        if (payload.quarterly) cleanPayload.quarterly = payload.quarterly;
+        if (payload.unitOfMeasurement) cleanPayload.unitOfMeasurement = payload.unitOfMeasurement;
+        if (payload.strategy) cleanPayload.strategy = payload.strategy
+
+        if (payload.weight !== undefined) cleanPayload.weight = parseFloat(payload.weight);
+        if (payload.target !== undefined) cleanPayload.target = payload.target;
+        if (payload.min !== undefined) cleanPayload.min = parseFloat(payload.min);
+        if (payload.max !== undefined) cleanPayload.max = parseFloat(payload.max);
+
+        if (payload.unitIds !== undefined) cleanPayload.unitIds = Array.isArray(payload.unitIds) ? payload.unitIds : [];
+
+        const updatedData = await updateContractManagementQuery(id, cleanPayload)
 
         res.status(200).json({
             success: true,
-            message: "Data successfully recalculated and updated",
+            message: "Data successfully updated",
             data: updatedData
         })
     } catch (error) {
@@ -243,6 +273,9 @@ async function deleteContractManagement(req, res) {
     try {
         const { id } = req.params
         const result = await deleteContractManagementQuery(id)
+        if (!id || isNaN(parseInt(id))) {
+            return res.status(400).json({ success: false, message: "Invalid ID parameter" });
+        }
 
         res.status(200).json({
             success: true,

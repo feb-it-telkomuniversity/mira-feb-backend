@@ -183,7 +183,15 @@ async function getContractManagementDataQuery(page = 1, limit = 15, search = "",
 
 async function getContractManagementByIdQuery(id) {
     return await prisma.contractManagement.findUnique({
-        where: { id: parseInt(id) }
+        where: { id: parseInt(id) },
+        include: {
+            assignments: {
+                select: {
+                    unitId: true,
+                    unit: { select: { name: true } }
+                }
+            }
+        }
     })
 }
 
@@ -242,44 +250,58 @@ async function createContractManagementQueryWithAssignment(payload) {
 }
 
 async function updateContractManagementQuery(id, payload) {
-    const fetchData = await prisma.contractManagement.findUnique({
-        where: { id: parseInt(id) }
-    })
+    const { unitIds, ...updateData } = payload
 
-    if (!fetchData) {
+    // 2. Tarik data lama untuk mencari tahu Unit apa saja yang terdaftar saat ini
+    const existingData = await prisma.contractManagement.findUnique({
+        where: { id: parseInt(id) },
+        include: { assignments: true }
+    })
+    if (!existingData) {
         throw new Error("RecordNotFound")
     }
 
-    const mergedData = {
-        responsibility: payload.responsibility !== undefined ? payload.responsibility : fetchData.responsibility,
-        weight: payload.weight !== undefined ? payload.weight : fetchData.weight,
-        target: payload.target !== undefined ? payload.target : fetchData.target,
-        realization: payload.realization !== undefined ? payload.realization : fetchData.realization,
-        min: payload.min !== undefined ? payload.min : fetchData.min,
-        max: payload.max !== undefined ? payload.max : fetchData.max,
-    }
-    const calculateData = calculateKM(mergedData)
+    const prismaOperations = [
+        prisma.contractManagement.update({
+            where: { id: parseInt(id) },
+            data: updateData
+        })
+    ]
 
-    return await prisma.contractManagement.update({
-        where: { id: parseInt(id) },
-        data: {
-            responsibility: payload.responsibility,
-            quarterly: payload.quarterly,
-            unit: payload.unit,
+    // 4. Sinkronisasi Unit (Jika Admin merubah pilihan unitIds)
+    if (Array.isArray(unitIds)) {
+        // Ambil ID unit yang sudah ada di database (Lama)
+        const currentUnitIds = existingData.assignments.map(a => a.unitId);
 
-            weight: mergedData.weight,
-            target: mergedData.target,
-            realization: mergedData.realization,
-            min: mergedData.min,
-            max: mergedData.max,
-            Input: payload.Input,
-            Monitor: payload.Monitor,
+        // Cari unit yang baru dicentang (Ada di input baru, tapi tidak ada di database)
+        const unitsToAdd = unitIds.filter(id => !currentUnitIds.includes(id));
 
-            achievement: calculateData.achievement,
-            persReal: calculateData.persReal,
-            value: calculateData.value
+        // Cari unit yang uncheck/dihapus (Ada di database, tapi tidak ada di input baru)
+        const unitsToRemove = currentUnitIds.filter(id => !unitIds.includes(id));
+
+        // Operasi B: Hapus assignment untuk unit yang di-uncheck
+        if (unitsToRemove.length > 0) {
+            prismaOperations.push(prisma.contractAssignment.deleteMany({
+                where: {
+                    contractId: parseInt(id),
+                    unitId: { in: unitsToRemove }
+                }
+            }));
         }
-    })
+
+        // Operasi C: Buat assignment baru untuk unit yang baru dicentang
+        if (unitsToAdd.length > 0) {
+            prismaOperations.push(prisma.contractAssignment.createMany({
+                data: unitsToAdd.map(newUnitId => ({
+                    contractId: parseInt(id),
+                    unitId: parseInt(newUnitId)
+                }))
+            }));
+        }
+    }
+
+    await prisma.$transaction(prismaOperations)
+    return await getContractManagementByIdQuery(id)
 }
 
 async function deleteContractManagementQuery(id) {
