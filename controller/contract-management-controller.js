@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { createContractManagementQuery, createContractManagementQueryWithAssignment, deleteContractManagementQuery, getContractManagementByIdQuery, getContractManagementDataQuery, getContractStatsQuery, updateContractManagementQuery } from "../model/contract-management-model.js"
+import { createContractManagementQuery, createContractManagementQueryWithAssignment, deleteContractManagementQuery, getContractManagementByIdQuery, getContractManagementDataQuery, getContractStatsQuery, updateAssignementQuery, updateContractManagementQuery } from "../model/contract-management-model.js"
 
 const prisma = new PrismaClient()
 
@@ -295,4 +295,51 @@ async function deleteContractManagement(req, res) {
         })
     }
 }
-export { getContractManagementData, createContractManagement, updateContractManagement, getContractManagementById, deleteContractManagement, createContractManagementWithAssignment }
+
+async function updateAssignment(req, res) {
+    try {
+        const { id } = req.params;
+        const { realization, inputNote } = req.body
+
+        if (realization === undefined || realization === null || realization === "") {
+            return res.status(400).json({
+                success: false,
+                message: "Nilai realisasi wajib diisi."
+            });
+        }
+
+        const updatedData = await updateAssignementQuery(id, realization, inputNote)
+
+        res.status(200).json({
+            success: true,
+            message: "Data successfully updated and calculated",
+            data: updatedData
+        })
+
+
+    } catch (error) {
+        console.error("Update data error:", error);
+
+        if (error.message === "AssignmentNotFound" || error.code === 'P2025') {
+            return res.status(404).json({
+                success: false,
+                message: "Data penugasan tidak ditemukan."
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            message: "Gagal menyimpan data."
+        })
+    }
+}
+
+export {
+    getContractManagementData,
+    createContractManagement,
+    updateContractManagement,
+    getContractManagementById,
+    deleteContractManagement,
+    createContractManagementWithAssignment,
+    updateAssignment
+}

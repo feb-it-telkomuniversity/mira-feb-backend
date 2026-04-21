@@ -1,4 +1,5 @@
 import { PrismaClient, Prisma } from "@prisma/client";
+import { calculateKM } from "../utils/contract-management-calculator";
 
 const prisma = new PrismaClient()
 
@@ -354,7 +355,6 @@ async function getTicketsForUnitQuery(user) {
         }
     })
 }
-
 export {
     findTickets,
     findConversationById,
@@ -375,5 +375,5 @@ export {
     submitResolutionQuery,
     updateTicketStatusQuery,
     getTicketsForRoleQuery,
-    getTicketsForUnitQuery
+    getTicketsForUnitQuery,
 }

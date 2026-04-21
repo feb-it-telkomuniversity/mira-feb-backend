@@ -187,6 +187,7 @@ async function getContractManagementByIdQuery(id) {
         include: {
             assignments: {
                 select: {
+                    id: true,
                     unitId: true,
                     unit: { select: { name: true } }
                 }
@@ -310,4 +311,46 @@ async function deleteContractManagementQuery(id) {
     })
 }
 
-export { getContractManagementDataQuery, createContractManagementQuery, updateContractManagementQuery, getContractManagementByIdQuery, deleteContractManagementQuery, createContractManagementQueryWithAssignment }
+async function updateAssignementQuery(assignmentId, realization, inputNote) {
+    const assignment = await prisma.contractAssignment.findUnique({
+        where: { id: parseInt(assignmentId) },
+        include: { contract: true }
+    });
+
+    if (!assignment) {
+        throw new Error('AssignmentNotfound');
+    }
+
+    const calcData = {
+        responsibility: assignment.contract.responsibility,
+        weight: assignment.contract.weight,
+        target: assignment.contract.target,
+        realization: realization,
+        min: assignment.contract.min,
+        max: assignment.contract.max
+    }
+
+    const resultKM = calculateKM(calcData)
+
+    return await prisma.contractAssignment.update({
+        where: { id: parseInt(assignmentId) },
+        data: {
+            realization: parseFloat(realization),
+            achievement: resultKM.achievement,
+            persReal: resultKM.persReal,
+            value: resultKM.value,
+            inputNote: inputNote !== undefined ? inputNote : assignment.inputNote
+        }
+    })
+}
+
+
+export {
+    getContractManagementDataQuery,
+    createContractManagementQuery,
+    updateContractManagementQuery,
+    getContractManagementByIdQuery,
+    deleteContractManagementQuery,
+    createContractManagementQueryWithAssignment,
+    updateAssignementQuery,
+}
