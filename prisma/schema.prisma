@@ -196,13 +196,17 @@ model ContractManagement {
   id                         Int                         @id @default(autoincrement())
   ContractManagementCategory ContractManagementCategory?
   responsibility             String
-  quarterly                  String
-  unitOfMeasurement          String?                     @map("unit_of_measurement")
-  weight                     Float?
-  target                     String?
-  max                        Float?
-  min                        Float?
-  strategy                   String?                     @db.Text
+  definition                 String?                     @db.Text
+  objective                  String?                     @db.Text
+  indicatorCalc              String?                     @db.Text
+
+  quarterly         String
+  unitOfMeasurement String? @map("unit_of_measurement")
+  weight            Float?
+  target            String?
+  max               Float?
+  min               Float?
+  strategy          String? @db.Text
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

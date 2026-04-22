@@ -1,17 +1,34 @@
 import { PrismaClient } from "@prisma/client";
 import { createContractManagementQuery, createContractManagementQueryWithAssignment, deleteContractManagementQuery, getContractManagementByIdQuery, getContractManagementDataQuery, getContractStatsQuery, updateAssignementQuery, updateContractManagementQuery } from "../model/contract-management-model.js"
+import multer from 'multer';
+import { put } from '@vercel/blob'
 
 const prisma = new PrismaClient()
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 1 * 1024 * 1024,
+    },
+    fileFilter: (req, file, cb) => {
+        const allowedMimeTypes = ['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/csv']
+
+        if (allowedMimeTypes.includes(file.mimetype)) {
+            cb(null, true)
+        } else {
+            cb(new Error('INVALID_FILE_TYPE'), false)
+        }
+    }
+}).single('fileBukti')
 
 export const getContractStats = async (req, res) => {
     try {
-        const { quarterly, year } = req.query;
+        const { quarterly, year } = req.query
 
         // Logic sederhana penentuan TW default (bisa disesuaikan dengan logic tanggal)
-        const currentQuarter = quarterly || "TW-4";
-        const currentYear = year || new Date().getFullYear();
+        const currentQuarter = quarterly || "TW-4"
+        const currentYear = year || new Date().getFullYear()
 
-        const stats = await getContractStatsQuery(currentQuarter, currentYear);
+        const stats = await getContractStatsQuery(currentQuarter, currentYear)
 
         // Kita format agar mirip dengan struktur 'statsData' di Frontend kamu
         const responseData = [
@@ -174,7 +191,10 @@ async function createContractManagementWithAssignment(req, res) {
             min,
             max,
             unitIds,
-            strategy
+            strategy,
+            definition,
+            objective,
+            indicatorCalc
         } = req.body;
 
         if (!responsibility || !quarterly) {
@@ -193,7 +213,10 @@ async function createContractManagementWithAssignment(req, res) {
             min: min ? parseFloat(min) : null,
             max: max ? parseFloat(max) : null,
             unitIds: Array.isArray(unitIds) ? unitIds : [],
-            strategy: strategy || null
+            strategy: strategy || null,
+            definition: definition || null,
+            objective: objective || null,
+            indicatorCalc: indicatorCalc || null,
         }
 
         if (cleanPayload.unitIds.length > 0) {
@@ -245,6 +268,9 @@ async function updateContractManagement(req, res) {
         if (payload.target !== undefined) cleanPayload.target = payload.target;
         if (payload.min !== undefined) cleanPayload.min = parseFloat(payload.min);
         if (payload.max !== undefined) cleanPayload.max = parseFloat(payload.max);
+        if (payload.definition !== undefined) cleanPayload.definition = payload.definition;
+        if (payload.objective !== undefined) cleanPayload.objective = payload.objective;
+        if (payload.indicatorCalc !== undefined) cleanPayload.indicatorCalc = payload.indicatorCalc;
 
         if (payload.unitIds !== undefined) cleanPayload.unitIds = Array.isArray(payload.unitIds) ? payload.unitIds : [];
 
@@ -297,41 +323,72 @@ async function deleteContractManagement(req, res) {
 }
 
 async function updateAssignment(req, res) {
-    try {
-        const { id } = req.params;
-        const { realization, inputNote } = req.body
-
-        if (realization === undefined || realization === null || realization === "") {
-            return res.status(400).json({
-                success: false,
-                message: "Nilai realisasi wajib diisi."
-            });
+    upload(req, res, async function (err) {
+        if (err) {
+            if (err.code === 'LIMIT_FILE_SIZE') {
+                return res.status(400).json({
+                    success: false,
+                    message: "Ukuran file terlalu besar. Maksimal 3 MB."
+                });
+            }
+            if (err.message === 'INVALID_FILE_TYPE') {
+                return res.status(400).json({
+                    success: false,
+                    message: "Tipe file ditolak! Hanya boleh upload dokumen PDF atau gambar (JPG/PNG)."
+                });
+            }
+            // Error multer lainnya
+            console.error("Multer error:", err);
+            return res.status(400).json({ success: false, message: "Gagal memproses file upload." });
         }
 
-        const updatedData = await updateAssignementQuery(id, realization, inputNote)
+        try {
+            const { id } = req.params;
+            const realization = req.body.realization
+            let inputNote = req.body.inputNote
 
-        res.status(200).json({
-            success: true,
-            message: "Data successfully updated and calculated",
-            data: updatedData
-        })
+            if (realization === undefined || realization === null || realization === "") {
+                return res.status(400).json({
+                    success: false,
+                    message: "Nilai realisasi wajib diisi."
+                });
+            }
+
+            if (req.file) {
+                const safeFileName = req.file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+
+                const blob = await put(`bukti-km/${Date.now()}-${safeFileName}`, req.file.buffer, {
+                    access: 'public',
+                    token: process.env.BLOB_READ_WRITE_TOKEN
+                });
+
+                inputNote = blob.url;
+            }
+            const updatedData = await updateAssignementQuery(id, realization, inputNote);
+
+            res.status(200).json({
+                success: true,
+                message: "Realisasi dan dokumen berhasil disimpan",
+                data: updatedData
+            })
 
 
-    } catch (error) {
-        console.error("Update data error:", error);
+        } catch (error) {
+            console.error("Update data error:", error);
 
-        if (error.message === "AssignmentNotFound" || error.code === 'P2025') {
-            return res.status(404).json({
+            if (error.message === "AssignmentNotFound" || error.code === 'P2025') {
+                return res.status(404).json({
+                    success: false,
+                    message: "Data penugasan tidak ditemukan."
+                });
+            }
+
+            res.status(500).json({
                 success: false,
-                message: "Data penugasan tidak ditemukan."
-            });
+                message: "Gagal menyimpan data."
+            })
         }
-
-        res.status(500).json({
-            success: false,
-            message: "Gagal menyimpan data."
-        })
-    }
+    })
 }
 
 export {

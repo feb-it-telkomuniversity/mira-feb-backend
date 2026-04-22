@@ -146,6 +146,9 @@ async function getContractManagementDataQuery(page = 1, limit = 15, search = "",
                 unitOfMeasurement: true,
                 weight: true,
                 target: true,
+                definition: true,
+                objective: true,
+                indicatorCalc: true,
                 assignments: {
                     where: filters.unitId ? { unitId: filters.unitId } : undefined,
                     select: {
