@@ -208,7 +208,7 @@ async function getTicketTrendsQuery(periodInDays = 7) {
 
 // ==== HaloDekan Pengaduan ====
 async function createComplaintTicketQuery(userId, data) {
-    const { category, description, attachmentUrl } = data;
+    const { name, category, description, attachmentUrl } = data;
 
     // AUTO-GENERATE TICKET CODE (Format: HD-TAHUN-000X)
     const ticketCount = await prisma.complainmentTicket.count();
@@ -217,6 +217,7 @@ async function createComplaintTicketQuery(userId, data) {
 
     return await prisma.complainmentTicket.create({
         data: {
+            name,
             ticketCode,
             userId,
             category,
@@ -279,11 +280,24 @@ async function getTicketComplaintDetailQuery(ticketId) {
 
 // 1. Query untuk Dekan menugaskan tiket ke Unit
 async function assignTicketQuery(ticketId, assignedToId, actionNote) {
+    const targetUser = await prisma.users.findFirst({
+        where: {
+            unitId: parseInt(unitId),
+            role: { in: ['kaur', 'tpa'] }
+        },
+        orderBy: {
+            role: 'asc'
+        }
+    })
+    if (!targetUser) {
+        throw new Error("USER_NOT_FOUND")
+    }
+
     return await prisma.complainmentTicket.update({
         where: { id: parseInt(ticketId) },
         data: {
             status: 'AssignedToUnit',
-            assignedToId: parseInt(assignedToId),
+            assignedToId: targetUser.id,
             actionNote: actionNote
         }
     })

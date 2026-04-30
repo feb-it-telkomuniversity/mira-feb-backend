@@ -201,7 +201,7 @@ model ContractManagement {
   indicatorCalc              String?                     @db.Text
 
   unitOfMeasurement String? @map("unit_of_measurement")
-  
+
   targetTw1 String? @map("target_tw1")
   targetTw2 String? @map("target_tw2")
   targetTw3 String? @map("target_tw3")
@@ -212,9 +212,9 @@ model ContractManagement {
   weightTw3 Float? @map("weight_tw3")
   weightTw4 Float? @map("weight_tw4")
 
-  max               Float?
-  min               Float?
-  strategy          String? @db.Text
+  max      Float?
+  min      Float?
+  strategy String? @db.Text
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -239,15 +239,15 @@ model ContractAssignment {
   achievementTw3 Float? @map("achievement_tw3")
   achievementTw4 Float? @map("achievement_tw4")
 
-  persRealTw1    Float? @map("pers_real_tw1")
-  persRealTw2    Float? @map("pers_real_tw2")
-  persRealTw3    Float? @map("pers_real_tw3")
-  persRealTw4    Float? @map("pers_real_tw4")
+  persRealTw1 Float? @map("pers_real_tw1")
+  persRealTw2 Float? @map("pers_real_tw2")
+  persRealTw3 Float? @map("pers_real_tw3")
+  persRealTw4 Float? @map("pers_real_tw4")
 
-  valueTw1       Float? @map("value_tw1")
-  valueTw2       Float? @map("value_tw2")
-  valueTw3       Float? @map("value_tw3")
-  valueTw4       Float? @map("value_tw4")
+  valueTw1 Float? @map("value_tw1")
+  valueTw2 Float? @map("value_tw2")
+  valueTw3 Float? @map("value_tw3")
+  valueTw4 Float? @map("value_tw4")
 
   inputNote   String? @map("input_note") @db.Text
   monitorNote String? @map("monitor_note") @db.Text
@@ -400,11 +400,11 @@ model ComplainmentTicket {
   id         Int    @id @default(autoincrement())
   ticketCode String @unique
 
-  userId Int
-  user   Users @relation("ReportedTickets", fields: [userId], references: [id], onDelete: Cascade)
-
+  userId       Int
+  user         Users   @relation("ReportedTickets", fields: [userId], references: [id], onDelete: Cascade)
+  name         String?
   assignedToId Int?
-  assignedTo   Users? @relation("AssignedTickets", fields: [assignedToId], references: [id])
+  assignedTo   Users?  @relation("AssignedTickets", fields: [assignedToId], references: [id])
 
   category      ComplainmentCategory
   description   String               @db.Text
@@ -585,20 +585,35 @@ enum ApprovalStatus {
   Skipped
 }
 
+// enum Role {
+//   admin
+//   mahasiswa
+//   dosen
+//   dekan
+//   wadek_1
+//   wadek_2
+//   kaur_sekdek
+//   kaur_laa
+//   kaur_lab
+//   kaur_sdm
+//   kaur_kemahasiswaan
+//   kaprodi
+//   sekprodi
+// }
+
 enum Role {
+  super_admin
   admin
   mahasiswa
   dosen
-  dekan
-  wadek_1
-  wadek_2
-  kaur_sekdek
-  kaur_laa
-  kaur_lab
-  kaur_sdm
-  kaur_kemahasiswaan
+  dekanat
+  wadek
+  kaur
+  tpa
   kaprodi
   sekprodi
+  ketua_kk
+  umum
 }
 
 // --- Contract Management ---
@@ -610,9 +625,12 @@ enum ContractManagementCategory {
 }
 
 enum UnitCategory {
-  Prodi
-  KK
   Fakultas
+  Wadek
+  KK
+  Prodi
+  Kaur
+  Umum
 }
 
 enum UnitOption {

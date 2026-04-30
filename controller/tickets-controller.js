@@ -129,7 +129,7 @@ async function getTicketTrends(req, res) {
 async function createComplaintTicket(req, res) {
     try {
         const userId = req.user.id;
-        const { category, description, attachmentUrl } = req.body;
+        const { name, category, description, attachmentUrl } = req.body;
 
         if (!category || !description) {
             return res.status(400).json({
@@ -139,6 +139,7 @@ async function createComplaintTicket(req, res) {
         }
 
         const newTicket = await createComplaintTicketQuery(userId, {
+            name,
             category,
             description,
             attachmentUrl
@@ -233,22 +234,23 @@ async function verifyTicket(req, res) {
 async function assignTicket(req, res) {
     try {
         const { id } = req.params;
-        const { assignedToId, actionNote } = req.body
-
-        if (!assignedToId) {
-            return res.status(400).json({ success: false, message: "Unit penanggung jawab (assignedToId) harus diisi!" })
+        const { unitId, actionNote } = req.body;
+        if (!unitId) {
+            return res.status(400).json({ success: false, message: "Unit tujuan harus dipilih!" });
         }
 
-        const updatedTicket = await assignTicketQuery(id, assignedToId, actionNote);
-
+        const updatedTicket = await assignTicketQuery(id, unitId, actionNote);
         res.status(200).json({
             success: true,
             message: "Tiket berhasil ditugaskan ke Unit terkait.",
             data: updatedTicket
-        });
+        })
     } catch (error) {
         console.error("Error assign ticket:", error);
-        res.status(500).json({ success: false, message: "Gagal menugaskan tiket." })
+        if (error.message === "USER_NOT_FOUND") {
+            return res.status(404).json({ success: false, message: "Tidak ada penanggung jawab (Kaur/TPA) di Unit tersebut." });
+        }
+        res.status(500).json({ success: false, message: "Gagal menugaskan tiket." });
     }
 }
 
