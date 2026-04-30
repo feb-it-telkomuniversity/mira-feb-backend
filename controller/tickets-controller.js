@@ -82,7 +82,7 @@ async function assignTicketToAdmin(req, res) {
         res.json(updatedTicket)
     } catch (error) {
         res.status(500).json({ message: "Error assigning ticket", error: error.message })
-        console.log("error: ", error.message);
+        // console.log("error: ", error.message);
     }
 }
 
@@ -93,7 +93,7 @@ async function resolveTicketByAdmin(req, res) {
         res.json(resolveTicket)
     } catch (error) {
         res.status(500).json({ message: "Error when resolving ticket", error: error.message })
-        console.log("error: ", error.message);
+        // console.log("error: ", error.message);
     }
 }
 

@@ -279,7 +279,7 @@ async function getTicketComplaintDetailQuery(ticketId) {
 }
 
 // 1. Query untuk Dekan menugaskan tiket ke Unit
-async function assignTicketQuery(ticketId, assignedToId, actionNote) {
+async function assignTicketQuery(ticketId, unitId, actionNote) {
     const targetUser = await prisma.users.findFirst({
         where: {
             unitId: parseInt(unitId),

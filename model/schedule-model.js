@@ -4,7 +4,7 @@ const prisma = new PrismaClient()
 
 async function createScheduleQuery(scheduleData) {
     const { recipients, ...mainScheduleData } = scheduleData
-    
+
     return await prisma.$transaction(async (trans) => {
         const newSchedule = await trans.schedule.create({
             data: {
@@ -21,7 +21,7 @@ async function createScheduleQuery(scheduleData) {
             // Cari atau Buat Kontak (Upsert)
             const contact = await trans.contacts.findUnique({
                 where: { id: recipient.id }
-            })          
+            })
             if (!contact) {
                 throw new Error(`Kontak dengan ID ${recipient.id} tidak ditemukan`);
             }
@@ -35,23 +35,23 @@ async function createScheduleQuery(scheduleData) {
                 }
             });
         }
-        
+
         return trans.schedule.findUnique({
             where: { id: newSchedule.id },
-            include: { 
+            include: {
                 recipients: {
                     include: {
                         contact: true // Kirim juga data kontaknya
                     }
-                } 
+                }
             }
         })
     })
 }
 
 async function sendScheduleReminders() {
-    console.log('⏰ Menjalankan pengecekan jadwal reminder...')
-    
+    // console.log('⏰ Menjalankan pengecekan jadwal reminder...')
+
     const now = new Date()
     const reminderToSend = await prisma.schedule.findMany({
         where: {
@@ -68,12 +68,12 @@ async function sendScheduleReminders() {
             }
         }
     })
-    
+
     if (reminderToSend.length === 0) {
-        console.log('Tidak ada jadwal reminder yang perlu dikirim saat ini')
+        // console.log('Tidak ada jadwal reminder yang perlu dikirim saat ini')
         return
     }
-    console.log(`Ditemukan ${reminderToSend.length} reminder untuk dikirim`)
+    // console.log(`Ditemukan ${reminderToSend.length} reminder untuk dikirim`)
 
     for (const schedule of reminderToSend) {
         for (const recipient of schedule.recipients) {
@@ -96,7 +96,7 @@ async function sendScheduleReminders() {
                 const message = `*Pengingat Jadwal*\n\nYth. Bpk/Ibu ${contact.name}\nIzin mengingatkan Anda memiliki jadwal:\n\n*Kegiatan*: ${schedule.eventTitle}\n*Detail*: ${schedule.eventDescription}\n*Waktu*: ${formattedDate}\n*Pukul*: ${formattedTime}\n\nTerima kasih\n\nCatatan: Pesan ini tidak untuk dibalas, hanya sebagai *PENGINGAT*`
 
                 await whatsAppClient.sendMessage(contact.phoneNumber, message);
-                console.log(`✅ Reminder untuk "${schedule.eventTitle}" berhasil dikirim ke ${contact.name}.`)
+                // console.log(`✅ Reminder untuk "${schedule.eventTitle}" berhasil dikirim ke ${contact.name}.`)
 
                 await prisma.schedule.update({
                     where: { id: schedule.id },
@@ -120,12 +120,12 @@ async function getSchedulesByMonthQuery(year, month) {
 
 async function cancelScheduleQuery(scheduleId) {
     const cancelSchedule = await prisma.schedule.updateMany({
-        where: { 
+        where: {
             id: scheduleId,
             status: {
                 not: 'sent'
             }
-         },
+        },
         data: { status: 'cancelled' }
     })
     return cancelSchedule.count
@@ -133,14 +133,14 @@ async function cancelScheduleQuery(scheduleId) {
 
 async function deleteScheduleQuery(scheduleId) {
     return await prisma.schedule.delete({
-        where: { id: scheduleId } 
+        where: { id: scheduleId }
     })
 }
 
-export { 
-    createScheduleQuery, 
-    sendScheduleReminders, 
-    getSchedulesByMonthQuery, 
-    cancelScheduleQuery, 
+export {
+    createScheduleQuery,
+    sendScheduleReminders,
+    getSchedulesByMonthQuery,
+    cancelScheduleQuery,
     deleteScheduleQuery
 }
