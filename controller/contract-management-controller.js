@@ -91,13 +91,11 @@ async function getContractManagementData(req, res) {
         const userUnitId = req.user.unitId
         let unitFilterId = null
 
-        if (userRole === "admin") {
+        if (userRole === "admin" || userRole === "super_admin") {
             unitFilterId = req.query.unitId ? parseInt(req.query.unitId) : null;
-        } else if (userRole === "dekan" || userRole === "wadek_1" || userRole === "wadek_2"
+        } else if (userRole === "dekanat" || userRole === "wadek" || userRole === "ketua_kk"
             || userRole === "dosen" || userRole === "kaprodi" || userRole === "sekprodi"
-            || userRole === "kaur_sekdek" || userRole === "kaur_laa"
-            || userRole === "kaur_lab" || userRole === "kaur_sdm"
-            || userRole === "kaur_kemahasiswaan"
+            || userRole === "kaur" || userRole === "tpa"
         ) {
             unitFilterId = userUnitId
         } else {
@@ -321,9 +319,9 @@ async function deleteContractManagement(req, res) {
 async function updateAssignment(req, res) {
     try {
         const { id } = req.params;
-        const { 
-            realizationTw1, realizationTw2, realizationTw3, realizationTw4, 
-            inputNote 
+        const {
+            realizationTw1, realizationTw2, realizationTw3, realizationTw4,
+            inputNote
         } = req.body;
 
         const updatedData = await updateAssignementQuery(id, {
