@@ -283,6 +283,46 @@ async function updateContractManagementQuery(id, payload) {
         }
     }
 
+    // 5. Rekalkulasi capaian (achievement) untuk assignment yang sudah ada jika target/bobot berubah
+    const updatedContractData = { ...existingData, ...updateData };
+    const quarters = [1, 2, 3, 4];
+    
+    existingData.assignments.forEach(assignment => {
+        const assignmentUpdateData = {};
+        let shouldUpdate = false;
+        
+        quarters.forEach(q => {
+            if (assignment[`realizationTw${q}`] !== null && assignment[`realizationTw${q}`] !== undefined) {
+                const calcData = {
+                    responsibility: updatedContractData.responsibility,
+                    weight: updatedContractData[`weightTw${q}`],
+                    target: updatedContractData[`targetTw${q}`],
+                    realization: assignment[`realizationTw${q}`],
+                    min: updatedContractData.min,
+                    max: updatedContractData.max
+                };
+                
+                const resultKM = calculateKM(calcData);
+                
+                assignmentUpdateData[`achievementTw${q}`] = resultKM.achievement;
+                assignmentUpdateData[`persRealTw${q}`] = resultKM.persReal;
+                assignmentUpdateData[`valueTw${q}`] = resultKM.value;
+                shouldUpdate = true;
+            }
+        });
+        
+        if (shouldUpdate) {
+            // Pastikan tidak mengupdate assignment yang mau dihapus
+            const isRemoved = Array.isArray(unitIds) && !unitIds.includes(assignment.unitId);
+            if (!isRemoved) {
+                prismaOperations.push(prisma.contractAssignment.update({
+                    where: { id: assignment.id },
+                    data: assignmentUpdateData
+                }));
+            }
+        }
+    });
+
     await prisma.$transaction(prismaOperations)
     return await getContractManagementByIdQuery(id)
 }
