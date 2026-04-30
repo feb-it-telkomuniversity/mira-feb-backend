@@ -5,7 +5,7 @@ import { handleCreateSchedule, getSchedulesByMonth, handleCancelSchedule, handle
 import { createContact, getContacts, handleDeleteContact, updateContact } from '../controller/contacts-controller.js';
 import { createPartnershipData, deletePartnershipData, getPartnershipCharts, getPartnershipData, getPartnershipStats, getPartnershipSummaryStats, updatePartnershipData } from '../controller/partnership-controller.js';
 import { addEvent, getEvents, getGoogleEvents, googleLogin, googleRedirect } from '../controller/google-calendar-controller.js';
-import { createContractManagement, createContractManagementWithAssignment, deleteContractManagement, getContractManagementById, getContractManagementData, getContractStats, updateAssignment, updateContractManagement } from '../controller/contract-management-controller.js';
+import { createContractManagementWithAssignment, deleteContractManagement, getContractManagementById, getContractManagementData, getContractStats, updateAssignment, updateContractManagement } from '../controller/contract-management-controller.js';
 import { createActivityMonitoring, getActivityMonitoringList, deleteActivityMonitoring, updateActivityMonitoring, patchActivityDates } from '../controller/activity-monitoring-controller.js'
 import { createManagementReport, deleteManagementReport, getManagementReportList, toggleReportStatus, updateManagementReport } from '../controller/management-report-controller.js'
 import { getLecturersList } from '../controller/lecturer-controller.js'

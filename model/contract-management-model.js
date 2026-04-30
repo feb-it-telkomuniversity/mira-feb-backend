@@ -15,14 +15,21 @@ export const getContractStatsQuery = async (currentQuarter, year) => {
     const currentYearEnd = new Date(`${year}-12-31`);
 
     const whereCurrent = {
-        quarterly: currentQuarter,
+        createdAt: { gte: currentYearStart, lte: currentYearEnd }
+    }
+
+    const wherePrev = {
         createdAt: { gte: currentYearStart, lte: currentYearEnd }
     };
 
-    const wherePrev = {
-        quarterly: prevQuarter,
-        createdAt: { gte: currentYearStart, lte: currentYearEnd } // Note: Logic ini perlu disesuaikan jika TW-1 bandingannya TW-4 tahun lalu
-    };
+    const twNum = currentQuarter.replace('TW-', '');
+    const prevTwNum = prevQuarter ? prevQuarter.replace('TW-', '') : null;
+
+    const avgField = {};
+    avgField[`achievementTw${twNum}`] = true;
+
+    const sumField = {};
+    sumField[`valueTw${twNum}`] = true;
 
     // --- 1. Fetch Data Saat Ini ---
     const [
@@ -34,18 +41,18 @@ export const getContractStatsQuery = async (currentQuarter, year) => {
         prisma.contractManagement.count({ where: whereCurrent }),
 
         prisma.contractAssignment.aggregate({
-            _avg: { achievement: true },
+            _avg: avgField,
             where: { contract: whereCurrent }
         }),
 
         // Target Tercapai (Achievement >= 100)
         prisma.contractAssignment.count({
-            where: { contract: whereCurrent, achievement: { gte: 100 } }
+            where: { contract: whereCurrent, [`achievementTw${twNum}`]: { gte: 100 } }
         }),
 
         // Total Nilai
         prisma.contractAssignment.aggregate({
-            _sum: { value: true },
+            _sum: sumField,
             where: { contract: whereCurrent }
         })
     ]);
@@ -54,19 +61,24 @@ export const getContractStatsQuery = async (currentQuarter, year) => {
     // Jika prevQuarter null (misal data awal tahun), kita anggap 0
     let prevStats = { count: 0, avgAch: 0, targetMet: 0, totalVal: 0 };
 
-    if (prevQuarter) {
+    if (prevQuarter && prevTwNum) {
+        const prevAvgField = {};
+        prevAvgField[`achievementTw${prevTwNum}`] = true;
+        const prevSumField = {};
+        prevSumField[`valueTw${prevTwNum}`] = true;
+
         const [prevCount, prevAvg, prevMet, prevSum] = await prisma.$transaction([
             prisma.contractManagement.count({ where: wherePrev }),
-            prisma.contractAssignment.aggregate({ _avg: { achievement: true }, where: { contract: wherePrev } }),
-            prisma.contractAssignment.count({ where: { contract: wherePrev, achievement: { gte: 100 } } }),
-            prisma.contractAssignment.aggregate({ _sum: { value: true }, where: { contract: wherePrev } })
+            prisma.contractAssignment.aggregate({ _avg: prevAvgField, where: { contract: wherePrev } }),
+            prisma.contractAssignment.count({ where: { contract: wherePrev, [`achievementTw${prevTwNum}`]: { gte: 100 } } }),
+            prisma.contractAssignment.aggregate({ _sum: prevSumField, where: { contract: wherePrev } })
         ]);
 
         prevStats = {
             count: prevCount,
-            avgAch: Number(prevAvg?._avg?.achievement) || 0,
+            avgAch: Number(prevAvg?._avg[`achievementTw${prevTwNum}`]) || 0,
             targetMet: prevMet,
-            totalVal: Number(prevSum?._sum?.value) || 0
+            totalVal: Number(prevSum?._sum[`valueTw${prevTwNum}`]) || 0
         };
     }
 
@@ -84,9 +96,9 @@ export const getContractStatsQuery = async (currentQuarter, year) => {
 
     const currValues = {
         count: currCount,
-        avgAch: Number(currAvgAchivement?._avg?.achievement) || 0,
+        avgAch: Number(currAvgAchivement?._avg[`achievementTw${twNum}`]) || 0,
         targetMet: currTargetMet,
-        totalVal: Number(currTotalValue?._sum?.value) || 0
+        totalVal: Number(currTotalValue?._sum[`valueTw${twNum}`]) || 0
     };
 
     return {
@@ -119,10 +131,6 @@ async function getContractManagementDataQuery(page = 1, limit = 15, search = "",
         andConditions.push({ ContractManagementCategory: filters.category });
     }
 
-    if (filters.quarterly) {
-        andConditions.push({ quarterly: filters.quarterly })
-    }
-
     // 2. Filter spesifik berdasarkan ID Unit
     if (filters.unitId) {
         andConditions.push({
@@ -137,15 +145,14 @@ async function getContractManagementDataQuery(page = 1, limit = 15, search = "",
             where: whereClause,
             skip: skip,
             take: limit,
-            orderBy: { updatedAt: 'desc' },
+            orderBy: { createdAt: 'desc' },
             select: {
                 id: true,
                 ContractManagementCategory: true,
                 responsibility: true,
-                quarterly: true,
                 unitOfMeasurement: true,
-                weight: true,
-                target: true,
+                targetTw1: true, targetTw2: true, targetTw3: true, targetTw4: true,
+                weightTw1: true, weightTw2: true, weightTw3: true, weightTw4: true,
                 definition: true,
                 objective: true,
                 indicatorCalc: true,
@@ -154,10 +161,10 @@ async function getContractManagementDataQuery(page = 1, limit = 15, search = "",
                     select: {
                         id: true,
                         unitId: true,
-                        realization: true,
-                        achievement: true,
-                        persReal: true,
-                        value: true,
+                        realizationTw1: true, realizationTw2: true, realizationTw3: true, realizationTw4: true,
+                        achievementTw1: true, achievementTw2: true, achievementTw3: true, achievementTw4: true,
+                        persRealTw1: true, persRealTw2: true, persRealTw3: true, persRealTw4: true,
+                        valueTw1: true, valueTw2: true, valueTw3: true, valueTw4: true,
                         inputNote: true,
                         monitorNote: true,
                         unit: {
@@ -197,34 +204,6 @@ async function getContractManagementByIdQuery(id) {
             }
         }
     })
-}
-
-async function createContractManagementQuery(data) {
-    const { unitIds, ...contractData } = payload
-
-    const {
-        weight,
-        target,
-        realization,
-        min,
-        max,
-    } = data;
-
-    const calculated = calculateKM({
-        responsibility: data.responsibility,
-        weight,
-        target,
-        realization,
-        min,
-        max,
-    });
-
-    return prisma.contractManagement.create({
-        data: {
-            ...data,
-            ...calculated,
-        },
-    });
 }
 
 async function createContractManagementQueryWithAssignment(payload) {
@@ -314,43 +293,53 @@ async function deleteContractManagementQuery(id) {
     })
 }
 
-async function updateAssignementQuery(assignmentId, realization, inputNote) {
+async function updateAssignementQuery(assignmentId, updateData) {
     const assignment = await prisma.contractAssignment.findUnique({
         where: { id: parseInt(assignmentId) },
         include: { contract: true }
     });
 
     if (!assignment) {
-        throw new Error('AssignmentNotfound');
+        throw new Error('AssignmentNotFound');
     }
 
-    const calcData = {
-        responsibility: assignment.contract.responsibility,
-        weight: assignment.contract.weight,
-        target: assignment.contract.target,
-        realization: realization,
-        min: assignment.contract.min,
-        max: assignment.contract.max
-    }
+    const dataToUpdate = {};
 
-    const resultKM = calculateKM(calcData)
+    const quarters = [1, 2, 3, 4];
+    quarters.forEach(q => {
+        const realizationVal = updateData[`realizationTw${q}`];
+        if (realizationVal !== undefined && realizationVal !== null && realizationVal !== "") {
+            const calcData = {
+                responsibility: assignment.contract.responsibility,
+                weight: assignment.contract[`weightTw${q}`],
+                target: assignment.contract[`targetTw${q}`],
+                realization: realizationVal,
+                min: assignment.contract.min,
+                max: assignment.contract.max
+            };
+
+            const resultKM = calculateKM(calcData);
+
+            dataToUpdate[`realizationTw${q}`] = parseFloat(realizationVal);
+            dataToUpdate[`achievementTw${q}`] = resultKM.achievement;
+            dataToUpdate[`persRealTw${q}`] = resultKM.persReal;
+            dataToUpdate[`valueTw${q}`] = resultKM.value;
+        }
+    });
+
+    if (updateData.inputNote !== undefined) {
+        dataToUpdate.inputNote = updateData.inputNote;
+    }
 
     return await prisma.contractAssignment.update({
         where: { id: parseInt(assignmentId) },
-        data: {
-            realization: parseFloat(realization),
-            achievement: resultKM.achievement,
-            persReal: resultKM.persReal,
-            value: resultKM.value,
-            inputNote: inputNote !== undefined ? inputNote : assignment.inputNote
-        }
-    })
+        data: dataToUpdate
+    });
 }
 
 
 export {
     getContractManagementDataQuery,
-    createContractManagementQuery,
     updateContractManagementQuery,
     getContractManagementByIdQuery,
     deleteContractManagementQuery,

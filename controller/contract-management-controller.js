@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { createContractManagementQuery, createContractManagementQueryWithAssignment, deleteContractManagementQuery, getContractManagementByIdQuery, getContractManagementDataQuery, getContractStatsQuery, updateAssignementQuery, updateContractManagementQuery } from "../model/contract-management-model.js"
+import { createContractManagementQueryWithAssignment, deleteContractManagementQuery, getContractManagementByIdQuery, getContractManagementDataQuery, getContractStatsQuery, updateAssignementQuery, updateContractManagementQuery } from "../model/contract-management-model.js"
 import multer from 'multer';
 import { put } from '@vercel/blob'
 
@@ -93,7 +93,12 @@ async function getContractManagementData(req, res) {
 
         if (userRole === "admin") {
             unitFilterId = req.query.unitId ? parseInt(req.query.unitId) : null;
-        } else if (userRole === "kaur" || userRole === "kaprodi" || userRole === "dekanat") {
+        } else if (userRole === "dekan" || userRole === "wadek_1" || userRole === "wadek_2"
+            || userRole === "dosen" || userRole === "kaprodi" || userRole === "sekprodi"
+            || userRole === "kaur_sekdek" || userRole === "kaur_laa"
+            || userRole === "kaur_lab" || userRole === "kaur_sdm"
+            || userRole === "kaur_kemahasiswaan"
+        ) {
             unitFilterId = userUnitId
         } else {
             return res.status(403).json({
@@ -159,35 +164,14 @@ async function getContractManagementById(req, res) {
     }
 }
 
-async function createContractManagement(req, res) {
-    try {
-        const payload = req.body;
-
-        const result = await createContractManagementQuery(payload)
-
-        res.status(201).json({
-            success: true,
-            data: result,
-        })
-    } catch (error) {
-        console.error("Create KM error:", error)
-
-        res.status(500).json({
-            success: false,
-            message: "Failed to create contract management data",
-        })
-    }
-}
-
 async function createContractManagementWithAssignment(req, res) {
     try {
         const {
             ContractManagementCategory,
             responsibility,
-            quarterly,
             unitOfMeasurement,
-            weight,
-            target,
+            targetTw1, targetTw2, targetTw3, targetTw4,
+            weightTw1, weightTw2, weightTw3, weightTw4,
             min,
             max,
             unitIds,
@@ -197,19 +181,24 @@ async function createContractManagementWithAssignment(req, res) {
             indicatorCalc
         } = req.body;
 
-        if (!responsibility || !quarterly) {
+        if (!responsibility) {
             return res.status(400).json({
                 success: false,
-                message: "Responsibility and quarterly are required fields"
+                message: "Responsibility is required field"
             });
         }
         const cleanPayload = {
             ContractManagementCategory: ContractManagementCategory || null,
             responsibility,
-            quarterly,
             unitOfMeasurement: unitOfMeasurement || null,
-            weight: weight ? parseFloat(weight) : null,
-            target: target || null,
+            targetTw1: targetTw1 || null,
+            targetTw2: targetTw2 || null,
+            targetTw3: targetTw3 || null,
+            targetTw4: targetTw4 || null,
+            weightTw1: weightTw1 ? parseFloat(weightTw1) : null,
+            weightTw2: weightTw2 ? parseFloat(weightTw2) : null,
+            weightTw3: weightTw3 ? parseFloat(weightTw3) : null,
+            weightTw4: weightTw4 ? parseFloat(weightTw4) : null,
             min: min ? parseFloat(min) : null,
             max: max ? parseFloat(max) : null,
             unitIds: Array.isArray(unitIds) ? unitIds : [],
@@ -260,14 +249,21 @@ async function updateContractManagement(req, res) {
 
         if (payload.ContractManagementCategory) cleanPayload.ContractManagementCategory = payload.ContractManagementCategory;
         if (payload.responsibility) cleanPayload.responsibility = payload.responsibility;
-        if (payload.quarterly) cleanPayload.quarterly = payload.quarterly;
         if (payload.unitOfMeasurement) cleanPayload.unitOfMeasurement = payload.unitOfMeasurement;
         if (payload.strategy) cleanPayload.strategy = payload.strategy
 
-        if (payload.weight !== undefined) cleanPayload.weight = parseFloat(payload.weight);
-        if (payload.target !== undefined) cleanPayload.target = payload.target;
-        if (payload.min !== undefined) cleanPayload.min = parseFloat(payload.min);
-        if (payload.max !== undefined) cleanPayload.max = parseFloat(payload.max);
+        if (payload.targetTw1 !== undefined) cleanPayload.targetTw1 = payload.targetTw1;
+        if (payload.targetTw2 !== undefined) cleanPayload.targetTw2 = payload.targetTw2;
+        if (payload.targetTw3 !== undefined) cleanPayload.targetTw3 = payload.targetTw3;
+        if (payload.targetTw4 !== undefined) cleanPayload.targetTw4 = payload.targetTw4;
+
+        if (payload.weightTw1 !== undefined) cleanPayload.weightTw1 = payload.weightTw1 ? parseFloat(payload.weightTw1) : null;
+        if (payload.weightTw2 !== undefined) cleanPayload.weightTw2 = payload.weightTw2 ? parseFloat(payload.weightTw2) : null;
+        if (payload.weightTw3 !== undefined) cleanPayload.weightTw3 = payload.weightTw3 ? parseFloat(payload.weightTw3) : null;
+        if (payload.weightTw4 !== undefined) cleanPayload.weightTw4 = payload.weightTw4 ? parseFloat(payload.weightTw4) : null;
+
+        if (payload.min !== undefined) cleanPayload.min = payload.min ? parseFloat(payload.min) : null;
+        if (payload.max !== undefined) cleanPayload.max = payload.max ? parseFloat(payload.max) : null;
         if (payload.definition !== undefined) cleanPayload.definition = payload.definition;
         if (payload.objective !== undefined) cleanPayload.objective = payload.objective;
         if (payload.indicatorCalc !== undefined) cleanPayload.indicatorCalc = payload.indicatorCalc;
@@ -323,77 +319,42 @@ async function deleteContractManagement(req, res) {
 }
 
 async function updateAssignment(req, res) {
-    upload(req, res, async function (err) {
-        if (err) {
-            if (err.code === 'LIMIT_FILE_SIZE') {
-                return res.status(400).json({
-                    success: false,
-                    message: "Ukuran file terlalu besar. Maksimal 3 MB."
-                });
-            }
-            if (err.message === 'INVALID_FILE_TYPE') {
-                return res.status(400).json({
-                    success: false,
-                    message: "Tipe file ditolak! Hanya boleh upload dokumen PDF atau gambar (JPG/PNG)."
-                });
-            }
-            // Error multer lainnya
-            console.error("Multer error:", err);
-            return res.status(400).json({ success: false, message: "Gagal memproses file upload." });
-        }
+    try {
+        const { id } = req.params;
+        const { 
+            realizationTw1, realizationTw2, realizationTw3, realizationTw4, 
+            inputNote 
+        } = req.body;
 
-        try {
-            const { id } = req.params;
-            const realization = req.body.realization
-            let inputNote = req.body.inputNote
+        const updatedData = await updateAssignementQuery(id, {
+            realizationTw1, realizationTw2, realizationTw3, realizationTw4, inputNote
+        });
 
-            if (realization === undefined || realization === null || realization === "") {
-                return res.status(400).json({
-                    success: false,
-                    message: "Nilai realisasi wajib diisi."
-                });
-            }
+        res.status(200).json({
+            success: true,
+            message: "Realisasi dan catatan berhasil disimpan",
+            data: updatedData
+        })
 
-            if (req.file) {
-                const safeFileName = req.file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+    } catch (error) {
+        console.error("Update data error:", error);
 
-                const blob = await put(`bukti-km/${Date.now()}-${safeFileName}`, req.file.buffer, {
-                    access: 'public',
-                    token: process.env.BLOB_READ_WRITE_TOKEN
-                });
-
-                inputNote = blob.url;
-            }
-            const updatedData = await updateAssignementQuery(id, realization, inputNote);
-
-            res.status(200).json({
-                success: true,
-                message: "Realisasi dan dokumen berhasil disimpan",
-                data: updatedData
-            })
-
-
-        } catch (error) {
-            console.error("Update data error:", error);
-
-            if (error.message === "AssignmentNotFound" || error.code === 'P2025') {
-                return res.status(404).json({
-                    success: false,
-                    message: "Data penugasan tidak ditemukan."
-                });
-            }
-
-            res.status(500).json({
+        if (error.message === "AssignmentNotFound" || error.code === 'P2025') {
+            return res.status(404).json({
                 success: false,
-                message: "Gagal menyimpan data."
-            })
+                message: "Data penugasan tidak ditemukan."
+            });
         }
-    })
+
+        res.status(500).json({
+            success: false,
+            message: "Gagal menyimpan data."
+        })
+    }
 }
 
 export {
     getContractManagementData,
-    createContractManagement,
     updateContractManagement,
     getContractManagementById,
     deleteContractManagement,

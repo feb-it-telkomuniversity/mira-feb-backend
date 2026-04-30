@@ -200,10 +200,18 @@ model ContractManagement {
   objective                  String?                     @db.Text
   indicatorCalc              String?                     @db.Text
 
-  quarterly         String
   unitOfMeasurement String? @map("unit_of_measurement")
-  weight            Float?
-  target            String?
+  
+  targetTw1 String? @map("target_tw1")
+  targetTw2 String? @map("target_tw2")
+  targetTw3 String? @map("target_tw3")
+  targetTw4 String? @map("target_tw4")
+
+  weightTw1 Float? @map("weight_tw1")
+  weightTw2 Float? @map("weight_tw2")
+  weightTw3 Float? @map("weight_tw3")
+  weightTw4 Float? @map("weight_tw4")
+
   max               Float?
   min               Float?
   strategy          String? @db.Text
@@ -221,10 +229,26 @@ model ContractAssignment {
   contractId Int @map("contract_id")
   unitId     Int @map("unit_id")
 
-  realization Float?
-  achievement Float?
-  persReal    Float?  @map("pers_real")
-  value       Float?
+  realizationTw1 Float? @map("realization_tw1")
+  realizationTw2 Float? @map("realization_tw2")
+  realizationTw3 Float? @map("realization_tw3")
+  realizationTw4 Float? @map("realization_tw4")
+
+  achievementTw1 Float? @map("achievement_tw1")
+  achievementTw2 Float? @map("achievement_tw2")
+  achievementTw3 Float? @map("achievement_tw3")
+  achievementTw4 Float? @map("achievement_tw4")
+
+  persRealTw1    Float? @map("pers_real_tw1")
+  persRealTw2    Float? @map("pers_real_tw2")
+  persRealTw3    Float? @map("pers_real_tw3")
+  persRealTw4    Float? @map("pers_real_tw4")
+
+  valueTw1       Float? @map("value_tw1")
+  valueTw2       Float? @map("value_tw2")
+  valueTw3       Float? @map("value_tw3")
+  valueTw4       Float? @map("value_tw4")
+
   inputNote   String? @map("input_note") @db.Text
   monitorNote String? @map("monitor_note") @db.Text
 
