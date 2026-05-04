@@ -440,7 +440,7 @@ const verifyOtp = async (req, res) => {
         let user = await prisma.users.findUnique({ where: { email: normalizedEmail } });
 
         if (!user) {
-            const isStudent = email.endsWith('@student.telkomuniversity.ac.id')
+            const isStudent = normalizedEmail.endsWith('@student.telkomuniversity.ac.id')
             let baseUsername = normalizedEmail.split('@')[0]
             let finalUsername = baseUsername
             let isUsernameTaken = await prisma.users.findUnique({ where: { username: finalUsername } })
@@ -456,7 +456,7 @@ const verifyOtp = async (req, res) => {
                     email: normalizedEmail,
                     name: baseUsername,
                     username: finalUsername,
-                    role: isStudent ? "mahasiswa" : "dosen"
+                    role: isStudent ? "mahasiswa" : "tpa"
                 }
             })
         }
