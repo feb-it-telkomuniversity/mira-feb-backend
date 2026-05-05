@@ -6,9 +6,22 @@ import cookieParser from 'cookie-parser'
 import cron from "node-cron"
 import { sendScheduleReminders } from "./model/schedule-model.js";
 
+const allowedOrigins = [
+    'http://localhost:3000',
+    'https://mira-feb.telkomuniversity.ac.id'
+]
+
 const app = express()
 app.use(cors({
-    origin: process.env.PUBLIC_API_BASE_URL || "http://localhost:3000",
+    origin: function (origin, callback) {
+        if (!origin) return callback(null, true)
+
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true)
+        } else {
+            callback(new Error('Not allowed by CORS'))
+        }
+    },
     credentials: true
 }))
 
