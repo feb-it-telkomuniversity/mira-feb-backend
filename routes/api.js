@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getTickets, getConversationDetails, assignTicketToAdmin, countDasboardStats, getTicketCategoryStats, getTicketTrends, resolveTicketByAdmin, getConversationRelevantDetails, createComplaintTicket, getMyTickets, getTicketsForAdmin, verifyTicket, getTicketComplaintDetail, uploadComplaintTicketFiles, resolveTicketByUnit, approveTicketResolution, assignTicket, getDekanatTickets, getDekanatTicketDetail, getUnitTickets, getUnitTicketDetail } from "../controller/tickets-controller.js"
-import { signIn, getUsers, registerUser, deleteUser, updateUser, updateMyProfile, uploadAvatar, deleteAvatar, getMyProfile, linkGoogleAccount, unlinkGoogleAccount, requestOtp, verifyOtp } from '../controller/auth-controller.js'
+import { signIn, getUsers, registerUser, deleteUser, updateUser, updateMyProfile, uploadAvatar, deleteAvatar, getMyProfile, linkGoogleAccount, unlinkGoogleAccount, requestOtp, verifyOtp, signOut } from '../controller/auth-controller.js'
 import { handleCreateSchedule, getSchedulesByMonth, handleCancelSchedule, handleDeleteSchedule } from '../controller/schedule-controller.js';
 import { createContact, getContacts, handleDeleteContact, updateContact } from '../controller/contacts-controller.js';
 import { createPartnershipData, deletePartnershipData, getPartnershipCharts, getPartnershipData, getPartnershipStats, getPartnershipSummaryStats, updatePartnershipData } from '../controller/partnership-controller.js';
@@ -36,20 +36,22 @@ route.post('/auth/otp/verify', verifyOtp)
 // PROTECTED ROUTES
 route.use(verifyToken)
 
-const canEditData = verifyRole(['admin', 'dekanat', 'kaur', 'kaprodi'])
+const canEditData = verifyRole(['super_admin', 'admin', 'dekanat', 'wadek', 'kaur', 'kaprodi'])
 const adminOnly = verifyRole(['admin'])
+const superAdminOnly = verifyRole(['super_admin'])
 
 route.post('/account/link-google', linkGoogleAccount)
 route.post('/account/unlink-google', unlinkGoogleAccount)
 
 route.get("/users", getUsers)
-route.post('/register-user', adminOnly, registerUser)
+route.post('/register-user', adminOnly, superAdminOnly, registerUser)
 route.patch('/users/me', updateMyProfile)
 route.post('/users/upload-avatar', upload.single('avatar'), uploadAvatar)
 route.delete('/users/delete-avatar', deleteAvatar)
-route.delete('/users/:id', adminOnly, deleteUser)
-route.put('/users/:id', adminOnly, updateUser)
+route.delete('/users/:id', adminOnly, superAdminOnly, deleteUser)
+route.put('/users/:id', adminOnly, superAdminOnly, updateUser)
 route.get('/users/me', getMyProfile)
+route.post('/sign-out', signOut)
 
 // ============== NEED WHATSAPP : HANDLE LATER ==============
 route.get('/tickets', adminOnly, getTickets)

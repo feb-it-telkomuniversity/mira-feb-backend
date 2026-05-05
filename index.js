@@ -2,13 +2,18 @@ import express from "express"
 import { initializeWhatsapp } from "./services/whatsapp-service.js";
 import route from "./routes/api.js"
 import cors from 'cors'
+import cookieParser from 'cookie-parser'
 import cron from "node-cron"
 import { sendScheduleReminders } from "./model/schedule-model.js";
 
 const app = express()
-app.use(cors())
+app.use(cors({
+    origin: process.env.PUBLIC_API_BASE_URL || "http://localhost:3000",
+    credentials: true
+}))
 
 app.use(express.json())
+app.use(cookieParser())
 
 // initializeWhatsapp()
 

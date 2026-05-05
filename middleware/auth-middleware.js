@@ -3,8 +3,9 @@ import jwt from 'jsonwebtoken';
 // 1. Middleware Cek Token (Satpam Pintu Gerbang)
 export const verifyToken = (req, res, next) => {
     // Ambil header Authorization: "Bearer <token>"
-    const authHeader = req.headers['authorization']
-    const token = authHeader && authHeader.split(' ')[1]
+    // const authHeader = req.headers['authorization']
+    // const token = authHeader && authHeader.split(' ')[1]
+    const token = req.cookies.auth_token
 
     if (!token) {
         return res.status(401).json({

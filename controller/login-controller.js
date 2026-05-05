@@ -5,6 +5,13 @@ import jwt from "jsonwebtoken"
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 const prisma = new PrismaClient()
 
+const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    maxAge: 24 * 60 * 60 * 1000
+}
+
 export async function loginWithGoogle(req, res) {
     try {
         const { token } = req.body
@@ -14,11 +21,6 @@ export async function loginWithGoogle(req, res) {
                 message: "Google Token not Found"
             })
         }
-
-        // const ticket = await googleClient.verifyIdToken({
-        //     idToken: token,
-        //     audience: process.env.GOOGLE_CLIENT_ID
-        // })
 
         const googleResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
             headers: {
@@ -44,6 +46,7 @@ export async function loginWithGoogle(req, res) {
 
         if (!user) {
             const isStudent = googleEmail.endsWith('@student.telkomuniversity.ac.id')
+            const isStaff = googleEmail.endsWith('@telkomuniversity.ac.id')
 
             if (isStudent) {
                 user = await prisma.users.create({
@@ -53,6 +56,16 @@ export async function loginWithGoogle(req, res) {
                         name: payload.name,
                         username: googleEmail.split('@')[0],
                         role: 'mahasiswa',
+                    }
+                })
+            } else if (isStaff) {
+                user = await prisma.users.create({
+                    data: {
+                        email: googleEmail,
+                        googleEmail: googleEmail,
+                        name: payload.name,
+                        username: googleEmail.split('@')[0],
+                        role: 'tpa',
                     }
                 })
             } else {
@@ -70,11 +83,11 @@ export async function loginWithGoogle(req, res) {
         }
 
         const authToken = jwt.sign(jwtPayload, process.env.JWT_SECRET_KEY, { expiresIn: '1d' })
+        res.cookie('auth_token', authToken, cookieOptions)
 
         res.status(200).json({
             success: true,
             message: 'Login successful with Google Auth',
-            token: authToken,
             user: {
                 id: user.id,
                 name: user.name,

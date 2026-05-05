@@ -9,6 +9,13 @@ import { sendOtpEmail } from "../services/email-service.js";
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 const prisma = new PrismaClient()
 
+const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    maxAge: 24 * 60 * 60 * 1000
+}
+
 async function signIn(req, res) {
     try {
         const { username, password } = req.body
@@ -43,11 +50,11 @@ async function signIn(req, res) {
             }, process.env.JWT_SECRET_KEY,
             { expiresIn: '1d' }
         )
+        res.cookie('auth_token', token, cookieOptions)
 
         res.status(200).json({
             success: true,
             message: 'Login successful',
-            token: token,
             user: {
                 id: user.id,
                 name: user.name,
@@ -225,6 +232,25 @@ async function updateMyProfile(req, res) {
 
         const updatedUser = await updateUserQuery(userId, updateData)
         delete updatedUser.password
+
+        const newToken = jwt.sign(
+            {
+                id: updatedUser.id,
+                username: updatedUser.username,
+                role: updatedUser.role,
+                unitId: updatedUser.unitId
+            },
+            process.env.JWT_SECRET_KEY,
+            { expiresIn: '1d' }
+        )
+
+        const cookieOptions = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            maxAge: 24 * 60 * 60 * 1000
+        }
+        res.cookie('auth_token', newToken, cookieOptions)
 
         res.status(200).json({
             success: true,
@@ -464,11 +490,10 @@ const verifyOtp = async (req, res) => {
         // Generate JWT Token (Persis seperti fungsi Google Login kamu)
         const jwtPayload = { id: user.id, username: user.username, role: user.role, unitId: user.unitId };
         const authToken = jwt.sign(jwtPayload, process.env.JWT_SECRET_KEY, { expiresIn: '1d' });
-
+        res.cookie('auth_token', authToken, cookieOptions)
         res.status(200).json({
             success: true,
             message: 'Login successful',
-            token: authToken,
             user: { id: user.id, name: user.name, username: user.username, role: user.role }
         });
 
@@ -476,6 +501,19 @@ const verifyOtp = async (req, res) => {
         console.error("Error verify OTP:", error);
         res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." });
     }
+}
+
+const signOut = (req, res) => {
+    res.clearCookie('auth_token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    });
+
+    res.status(200).json({
+        success: true,
+        message: "Logout berhasil"
+    });
 }
 
 export {
@@ -492,5 +530,6 @@ export {
     linkGoogleAccount,
     unlinkGoogleAccount,
     requestOtp,
-    verifyOtp
+    verifyOtp,
+    signOut
 }
