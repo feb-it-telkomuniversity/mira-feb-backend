@@ -12,6 +12,7 @@ const allowedOrigins = [
 ]
 
 const app = express()
+app.disable('etag')
 app.use(cors({
     origin: function (origin, callback) {
         if (!origin) return callback(null, true)
