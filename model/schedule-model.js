@@ -1,6 +1,5 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "../utils/prisma.js";
 import { client as whatsAppClient } from '../services/whatsapp-client.js'
-const prisma = new PrismaClient()
 
 async function createScheduleQuery(scheduleData) {
     const { recipients, ...mainScheduleData } = scheduleData

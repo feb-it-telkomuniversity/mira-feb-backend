@@ -1,9 +1,8 @@
-import { PrismaClient } from "@prisma/client";
 import { OAuth2Client } from "google-auth-library";
 import jwt from "jsonwebtoken"
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
-const prisma = new PrismaClient()
+import prisma from "../utils/prisma.js";
 
 const cookieOptions = {
     httpOnly: true,

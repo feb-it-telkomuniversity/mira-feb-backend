@@ -1,8 +1,6 @@
 import { logMessage, createUnresolvedTicket } from "../model/conversation-model.js"
-import { PrismaClient } from "@prisma/client"
 import { generateResponse } from "../services/gemini-service.js"
-
-const prisma = new PrismaClient()
+import prisma from "../utils/prisma.js";
 
 export default async function chat(msg, conversation, text, chat) {
     if (conversation.user.role === "dosen") {
@@ -62,9 +60,9 @@ export default async function chat(msg, conversation, text, chat) {
         try {
             chat.sendStateTyping()
             const reply = await generateResponse(prompt)
-            
+
             const botMessageId = await logMessage(conversation.id, 'bot', reply)
-            
+
             await new Promise((resolve) => setTimeout(resolve, 2000))
             await msg.reply(reply)
 
@@ -73,7 +71,7 @@ export default async function chat(msg, conversation, text, chat) {
             await new Promise((resolve) => setTimeout(resolve, 4000))
             await msg.reply(feedbackQuestion)
             await logMessage(conversation.id, 'bot', feedbackQuestion)
-            
+
             await prisma.conversation.update({
                 where: { id: conversation.id },
                 data: {

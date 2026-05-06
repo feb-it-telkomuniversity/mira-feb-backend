@@ -2,12 +2,11 @@ import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 import { createUserQuery, deleteUserQuery, findUserByUsernameQuery, getMyProfileQuery, getUsersQuery, updateUserQuery } from "../model/auth-model.js"
 import { del, put } from "@vercel/blob"
-import { Prisma, PrismaClient } from "@prisma/client";
+import prisma from "../utils/prisma.js";
 import { OAuth2Client } from "google-auth-library";
 import { sendOtpEmail } from "../services/email-service.js";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
-const prisma = new PrismaClient()
 
 const cookieOptions = {
     httpOnly: true,

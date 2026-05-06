@@ -1,7 +1,5 @@
 import { logMessage } from "../model/conversation-model.js"
-import { PrismaClient } from "@prisma/client"
-
-const prisma = new PrismaClient()
+import prisma from "../utils/prisma.js";
 
 export default async function menu(msg, conversation, text, chat) {
     let category
@@ -12,11 +10,11 @@ export default async function menu(msg, conversation, text, chat) {
             category = "Sidang"
             skipWelcome = true
             break
-            case "2":
+        case "2":
             category = "Keuangan"
             skipWelcome = true
             break;
-            case "3":
+        case "3":
             category = "Wisuda";
             skipWelcome = true
             break;

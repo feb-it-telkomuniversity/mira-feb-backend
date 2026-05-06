@@ -1,6 +1,5 @@
-import { PrismaClient } from "@prisma/client";
 import { calculateKM } from "../utils/contract-management-calculator.js";
-const prisma = new PrismaClient()
+import prisma from "../utils/prisma.js";
 
 // Helper untuk menentukan TW sebelumnya
 const getPrevQuarter = (current) => {
@@ -286,11 +285,11 @@ async function updateContractManagementQuery(id, payload) {
     // 5. Rekalkulasi capaian (achievement) untuk assignment yang sudah ada jika target/bobot berubah
     const updatedContractData = { ...existingData, ...updateData };
     const quarters = [1, 2, 3, 4];
-    
+
     existingData.assignments.forEach(assignment => {
         const assignmentUpdateData = {};
         let shouldUpdate = false;
-        
+
         quarters.forEach(q => {
             if (assignment[`realizationTw${q}`] !== null && assignment[`realizationTw${q}`] !== undefined) {
                 const calcData = {
@@ -301,16 +300,16 @@ async function updateContractManagementQuery(id, payload) {
                     min: updatedContractData.min,
                     max: updatedContractData.max
                 };
-                
+
                 const resultKM = calculateKM(calcData);
-                
+
                 assignmentUpdateData[`achievementTw${q}`] = resultKM.achievement;
                 assignmentUpdateData[`persRealTw${q}`] = resultKM.persReal;
                 assignmentUpdateData[`valueTw${q}`] = resultKM.value;
                 shouldUpdate = true;
             }
         });
-        
+
         if (shouldUpdate) {
             // Pastikan tidak mengupdate assignment yang mau dihapus
             const isRemoved = Array.isArray(unitIds) && !unitIds.includes(assignment.unitId);

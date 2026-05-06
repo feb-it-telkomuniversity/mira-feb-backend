@@ -1,5 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient()
+import prisma from "../utils/prisma.js";
 
 async function createManagementQuery(payload) {
     const reportYear = payload.year ? parseInt(payload.year) : new Date().getFullYear()
@@ -25,7 +24,7 @@ async function getManagementReportListQuery(page = 1, limit = 15, search = "", y
         year: filterYear,
         indicator: {
             contains: search,
-            mode: 'insensitive' 
+            mode: 'insensitive'
         }
     }
 
@@ -35,7 +34,7 @@ async function getManagementReportListQuery(page = 1, limit = 15, search = "", y
             skip: skip,
             take: limit,
             orderBy: {
-                id: 'asc' 
+                id: 'asc'
             }
         }),
         prisma.managementReport.count({
@@ -44,7 +43,7 @@ async function getManagementReportListQuery(page = 1, limit = 15, search = "", y
     ])
 
     return {
-        data, 
+        data,
         pagination: {
             totalItems: totalCount,
             totalPage: Math.ceil(totalCount / limit),
@@ -70,7 +69,7 @@ async function updateManagementReportQuery(id, payload) {
     })
 }
 
-async function toggleReportStatusQuery(id, quarter, value)  {
+async function toggleReportStatusQuery(id, quarter, value) {
     return await prisma.managementReport.update({
         where: { id: parseInt(id) },
         data: {

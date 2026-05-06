@@ -1,5 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient()
+import prisma from "../utils/prisma.js";
 
 async function getPartnershipStatsQuery() {
     // 1. Chart berdasarkan Tahun Terbit
@@ -94,7 +93,7 @@ async function getPartnershipChartQuery() {
     return { documentsByYear, documentByCategory, documentByScope }
 }
 
-async function getPartnershipDataQuery(page = 1, limit = 15, search = "", filters={}) {
+async function getPartnershipDataQuery(page = 1, limit = 15, search = "", filters = {}) {
     const skip = (page - 1) * limit
 
     const andConditions = []
@@ -153,7 +152,7 @@ async function getPartnershipDataQuery(page = 1, limit = 15, search = "", filter
                 updatedAt: 'desc', // Urutkan dari yang terbaru diupdate
             },
             include: {
-                activities: true 
+                activities: true
             }
         }),
         prisma.partnershipDocument.count({
@@ -189,7 +188,7 @@ async function createPartnershipDataQuery(payload) {
             hasHardcopy: payload.hasHardcopy,
             hasSoftcopy: payload.hasSoftcopy,
             // Hati-hati: Kolom Unique. Kalau "" dikirim double, Prisma error. Jadi harus null.
-            docNumberInternal: toNull(payload.docNumberInternal), 
+            docNumberInternal: toNull(payload.docNumberInternal),
             docNumberExternal: toNull(payload.docNumberExternal),
 
             partnershipType: toNull(payload.partnershipType),
@@ -220,7 +219,7 @@ async function updatePartnershipDataQuery(id, payload) {
         if (value === "") return null;
         return value;
     }
-    
+
     const processDate = (value) => {
         if (value === undefined) return undefined;
         if (value === "" || value === null) return null;
@@ -232,7 +231,7 @@ async function updatePartnershipDataQuery(id, payload) {
     // Dipakai jika FE mengirim array object yang punya 'id'
     // ============================================================
     if (payload.activities && payload.activities.length > 0 && payload.activities[0].id) {
-        const updatePromises = payload.activities.map(act => 
+        const updatePromises = payload.activities.map(act =>
             prisma.partnershipActivity.update({
                 where: { id: parseInt(act.id) }, // Cari berdasarkan ID activity
                 data: {
@@ -285,11 +284,11 @@ async function updatePartnershipDataQuery(id, payload) {
     return await prisma.partnershipDocument.update({
         where: { id: parseInt(id) },
         data: {
-            yearIssued: payload.yearIssued ? parseInt(payload.yearIssued) : undefined, 
+            yearIssued: payload.yearIssued ? parseInt(payload.yearIssued) : undefined,
             docType: payload.docType,
             partnerName: payload.partnerName,
             scope: payload.scope,
-            
+
             picExternal: processValue(payload.picExternal),
             picExternalPhone: processValue(payload.picExternalPhone),
             picInternal: processValue(payload.picInternal),
@@ -298,11 +297,11 @@ async function updatePartnershipDataQuery(id, payload) {
             docNumberExternal: processValue(payload.docNumberExternal),
 
             partnershipType: processValue(payload.partnershipType),
-            
+
             // Masukkan logic activitiesOperation disini
             // (Akan undefined jika masuk ke Logic 1, jadi aman)
-            activities: activitiesOperation, 
-            
+            activities: activitiesOperation,
+
             dateCreated: processDate(payload.dateCreated),
             signingType: processValue(payload.signingType),
             dateSigned: processDate(payload.dateSigned),
@@ -337,9 +336,9 @@ async function deletePartnershipDataQuery(id) {
     })
 }
 
-export { 
-    getPartnershipStatsQuery, 
-    getPartnershipSummaryStatsQuery, 
+export {
+    getPartnershipStatsQuery,
+    getPartnershipSummaryStatsQuery,
     getPartnershipChartQuery,
     getPartnershipDataQuery,
     createPartnershipDataQuery,

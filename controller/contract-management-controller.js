@@ -1,9 +1,7 @@
-import { PrismaClient } from "@prisma/client";
 import { createContractManagementQueryWithAssignment, deleteContractManagementQuery, getContractManagementByIdQuery, getContractManagementDataQuery, getContractStatsQuery, updateAssignementQuery, updateContractManagementQuery } from "../model/contract-management-model.js"
 import multer from 'multer';
-import { put } from '@vercel/blob'
+import prisma from "../utils/prisma.js";
 
-const prisma = new PrismaClient()
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: {

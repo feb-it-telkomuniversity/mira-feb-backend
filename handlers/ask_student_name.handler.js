@@ -1,9 +1,6 @@
 import { logMessage } from "../model/conversation-model.js"
-import { PrismaClient } from "@prisma/client"
 import { generateResponse } from "../services/gemini-service.js"
-
-const prisma = new PrismaClient()
-
+import prisma from "../utils/prisma.js";
 export default async function askStudentName(msg, conversation, text, chat) {
     let name
     try {
@@ -42,6 +39,6 @@ export default async function askStudentName(msg, conversation, text, chat) {
     await new Promise((resolve) => setTimeout(resolve, 4000))
     const reply = `Halo ${name}, datamu sudah tersimpan ✅\n\nSilakan pilih kategori bantuan di bawah ini:\n1️⃣ Sidang\n2️⃣ Keuangan\n3️⃣ Wisuda`
     msg.reply(reply)
-    await logMessage(conversation.id, 'bot', reply) 
+    await logMessage(conversation.id, 'bot', reply)
     // return
 }

@@ -1,7 +1,5 @@
 import { logMessage } from "../model/conversation-model.js"
-import { PrismaClient } from "@prisma/client"
-
-const prisma = new PrismaClient()
+import prisma from "../utils/prisma.js";
 
 export default async function askStudentNim(msg, conversation, text, chat) {
     let nimMatch = text.match(/\d+/g)

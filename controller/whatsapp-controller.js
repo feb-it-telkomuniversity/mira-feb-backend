@@ -1,7 +1,5 @@
 import { getOrCreateConversation, logMessage, createUnresolvedTicket } from "../model/conversation-model.js"
-import { PrismaClient } from "@prisma/client"
-
-const prisma = new PrismaClient()
+import prisma from "../utils/prisma.js";
 
 async function handleNewUser(msg, conversation) {
     const chat = await msg.getChat()
@@ -34,7 +32,7 @@ async function handleMessage(msg) {
     // console.log('====================================')
 
     if (msg.fromMe || msg.type !== "chat" || !msg.body) return
-    
+
     const userId = msg.from
     const text = msg.body.trim()
     const chat = await msg.getChat()

@@ -1,7 +1,5 @@
 import { logMessage, createUnresolvedTicket } from "../model/conversation-model.js"
-import { PrismaClient } from "@prisma/client"
-
-const prisma = new PrismaClient()
+import prisma from "../utils/prisma.js";
 
 export default async function awaitingFeedback(msg, conversation, text, chat) {
     const lastMessageId = conversation.last_bot_message_id

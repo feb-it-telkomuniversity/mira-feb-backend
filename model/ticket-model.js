@@ -1,6 +1,4 @@
-import { PrismaClient, Prisma } from "@prisma/client";
-
-const prisma = new PrismaClient()
+import prisma from "../utils/prisma.js";
 
 async function findTickets(status) {
     const whereClause = {}

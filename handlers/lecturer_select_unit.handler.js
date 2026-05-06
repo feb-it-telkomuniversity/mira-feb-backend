@@ -1,7 +1,5 @@
 import { logMessage } from "../model/conversation-model.js"
-import { PrismaClient } from "@prisma/client"
-
-const prisma = new PrismaClient()
+import prisma from "../utils/prisma.js";
 
 export default async function lecturerSelectUnit(msg, conversation, text, chat) {
     let unitCategory

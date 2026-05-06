@@ -1,5 +1,5 @@
 import { createActivityMonitoringQuery, getActivityMonitoringListQuery, deleteActivityMonitoringQuery, updateActivityMonitoringQuery, getActivityMonitoringByIdQuery, patchActivityDatesQuery } from '../model/activity-monitoring-model.js'
-import { PrismaClient } from "@prisma/client";
+import prisma from "../utils/prisma.js";
 const UNIT_MAP = {
     "Dekan": "Dekan",
     "Wakil Dekan I": "WakilDekanI",
@@ -70,8 +70,6 @@ const OFFICIAL_MAP = {
     "Kaprodi S3 Manajemen": "KaprodiS3Manajemen"
 }
 
-
-const prisma = new PrismaClient()
 
 async function getActivityMonitoringList(req, res) {
     try {

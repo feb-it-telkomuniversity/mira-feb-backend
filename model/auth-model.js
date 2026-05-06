@@ -1,6 +1,5 @@
-import { Prisma, PrismaClient } from "@prisma/client";
+import prisma from "../utils/prisma.js";
 
-const prisma = new PrismaClient()
 
 async function createUserQuery(username, hashedPassword, name, role, supervisorId, unitId) {
     return await prisma.users.create({

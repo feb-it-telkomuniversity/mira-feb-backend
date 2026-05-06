@@ -1,14 +1,12 @@
 import { getOrCreateConversation, logMessage, createUnresolvedTicket } from "../model/conversation-model.js"
-import { PrismaClient } from "@prisma/client"
-
-const prisma = new PrismaClient()
+import prisma from "../utils/prisma.js";
 
 export default async function selectRole(msg, conversation, text) {
     let nextStep = ''
     let userRole = ''
     let replyText = ''
 
-    switch(text) {
+    switch (text) {
         case '1':
             userRole = 'mahasiswa'
             nextStep = 'ask_student_nim'
