@@ -201,6 +201,7 @@ model ContractManagement {
   indicatorCalc              String?                     @db.Text
 
   unitOfMeasurement String? @map("unit_of_measurement")
+  year              String?
 
   targetTw1 String? @map("target_tw1")
   targetTw2 String? @map("target_tw2")

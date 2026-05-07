@@ -166,6 +166,7 @@ async function createContractManagementWithAssignment(req, res) {
             ContractManagementCategory,
             responsibility,
             unitOfMeasurement,
+            year,
             targetTw1, targetTw2, targetTw3, targetTw4,
             weightTw1, weightTw2, weightTw3, weightTw4,
             min,
@@ -187,6 +188,7 @@ async function createContractManagementWithAssignment(req, res) {
             ContractManagementCategory: ContractManagementCategory || null,
             responsibility,
             unitOfMeasurement: unitOfMeasurement || null,
+            year: year || null,
             targetTw1: targetTw1 || null,
             targetTw2: targetTw2 || null,
             targetTw3: targetTw3 || null,
@@ -245,7 +247,8 @@ async function updateContractManagement(req, res) {
 
         if (payload.ContractManagementCategory) cleanPayload.ContractManagementCategory = payload.ContractManagementCategory;
         if (payload.responsibility) cleanPayload.responsibility = payload.responsibility;
-        if (payload.unitOfMeasurement) cleanPayload.unitOfMeasurement = payload.unitOfMeasurement;
+        if (payload.unitOfMeasurement) cleanPayload.unitOfMeasurement = payload.unitOfMeasurement
+        if (payload.year) cleanPayload.year = payload.year
         if (payload.strategy) cleanPayload.strategy = payload.strategy
 
         if (payload.targetTw1 !== undefined) cleanPayload.targetTw1 = payload.targetTw1;
