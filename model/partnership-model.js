@@ -255,7 +255,13 @@ async function updatePartnershipDataQuery(id, payload) {
                 }
             }))
 
-        await prisma.$transaction([...updatePromises, ...createPromises])
+        const deletePromises = payload.deletedActivityIds && payload.deletedActivityIds.length > 0
+            ? [prisma.partnershipActivity.deleteMany({
+                where: { id: { in: payload.deletedActivityIds } }
+            })]
+            : []
+
+        await prisma.$transaction([...updatePromises, ...createPromises, ...deletePromises])
 
         return await prisma.partnershipDocument.findUnique({
             where: { id: parseInt(id) },
