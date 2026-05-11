@@ -129,6 +129,7 @@ model Contacts {
   @@map("contacts")
 }
 
+// Partnership Monitoring ---
 model PartnershipDocument {
   id          Int      @id @default(autoincrement())
   yearIssued  Int      @map("year_issued")
@@ -144,7 +145,6 @@ model PartnershipDocument {
   docNumberExternal String? @unique @map("doc_number_external")
 
   partnershipType PartnershipType?      @map("partnership_type")
-  // activityType        ActivityType?    @map("activity_type")
   activities      PartnershipActivity[]
 
   dateCreated DateTime? @map("date_created")
@@ -179,10 +179,11 @@ model PartnershipDocument {
 }
 
 model PartnershipActivity {
-  id     Int             @id @default(autoincrement())
-  type   ActivityType?
-  status ActivityStatus? @default(BelumTerlaksana)
-  notes  String?         @db.Text
+  id       Int              @id @default(autoincrement())
+  category PartnershipType?
+  name     String?
+  status   ActivityStatus?  @default(BelumTerlaksana)
+  notes    String?          @db.Text
 
   // Relasi ke Dokumen
   documentId Int                 @map("document_id")
@@ -553,25 +554,25 @@ enum PartnershipType {
   Abdimas
 }
 
-enum ActivityType {
-  // --- Sub Akademik ---
-  JointDegree
-  DoubleDegree
-  JointClass
-  StudentExchange
-  VisitingProfessor
+// enum ActivityType {
+//   // --- Sub Akademik ---
+//   JointDegree
+//   DoubleDegree
+//   JointClass
+//   StudentExchange
+//   VisitingProfessor
 
-  // --- Sub Penelitian ---
-  JointResearch
-  JointPublication
+//   // --- Sub Penelitian ---
+//   JointResearch
+//   JointPublication
 
-  // --- Sub Abdimas ---
-  JointCommunityService
-  SocialProject
+//   // --- Sub Abdimas ---
+//   JointCommunityService
+//   SocialProject
 
-  // --- Umum ---
-  General
-}
+//   // --- Umum ---
+//   General
+// }
 
 enum ActivityStatus {
   Terlaksana
@@ -586,22 +587,7 @@ enum ApprovalStatus {
   Skipped
 }
 
-// enum Role {
-//   admin
-//   mahasiswa
-//   dosen
-//   dekan
-//   wadek_1
-//   wadek_2
-//   kaur_sekdek
-//   kaur_laa
-//   kaur_lab
-//   kaur_sdm
-//   kaur_kemahasiswaan
-//   kaprodi
-//   sekprodi
-// }
-
+// User Role
 enum Role {
   super_admin
   admin
