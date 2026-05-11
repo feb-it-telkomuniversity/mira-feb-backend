@@ -116,6 +116,10 @@ async function getPartnershipDataQuery(page = 1, limit = 15, search = "", filter
         andConditions.push({ docType: filters.docType });
     }
 
+    if (filters.yearIssued) {
+        andConditions.push({ yearIssued: parseInt(filters.yearIssued) });
+    }
+
     if (filters.archive) {
         if (filters.archive === 'missing_hardcopy') {
             andConditions.push({ hasHardcopy: false });

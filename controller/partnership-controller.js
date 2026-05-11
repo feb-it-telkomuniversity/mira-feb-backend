@@ -51,6 +51,7 @@ async function getPartnershipData(req, res) {
             docType: req.query.docType || null,
             status: req.query.status || null,
             archive: req.query.archive || null,
+            yearIssued: req.query.yearIssued || null,
         }
 
         if (page < 1 || limit < 1) {
