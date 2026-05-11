@@ -19,9 +19,9 @@ async function getPartnershipSummaryStats(req, res) {
         })
     } catch (error) {
         console.error("Error fetching partnership stats:", error)
-        res.status(500).json({ 
-            message: "Internal server error when fetching partnership data", 
-            error: error.message 
+        res.status(500).json({
+            message: "Internal server error when fetching partnership data",
+            error: error.message
         })
     }
 }
@@ -54,9 +54,9 @@ async function getPartnershipData(req, res) {
         }
 
         if (page < 1 || limit < 1) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                message: "Invalid page or limit parameter" 
+                message: "Invalid page or limit parameter"
             });
         }
 
@@ -102,16 +102,16 @@ async function createPartnershipData(req, res) {
             })
         }
 
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
-            message: "Terjadi kesalahan server saat menyimpan data." 
+            message: "Terjadi kesalahan server saat menyimpan data."
         })
     }
 }
 
 async function updatePartnershipData(req, res) {
     try {
-        const { id } = req.params // Ambil ID dari URL
+        const { id } = req.params
         const payload = req.body
 
         if (!id) {
@@ -121,15 +121,6 @@ async function updatePartnershipData(req, res) {
             })
         }
 
-        if (Array.isArray(payload.activities)) {
-            payload.activities = payload.activities.map(act => ({
-                id: act.id,
-                status: act.status || null,
-                notes: act.notes || null
-            }))
-        }
-
-        // Jalankan Update
         const updatedData = await updatePartnershipDataQuery(id, payload)
 
         res.status(200).json({
@@ -150,15 +141,15 @@ async function updatePartnershipData(req, res) {
 
         // Handle Error: Unique Constraint (Misal ganti No Dokumen jadi nomor yg sudah ada)
         if (error.code === 'P2002') {
-             return res.status(409).json({
+            return res.status(409).json({
                 success: false,
                 message: "Nomor dokumen yang anda masukkan sudah digunakan oleh data lain."
             });
         }
 
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
-            message: "Terjadi kesalahan server saat memperbarui data." 
+            message: "Terjadi kesalahan server saat memperbarui data."
         });
     }
 }
@@ -169,19 +160,19 @@ async function deletePartnershipData(req, res) {
         await deletePartnershipDataQuery(partnershipId)
         res.status(204).json({ message: "Partnership data terhapus dengan baik" })
     } catch (error) {
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
-            message: "Terjadi kesalahan server saat memperbarui data." 
+            message: "Terjadi kesalahan server saat memperbarui data."
         })
     }
 }
 
-export { 
-    getPartnershipStats, 
-    getPartnershipSummaryStats, 
-    getPartnershipCharts, 
-    getPartnershipData, 
-    createPartnershipData, 
+export {
+    getPartnershipStats,
+    getPartnershipSummaryStats,
+    getPartnershipCharts,
+    getPartnershipData,
+    createPartnershipData,
     updatePartnershipData,
-    deletePartnershipData 
+    deletePartnershipData
 }

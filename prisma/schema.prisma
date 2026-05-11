@@ -158,6 +158,7 @@ model PartnershipDocument {
   approvalWadek1      ApprovalStatus? @map("approval_wadek1")
   approvalKabagKST    ApprovalStatus? @map("approval_kabag_kst")
   approvalDirSPIO     ApprovalStatus? @map("approval_dir_spio")
+  approvalDirMIK      ApprovalStatus? @map("approval_dir_mik")
   approvalKaurLegal   ApprovalStatus? @map("approval_kaur_legal")
   approvalKabagSekpim ApprovalStatus? @map("approval_kabag_sekpim")
   approvalDirSPS      ApprovalStatus? @map("approval_dir_sps")
@@ -179,11 +180,12 @@ model PartnershipDocument {
 }
 
 model PartnershipActivity {
-  id       Int              @id @default(autoincrement())
-  category PartnershipType?
-  name     String?
-  status   ActivityStatus?  @default(BelumTerlaksana)
-  notes    String?          @db.Text
+  id           Int              @id @default(autoincrement())
+  category     PartnershipType?
+  name         String?
+  status       ActivityStatus?  @default(BelumTerlaksana)
+  notes        String?          @db.Text
+  evidenceLink String?          @map("evidence_link")
 
   // Relasi ke Dokumen
   documentId Int                 @map("document_id")

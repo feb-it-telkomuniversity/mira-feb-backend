@@ -201,8 +201,9 @@ async function createPartnershipDataQuery(payload) {
             validUntil: toNull(payload.validUntil),
 
             activities: {
-                create: (payload.activityType || []).map((type) => ({
-                    type: type,
+                create: (payload.activities || payload.activityType || []).map((activityName) => ({
+                    name: activityName,
+                    category: toNull(payload.partnershipType),
                     status: "BelumTerlaksana"
                 }))
             }
@@ -230,23 +231,36 @@ async function updatePartnershipDataQuery(id, payload) {
     // 🚨 LOGIC 1: UPDATE STATUS & NOTES (TRANSACTIONAL) 
     // Dipakai jika FE mengirim array object yang punya 'id'
     // ============================================================
-    if (payload.activities && payload.activities.length > 0 && payload.activities[0].id) {
-        const updatePromises = payload.activities.map(act =>
-            prisma.partnershipActivity.update({
-                where: { id: parseInt(act.id) }, // Cari berdasarkan ID activity
+    if (payload.isStatusUpdate && payload.activities) {
+        const updatePromises = payload.activities
+            .filter(act => act.id)
+            .map(act => prisma.partnershipActivity.update({
+                where: { id: parseInt(act.id) },
                 data: {
-                    status: act.status, // Update Status
-                    notes: act.notes    // Update Notes
+                    status: act.status,
+                    notes: act.notes,
+                    evidenceLink: act.evidenceLink
                 }
-            })
-        );
+            }))
 
-        await prisma.$transaction(updatePromises);
+        const createPromises = payload.activities
+            .filter(act => !act.id)
+            .map(act => prisma.partnershipActivity.create({
+                data: {
+                    name: act.name,
+                    status: act.status || 'BelumTerlaksana',
+                    notes: act.notes,
+                    evidenceLink: act.evidenceLink,
+                    documentId: parseInt(id)
+                }
+            }))
+
+        await prisma.$transaction([...updatePromises, ...createPromises])
 
         return await prisma.partnershipDocument.findUnique({
             where: { id: parseInt(id) },
             include: { activities: true }
-        });
+        })
     }
 
     // ============================================================
@@ -262,13 +276,15 @@ async function updatePartnershipDataQuery(id, payload) {
         const activitiesData = incomingActivities.map((item) => {
             if (typeof item === 'string') {
                 return {
-                    type: item,
+                    name: item,
+                    category: processValue(payload.partnershipType),
                     status: 'BelumTerlaksana',
                     notes: null
                 }
             } else {
                 return {
-                    type: item.type,
+                    name: item.name || item.type,
+                    category: processValue(payload.partnershipType),
                     status: item.status || 'BelumTerlaksana',
                     notes: item.notes || null
                 }
@@ -317,6 +333,7 @@ async function updatePartnershipDataQuery(id, payload) {
             approvalWadek1: processValue(payload.approvalWadek1),
             approvalKabagKST: processValue(payload.approvalKabagKST),
             approvalDirSPIO: processValue(payload.approvalDirSPIO),
+            approvalDirMIK: processValue(payload.approvalDirMIK),
             approvalKaurLegal: processValue(payload.approvalKaurLegal),
             approvalKabagSekpim: processValue(payload.approvalKabagSekpim),
             approvalDirSPS: processValue(payload.approvalDirSPS),
