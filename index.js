@@ -12,26 +12,26 @@ const allowedOrigins = [
 ]
 
 const app = express()
-app.use((req, res, next) => {
-    const origin = req.headers.origin;
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin) return callback(null, true)
 
-    // ✨ Cek apakah origin ada di list (lebih fleksibel dibanding indexOf)
-    if (allowedOrigins.includes(origin)) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
-    }
-
-    // ✨ Wajib ada buat handle "credentials: include"
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, ngrok-skip-browser-warning');
-
-    // ✨ Langsung jawab OK kalau request-nya OPTIONS (Pre-flight)
-    if (req.method === 'OPTIONS') {
-        return res.sendStatus(204);
-    }
-
-    next();
-});
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true)
+        } else {
+            callback(new Error(`Origin ${origin} not allowed by CORS`))
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'X-Requested-With',
+        'Accept',
+        'ngrok-skip-browser-warning'
+    ]
+}))
 
 app.use(express.json())
 app.use(cookieParser())
