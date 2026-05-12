@@ -198,6 +198,7 @@ model PartnershipActivity {
 model ContractManagement {
   id                         Int                         @id @default(autoincrement())
   ContractManagementCategory ContractManagementCategory?
+  subCategory                String?                     @map("sub_category")
   responsibility             String
   definition                 String?                     @db.Text
   objective                  String?                     @db.Text

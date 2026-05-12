@@ -148,6 +148,7 @@ async function getContractManagementDataQuery(page = 1, limit = 15, search = "",
             select: {
                 id: true,
                 ContractManagementCategory: true,
+                subCategory: true,
                 responsibility: true,
                 unitOfMeasurement: true,
                 targetTw1: true, targetTw2: true, targetTw3: true, targetTw4: true,

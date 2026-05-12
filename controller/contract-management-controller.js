@@ -164,6 +164,7 @@ async function createContractManagementWithAssignment(req, res) {
     try {
         const {
             ContractManagementCategory,
+            subCategory,
             responsibility,
             unitOfMeasurement,
             year,
@@ -186,6 +187,7 @@ async function createContractManagementWithAssignment(req, res) {
         }
         const cleanPayload = {
             ContractManagementCategory: ContractManagementCategory || null,
+            subCategory: subCategory || null,
             responsibility,
             unitOfMeasurement: unitOfMeasurement || null,
             year: year || null,
@@ -245,7 +247,8 @@ async function updateContractManagement(req, res) {
         }
         const cleanPayload = {}
 
-        if (payload.ContractManagementCategory) cleanPayload.ContractManagementCategory = payload.ContractManagementCategory;
+        if (payload.ContractManagementCategory) cleanPayload.ContractManagementCategory = payload.ContractManagementCategory
+        if (payload.subCategory) cleanPayload.subCategory = payload.subCategory
         if (payload.responsibility) cleanPayload.responsibility = payload.responsibility;
         if (payload.unitOfMeasurement) cleanPayload.unitOfMeasurement = payload.unitOfMeasurement
         if (payload.year) cleanPayload.year = payload.year
