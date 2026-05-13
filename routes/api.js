@@ -5,7 +5,7 @@ import { handleCreateSchedule, getSchedulesByMonth, handleCancelSchedule, handle
 import { createContact, getContacts, handleDeleteContact, updateContact } from '../controller/contacts-controller.js';
 import { createPartnershipData, deletePartnershipData, getPartnershipCharts, getPartnershipData, getPartnershipStats, getPartnershipSummaryStats, updatePartnershipData } from '../controller/partnership-controller.js';
 import { addEvent, getEvents, getGoogleEvents, googleLogin, googleRedirect } from '../controller/google-calendar-controller.js';
-import { createContractManagementWithAssignment, deleteContractManagement, getContractManagementById, getContractManagementData, getContractStats, updateAssignment, updateContractManagement } from '../controller/contract-management-controller.js';
+import { createContractManagementWithAssignment, deleteContractManagement, getContractManagementById, getContractManagementData, getContractStats, reorderContracts, updateAssignment, updateContractManagement } from '../controller/contract-management-controller.js';
 import { createActivityMonitoring, getActivityMonitoringList, deleteActivityMonitoring, updateActivityMonitoring, patchActivityDates } from '../controller/activity-monitoring-controller.js'
 import { createManagementReport, deleteManagementReport, getManagementReportList, toggleReportStatus, updateManagementReport } from '../controller/management-report-controller.js'
 import { getLecturersList } from '../controller/lecturer-controller.js'
@@ -95,6 +95,7 @@ route.post('/contract-management', createContractManagementWithAssignment)
 route.put('/contract-management/:id', updateContractManagement)
 route.delete('/contract-management/:id', deleteContractManagement)
 route.patch('/contract-management/:id/update-assignment', updateAssignment)
+route.patch('/contract-management/reorder', reorderContracts)
 // ==== Contract Management ====
 
 
