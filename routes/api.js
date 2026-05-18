@@ -69,6 +69,7 @@ route.delete('/schedules/:id', handleDeleteSchedule)
 route.put('/schedules/:id/cancel', handleCancelSchedule)
 // ============== NEED WHATSAPP : HANDLE LATER ==============
 
+// ==== Contacts ====
 route.get('/contacts', getContacts)
 route.post('/contacts', createContact)
 route.delete('/contacts/:id', handleDeleteContact)
@@ -86,7 +87,6 @@ route.delete('/partnership/:id', deletePartnershipData)
 route.get("/google/events", getGoogleEvents)
 route.post("/google/events", addEvent)
 
-
 // ==== Contract Management ====
 route.get('/contract-management', getContractManagementData)
 route.get('/contract-management/stats', getContractStats)
@@ -96,7 +96,6 @@ route.put('/contract-management/:id', updateContractManagement)
 route.delete('/contract-management/:id', deleteContractManagement)
 route.patch('/contract-management/:id/update-assignment', updateAssignment)
 // ==== Contract Management ====
-
 
 // ==== Activtiy Monitoring List ====
 route.get('/activity-monitoring', getActivityMonitoringList)
@@ -145,7 +144,6 @@ route.patch('/halodekan/unit/tickets/:id/resolve', resolveTicketByUnit)
 route.get('/halodekan/unit/tickets', getUnitTickets)
 route.get('/halodekan/unit/tickets/:id', getUnitTicketDetail)
 // ==== HaloDekan ====
-
 
 // ==== Unit ====
 route.get('/units', getUnits)
