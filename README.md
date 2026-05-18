@@ -1,6 +1,6 @@
 # MIRA FEB Backend API 🚀
 
-Backend API unified engine untuk sistem **MIRA FEB** (Management and Information Resource Assistant - Fakultas Ekonomi dan Bisnis) Telkom University. Service ini mengelola seluruh operasional akademik, pengaduan keluhan (*Halo Dekan*), monitoring kontrak kinerja unit, penjadwalan kegiatan, notulensi rapat, serta asisten chatbot AI. 
+Backend API unified engine untuk sistem **MIRA FEB** (Media Informasi dan Relasi Anda - Fakultas Ekonomi dan Bisnis) Telkom University. Service ini mengelola seluruh operasional akademik, pengaduan keluhan (*Halo Dekan*), monitoring kontrak kinerja unit, penjadwalan kegiatan, notulensi rapat, serta asisten chatbot AI. 
 
 Backend Express.js ini dirancang untuk melayani integrasi data berkecepatan tinggi yang dikonsumsi oleh Web Dashboard Administrator maupun Mobile Application.
 
@@ -33,7 +33,6 @@ MIRA FEB Backend dibangun menggunakan ekosistem teknologi modern:
 * **ORM**: [Prisma ORM v6](https://www.prisma.io/)
 * **Cloud Object Storage**: [Vercel Blob Storage](https://vercel.com/docs/storage/vercel-blob)
 * **AI Engine**: [Google GenAI / Gemini API](https://ai.google.dev/)
-* **Notification Gateway**: [WhatsApp Web.js](https://wwebjs.dev/)
 
 ---
 
