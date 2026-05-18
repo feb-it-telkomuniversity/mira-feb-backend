@@ -30,9 +30,10 @@ export const getUnitsQuery = async (search = "", category = "") => {
             name: true,
             category: true,
         },
-        orderBy: {
-            name: 'asc'
-        }
+        orderBy: [
+            { category: 'asc' },
+            { name: 'asc' }
+        ]
     });
 };
 

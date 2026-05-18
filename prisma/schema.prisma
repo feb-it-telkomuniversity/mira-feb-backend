@@ -197,6 +197,7 @@ model PartnershipActivity {
 // ==== Contract Management ====
 model ContractManagement {
   id                         Int                         @id @default(autoincrement())
+  order                      Int?                        @default(0)
   ContractManagementCategory ContractManagementCategory?
   subCategory                String?                     @map("sub_category")
   responsibility             String

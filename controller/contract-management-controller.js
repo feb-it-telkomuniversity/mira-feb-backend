@@ -355,11 +355,37 @@ async function updateAssignment(req, res) {
     }
 }
 
+const reorderContracts = async (req, res) => {
+    const { newOrder } = req.body
+
+    try {
+        await prisma.$transaction(
+            newOrder.map((item) =>
+                prisma.contractManagement.update({
+                    where: { id: item.id },
+                    data: { order: item.order },
+                })
+            )
+        )
+
+        res.status(200).json({
+            success: true,
+            message: "Urutan berhasil diperbarui",
+        })
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Gagal memperbarui urutan ke database"
+        })
+    }
+}
+
 export {
     getContractManagementData,
     updateContractManagement,
     getContractManagementById,
     deleteContractManagement,
     createContractManagementWithAssignment,
-    updateAssignment
+    updateAssignment,
+    reorderContracts
 }
