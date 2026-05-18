@@ -1,0 +1,4266 @@
+openapi: 3.0.3
+info:
+  title: MIRA FEB Backend API Specification
+  description: >
+    Dokumentasi Lengkap API Specification (Phase 1, 2, dan 3) untuk backend Express.js MIRA FEB (Fakultas Ekonomi dan Bisnis).
+    Menjangkau seluruh modul dari Autentikasi Publik, Pengguna, Tiket Pengaduan, Pengingat Jadwal, Kontak, Dokumen Kemitraan (Partnership), Google Calendar, Evaluasi Kontrak Kinerja Unit, Monitoring Konflik Kegiatan Ruang & Pejabat, Notulensi Rapat, Data Master Dosen & TPA, HaloDekan Multi-Role Workflow (Mahasiswa, Admin, Dekanat, Unit Kerja), hingga Manajemen Struktural Unit.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000/api
+    description: Local Development Server
+  - url: https://mira-feb-backend-six.vercel.app/api
+    description: Production Server
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Public Auth
+    description: Endpoint autentikasi publik yang tidak memerlukan token akses.
+  - name: Protected Auth & Accounts
+    description: Endpoint pengaturan akun dan integrasi Google (Memerlukan login).
+  - name: Protected Users
+    description: Manajemen data pengguna dan profil (Memerlukan login).
+  - name: Protected Tickets
+    description: Manajemen pelaporan / Tiket Pengaduan dan Dashboard (Memerlukan login & wewenang admin).
+  - name: Protected Schedules
+    description: Manajemen jadwal pengingat / Reminder (Memerlukan login).
+  - name: Protected Contacts
+    description: Data kontak civitas akademika (Memerlukan login).
+  - name: Protected Partnership
+    description: Dokumen kerjasama / kemitraan MoA, MoU, IA (Memerlukan login).
+  - name: Protected Google Calendar
+    description: Sinkronisasi agenda rapat ke Google Calendar (Memerlukan login).
+  - name: Protected Contract Management
+    description: Evaluasi kinerja unit / Contract Kinerja (Memerlukan login).
+  - name: Protected Activity Monitoring
+    description: Monitoring konflik jadwal kegiatan ruangan & pejabat (Memerlukan login).
+  - name: Protected Management Reports
+    description: Checklist status laporan manajemen tahunan (Memerlukan login).
+  - name: Protected Meetings
+    description: Notulensi & action items rapat (Memerlukan login).
+  - name: Protected Lecturers & Staffs
+    description: Data master Dosen dan Tenaga Penunjang Akademik (TPA) (Memerlukan login).
+  - name: Protected HaloDekan
+    description: Sistem Pelaporan Halo Dekan terintegrasi multi-role (Mahasiswa, Admin, Dekanat, Unit).
+  - name: Protected Units
+    description: Manajemen data unit struktural FEB Telkom University.
+
+paths:
+  # ================= PUBLIC ROUTES =================
+  /sign-in:
+    post:
+      tags:
+        - Public Auth
+      summary: Sign in with credentials
+      description: Mengautentikasi pengguna menggunakan username dan password, mengembalikan info user dan menetapkan cookie `auth_token`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  example: "admin_feb"
+                password:
+                  type: string
+                  example: "securePassword123"
+      responses:
+        '200':
+          description: Login berhasil, cookie auth_token telah diset.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: "auth_token=eyJhbGciOiJIUzI1Ni...; HttpOnly; Secure; SameSite=None; Max-Age=86400"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Login successful"
+                  user:
+                    $ref: '#/components/schemas/UserBasic'
+        '400':
+          description: Username dan password wajib diisi.
+        '401':
+          description: Username atau password salah.
+        '500':
+          description: Terjadi kesalahan pada server.
+
+  /google/login:
+    get:
+      tags:
+        - Public Auth
+      summary: Initiate Google OAuth flow
+      description: Mengalihkan pengguna ke halaman persetujuan Google OAuth untuk integrasi Kalender.
+      security: []
+      responses:
+        '302':
+          description: Dialihkan ke Google OAuth URL.
+
+  /google/redirect:
+    get:
+      tags:
+        - Public Auth
+      summary: Handle Google OAuth callback
+      description: Endpoint callback setelah otorisasi Google. Menerima code, menyimpan token, dan mengalihkan pengguna kembali ke frontend.
+      security: []
+      parameters:
+        - name: code
+          in: query
+          required: true
+          description: Kode otorisasi dari Google.
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect ke dashboard frontend dengan status koneksi (connected=true/false).
+
+  /auth/google:
+    post:
+      tags:
+        - Public Auth
+      summary: Authenticate with Google Token
+      description: >
+        Login atau registrasi otomatis menggunakan token dari Google.
+        Hanya mengizinkan alamat email resmi Telkom University (@student.telkomuniversity.ac.id atau @telkomuniversity.ac.id).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+              properties:
+                token:
+                  type: string
+                  description: Google ID Token / Access Token.
+                  example: "ya29.a0AeD3V_..._token"
+      responses:
+        '200':
+          description: Autentikasi Google berhasil.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Login successful with Google Auth"
+                  user:
+                    $ref: '#/components/schemas/UserBasic'
+        '400':
+          description: Google Token tidak ditemukan.
+        '403':
+          description: Domain email tidak terdaftar atau bukan email resmi Telkom University.
+        '500':
+          description: Terjadi kesalahan server.
+
+  /auth/otp/request:
+    post:
+      tags:
+        - Public Auth
+      summary: Request OTP code via email
+      description: Mengirimkan 6 digit kode OTP ke email resmi Telkom University untuk verifikasi login/pendaftaran.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "mahasiswa@student.telkomuniversity.ac.id"
+      responses:
+        '200':
+          description: OTP berhasil dikirim ke email.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "OTP berhasil dikirim ke email Anda."
+        '403':
+          description: Menggunakan email di luar domain Telkom University.
+        '500':
+          description: Gagal mengirim OTP atau kesalahan server.
+
+  /auth/otp/verify:
+    post:
+      tags:
+        - Public Auth
+      summary: Verify OTP code
+      description: Memverifikasi kode OTP yang dikirim ke email. Jika valid, pengguna otomatis masuk/terdaftar.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - otp
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "mahasiswa@student.telkomuniversity.ac.id"
+                otp:
+                  type: string
+                  example: "123456"
+      responses:
+        '200':
+          description: Verifikasi OTP berhasil, cookie auth_token telah diset.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Login successful"
+                  user:
+                    $ref: '#/components/schemas/UserBasic'
+        '400':
+          description: Kode OTP salah atau sudah kedaluwarsa.
+        '404':
+          description: Belum melakukan request OTP untuk email tersebut.
+        '500':
+          description: Terjadi kesalahan server.
+
+  # ================= PROTECTED ROUTES =================
+  /account/link-google:
+    post:
+      tags:
+        - Protected Auth & Accounts
+      summary: Link Google Account
+      description: Menghubungkan akun Google ke akun pengguna yang sedang login.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - googleToken
+                - userId
+              properties:
+                googleToken:
+                  type: string
+                  example: "ya29.a0AeD3V_..."
+                userId:
+                  type: string
+                  example: "clzxxxxxx0000xxxx"
+      responses:
+        '200':
+          description: Akun Google berhasil ditautkan.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Google account successfully linked"
+                  email:
+                    type: string
+                    example: "user@gmail.com"
+        '400':
+          description: Parameter tidak lengkap atau email sudah terhubung ke akun lain.
+        '500':
+          description: Gagal menautkan akun Google.
+
+  /account/unlink-google:
+    post:
+      tags:
+        - Protected Auth & Accounts
+      summary: Unlink Google Account
+      description: Memutuskan tautan akun Google dari akun pengguna yang sedang login.
+      responses:
+        '200':
+          description: Berhasil memutuskan tautan akun Google.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Google account successfully unlinked"
+                  email:
+                    type: string
+                    nullable: true
+                    example: null
+        '500':
+          description: Gagal memutuskan tautan.
+
+  /users:
+    get:
+      tags:
+        - Protected Users
+      summary: Get all users
+      description: Mengambil daftar seluruh pengguna.
+      responses:
+        '200':
+          description: Berhasil memuat daftar pengguna.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Users fetched successfully"
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UserFull'
+        '500':
+          description: Gagal mengambil data pengguna.
+
+  /register-user:
+    post:
+      tags:
+        - Protected Users
+      summary: Register a new user (Admin Only)
+      description: Mendaftarkan user baru ke dalam sistem. Akses dibatasi untuk Super Admin / Admin.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+                - name
+                - role
+                - unitId
+              properties:
+                username:
+                  type: string
+                  example: "tpa_finance"
+                password:
+                  type: string
+                  example: "AdminSecret123"
+                name:
+                  type: string
+                  example: "Rofi"
+                role:
+                  type: string
+                  enum: [super_admin, admin, dekanat, wadek, kaur, kaprodi, mahasiswa, tpa]
+                  example: "tpa"
+                supervisorId:
+                  type: integer
+                  nullable: true
+                  example: 1
+                unitId:
+                  type: integer
+                  example: 2
+      responses:
+        '201':
+          description: User berhasil didaftarkan.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "User created successfuly"
+                  user:
+                    $ref: '#/components/schemas/UserFull'
+        '400':
+          description: Data input tidak lengkap.
+        '409':
+          description: Username sudah digunakan.
+        '500':
+          description: Terjadi kesalahan server.
+
+  /users/me:
+    get:
+      tags:
+        - Protected Users
+      summary: Get current user profile
+      description: Mengambil detail profil dari user yang sedang terautentikasi (berdasarkan token sesi).
+      responses:
+        '200':
+          description: Profil berhasil diambil.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "User fetched successfully"
+                  user:
+                    $ref: '#/components/schemas/UserFull'
+        '404':
+          description: User tidak ditemukan.
+        '500':
+          description: Terjadi kesalahan server.
+    patch:
+      tags:
+        - Protected Users
+      summary: Update own profile
+      description: Memperbarui informasi profil pengguna yang sedang login.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: "ahmad_new"
+                name:
+                  type: string
+                  example: "Ahmad Sidik Rofi"
+                password:
+                  type: string
+                  example: "newSecretPassword123"
+                avatarUrl:
+                  type: string
+                  example: "https://xxxx.vercel-storage.com/profiles/avatar.png"
+      responses:
+        '200':
+          description: Profil berhasil diperbarui. Cookie token diperbarui.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Profile updated successfully"
+                  user:
+                    $ref: '#/components/schemas/UserFull'
+        '400':
+          description: Username sudah digunakan atau tidak ada perubahan data.
+        '500':
+          description: Terjadi kesalahan server.
+
+  /users/upload-avatar:
+    post:
+      tags:
+        - Protected Users
+      summary: Upload avatar image
+      description: Mengunggah gambar avatar (Maksimal 2MB, format JPEG/PNG/WEBP) ke Vercel Blob storage.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - avatar
+              properties:
+                avatar:
+                  type: string
+                  format: binary
+                  description: File foto profil / avatar.
+      responses:
+        '200':
+          description: Foto berhasil diunggah.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Photo succeded uploaded"
+                  url:
+                    type: string
+                    example: "https://xxxx.vercel-storage.com/profiles/1715830000-avatar.png"
+        '400':
+          description: Tidak ada file yang diunggah.
+        '500':
+          description: Gagal mengunggah file.
+
+  /users/delete-avatar:
+    delete:
+      tags:
+        - Protected Users
+      summary: Delete avatar image
+      description: Menghapus avatar aktif dari Vercel Blob dan mengosongkan avatarUrl di profil user.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - avatarUrl
+              properties:
+                avatarUrl:
+                  type: string
+                  example: "https://xxxx.vercel-storage.com/profiles/1715830000-avatar.png"
+      responses:
+        '200':
+          description: Avatar berhasil dihapus.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Profile picture deleted successfully"
+                  user:
+                    $ref: '#/components/schemas/UserFull'
+        '500':
+          description: Gagal menghapus foto profil.
+
+  /users/{id}:
+    put:
+      tags:
+        - Protected Users
+      summary: Update user (Admin Only)
+      description: Mengubah detail data pengguna lain berdasarkan ID.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID User yang akan diupdate.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                name:
+                  type: string
+                role:
+                  type: string
+                  enum: [super_admin, admin, dekanat, wadek, kaur, kaprodi, mahasiswa, tpa]
+                supervisorId:
+                  type: integer
+                  nullable: true
+                unitId:
+                  type: integer
+                  nullable: true
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Pengguna berhasil diperbarui.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "User updated successfully"
+                  user:
+                    $ref: '#/components/schemas/UserFull'
+        '500':
+          description: Gagal memperbarui data user.
+    delete:
+      tags:
+        - Protected Users
+      summary: Delete user (Admin Only)
+      description: Menghapus pengguna dari sistem berdasarkan ID.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID User yang akan dihapus.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Pengguna berhasil dihapus.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "User deleted successfully"
+                  user:
+                    $ref: '#/components/schemas/UserFull'
+        '500':
+          description: Gagal menghapus user.
+
+  /sign-out:
+    post:
+      tags:
+        - Protected Users
+      summary: Sign out / Log out
+      description: Menghapus cookie `auth_token` untuk mengakhiri sesi pengguna.
+      responses:
+        '200':
+          description: Logout berhasil.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Logout berhasil"
+
+  # ================= NEED WHATSAPP : HANDLE LATER =================
+  /tickets:
+    get:
+      tags:
+        - Protected Tickets
+      summary: Get all tickets (Admin Only)
+      description: Mengambil semua daftar tiket pengaduan masuk, opsional difilter berdasarkan status.
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Filter status tiket.
+          schema:
+            type: string
+            example: "open"
+      responses:
+        '200':
+          description: Daftar tiket berhasil dimuat.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Ticket'
+        '500':
+          description: Gagal mengambil daftar tiket.
+
+  /tickets/{id}/assign:
+    put:
+      tags:
+        - Protected Tickets
+      summary: Assign ticket to Admin (Admin Only)
+      description: Menugaskan tiket pengaduan ke admin tertentu untuk mulai ditangani.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID Tiket.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - adminName
+              properties:
+                adminName:
+                  type: string
+                  example: "Admin Budi"
+      responses:
+        '200':
+          description: Tiket berhasil ditugaskan.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        '400':
+          description: Parameter adminName wajib diisi.
+        '500':
+          description: Gagal menugaskan tiket.
+
+  /tickets/{id}/resolve:
+    put:
+      tags:
+        - Protected Tickets
+      summary: Resolve ticket by Admin (Admin Only)
+      description: Menyelesaikan tiket pengaduan secara langsung oleh admin.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID Tiket.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tiket berhasil diselesaikan.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        '500':
+          description: Gagal menyelesaikan tiket.
+
+  /dashboard/stats:
+    get:
+      tags:
+        - Protected Tickets
+      summary: Get Dashboard Stats (Admin Only)
+      description: Mengambil data ringkasan statistik tiket pengaduan untuk dashboard admin.
+      responses:
+        '200':
+          description: Berhasil memuat statistik dashboard.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                    example: 120
+                  open:
+                    type: integer
+                    example: 15
+                  inProgress:
+                    type: integer
+                    example: 25
+                  resolved:
+                    type: integer
+                    example: 80
+        '500':
+          description: Gagal mengambil statistik.
+
+  /dashboard/stats/ticket-categories:
+    get:
+      tags:
+        - Protected Tickets
+      summary: Get Ticket Category Stats (Admin Only)
+      description: Mengambil data jumlah tiket per kategori pengaduan.
+      responses:
+        '200':
+          description: Statistik kategori berhasil diambil.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: integer
+                example:
+                  Sarana & Prasarana: 45
+                  Akademik: 30
+                  Kemahasiswaan: 25
+        '500':
+          description: Gagal memuat data statistik kategori.
+
+  /dashboard/stats/ticket-trends:
+    get:
+      tags:
+        - Protected Tickets
+      summary: Get Ticket Trends (Admin Only)
+      description: Mengambil data tren kenaikan/penurunan jumlah tiket dalam kurun waktu tertentu.
+      parameters:
+        - name: period
+          in: query
+          required: false
+          description: Periode hari (default 7 hari).
+          schema:
+            type: integer
+            default: 7
+            example: 7
+      responses:
+        '200':
+          description: Data tren tiket berhasil didapatkan.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    date:
+                      type: string
+                      format: date
+                      example: "2026-05-18"
+                    count:
+                      type: integer
+                      example: 8
+        '500':
+          description: Gagal mengambil tren tiket.
+
+  /conversations/{id}:
+    get:
+      tags:
+        - Protected Tickets
+      summary: Get Conversation Segment (Admin Only)
+      description: Mengambil segmen percakapan atau detail obrolan relevan terkait tiket pengaduan.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID Percakapan / Conversation.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Segmen percakapan berhasil diambil.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  conversationSegment:
+                    type: object
+                    description: Informasi terperinci segmen pesan obrolan.
+        '404':
+          description: Percakapan tidak ditemukan atau tidak memiliki tiket aktif.
+        '500':
+          description: Gagal memuat obrolan.
+
+  /schedules:
+    get:
+      tags:
+        - Protected Schedules
+      summary: Get schedules list
+      description: Mengambil seluruh daftar jadwal reminder aktif berdasarkan bulan berjalan.
+      responses:
+        '200':
+          description: Daftar jadwal berhasil didapatkan.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Schedule'
+        '500':
+          description: Gagal mengambil data jadwal.
+    post:
+      tags:
+        - Protected Schedules
+      summary: Create reminder schedule
+      description: Membuat jadwal pengingat (reminder) baru lengkap dengan judul, deskripsi, dan penerima WhatsApp.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - recipients
+                - eventTitle
+                - eventDescription
+                - eventTime
+                - reminderTime
+                - createdBy
+              properties:
+                recipients:
+                  type: array
+                  items:
+                    type: string
+                  description: Daftar nomor WhatsApp atau email penerima pengingat.
+                  example: ["081234567890", "089876543210"]
+                eventTitle:
+                  type: string
+                  example: "Ujian Akhir Semester"
+                eventDescription:
+                  type: string
+                  example: "Jangan lupa untuk mempersiapkan kartu ujian sebelum masuk ruang kelas."
+                eventTime:
+                  type: string
+                  format: date-time
+                  example: "2026-06-15T08:00:00Z"
+                reminderTime:
+                  type: string
+                  format: date-time
+                  example: "2026-06-14T08:00:00Z"
+                createdBy:
+                  type: string
+                  example: "admin_akademik"
+      responses:
+        '201':
+          description: Jadwal pengingat berhasil dibuat.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Jadwal berhasil dibuat"
+                  data:
+                    $ref: '#/components/schemas/Schedule'
+        '400':
+          description: Input tidak lengkap (recipients minimal satu, judul, deskripsi, waktu wajib diisi).
+        '500':
+          description: Terjadi kesalahan server.
+
+  /schedules/{id}:
+    delete:
+      tags:
+        - Protected Schedules
+      summary: Delete schedule
+      description: Menghapus jadwal reminder secara permanen berdasarkan ID.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID Jadwal (integer).
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Jadwal berhasil dihapus (tidak mengembalikan konten).
+        '500':
+          description: Gagal menghapus jadwal.
+
+  /schedules/{id}/cancel:
+    put:
+      tags:
+        - Protected Schedules
+      summary: Cancel schedule
+      description: Membatalkan pengiriman jadwal reminder (status dibatalkan sebelum terkirim).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID Jadwal (integer).
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Jadwal berhasil dibatalkan.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Schedule 12 successfully cancelled"
+        '409':
+          description: Jadwal tidak bisa dibatalkan (mungkin sudah terkirim atau tidak ditemukan).
+        '500':
+          description: Terjadi kesalahan server.
+
+  # ================= FASE 2: PROTECTED ROUTES =================
+  /contacts:
+    get:
+      tags:
+        - Protected Contacts
+      summary: Get all contacts
+      description: Mengambil seluruh daftar kontak civitas akademika FEB Telkom University.
+      responses:
+        '200':
+          description: Daftar kontak berhasil didapatkan.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Contact'
+        '500':
+          description: Terjadi kesalahan server.
+    post:
+      tags:
+        - Protected Contacts
+      summary: Create new contact
+      description: Menambahkan data kontak baru ke dalam sistem.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactCreate'
+      responses:
+        '201':
+          description: Kontak baru berhasil dibuat.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contact'
+        '500':
+          description: Gagal menyimpan data kontak.
+
+  /contacts/{id}:
+    put:
+      tags:
+        - Protected Contacts
+      summary: Update contact by ID
+      description: Memperbarui informasi data kontak berdasarkan ID.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID Kontak yang akan diperbarui.
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactCreate'
+      responses:
+        '200':
+          description: Kontak berhasil diperbarui.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Contact updated successfully"
+                  contacts:
+                    $ref: '#/components/schemas/Contact'
+        '500':
+          description: Terjadi kesalahan saat memperbarui kontak.
+    delete:
+      tags:
+        - Protected Contacts
+      summary: Delete contact by ID
+      description: Menghapus kontak dari sistem berdasarkan ID secara permanen.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID Kontak yang akan dihapus.
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Kontak berhasil dihapus.
+        '500':
+          description: Terjadi kesalahan server saat menghapus kontak.
+
+  /partnership/stats:
+    get:
+      tags:
+        - Protected Partnership
+      summary: Get Partnership summary stats
+      description: Mengambil data ringkasan statistik MoU, MoA, IA, dan total mitra aktif.
+      responses:
+        '200':
+          description: Berhasil memuat statistik partnership.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Successfully fetch partnership statistic"
+                  data:
+                    type: object
+                    properties:
+                      totalMoA:
+                        type: integer
+                        example: 25
+                      totalMoU:
+                        type: integer
+                        example: 18
+                      totalIA:
+                        type: integer
+                        example: 12
+                      activePartnerGroup:
+                        type: integer
+                        example: 45
+        '500':
+          description: Terjadi kesalahan server.
+
+  /partnership/chart:
+    get:
+      tags:
+        - Protected Partnership
+      summary: Get partnership chart data
+      description: Mengambil data olahan (Tahun Terbit, Kategori/Tipe Mitra, dan Scope) yang ramah Chart.
+      responses:
+        '200':
+          description: Data chart partnership berhasil diambil.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Successfully fetch chart data partnership"
+                  data:
+                    type: object
+                    properties:
+                      documentsByYear:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                              example: "2025"
+                            value:
+                              type: integer
+                              example: 10
+                      documentByCategory:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                              example: "Pendidikan"
+                            value:
+                              type: integer
+                              example: 15
+                      documentByScope:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                              example: "nasional"
+                            value:
+                              type: integer
+                              example: 30
+        '500':
+          description: Terjadi kesalahan server.
+
+  /partnership:
+    get:
+      tags:
+        - Protected Partnership
+      summary: Get partnership documents list (Searchable & Filterable)
+      description: Mengambil seluruh data kerjasama kemitraan dengan dukungan pencarian, filter, dan pagination.
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 15
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: docType
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: archive
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: yearIssued
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Data kemitraan berhasil dimuat.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Successfully fetch partnership data"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PartnershipDocument'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '400':
+          description: Parameter page/limit tidak valid.
+        '500':
+          description: Terjadi kesalahan server.
+    post:
+      tags:
+        - Protected Partnership
+      summary: Create new partnership document
+      description: Menyimpan dokumen kemitraan baru beserta pembuatan aktivitas kemitraan awal secara otomatis.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartnershipCreate'
+      responses:
+        '201':
+          description: Dokumen kemitraan berhasil disimpan.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Successfully create partnership data"
+                  data:
+                    $ref: '#/components/schemas/PartnershipDocument'
+        '400':
+          description: Data wajib tidak lengkap.
+        '409':
+          description: Terjadi konflik nomor dokumen unik yang sudah digunakan.
+        '500':
+          description: Terjadi kesalahan server saat menyimpan data.
+
+  /partnership/{id}:
+    put:
+      tags:
+        - Protected Partnership
+      summary: Update partnership document (or Activities Status)
+      description: Memperbarui data dokumen kemitraan, atau memproses pembaruan/tambah/hapus detail aktivitas pelaksanaannya (jika isStatusUpdate=true).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartnershipUpdate'
+      responses:
+        '200':
+          description: Data kemitraan berhasil diperbarui.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Data partnership berhasil diperbarui"
+                  data:
+                    $ref: '#/components/schemas/PartnershipDocument'
+        '400':
+          description: ID Partnership tidak disertakan.
+        '404':
+          description: Data partnership tidak ditemukan.
+        '409':
+          description: Nomor dokumen yang diubah sudah digunakan oleh data lain.
+        '500':
+          description: Terjadi kesalahan server.
+    delete:
+      tags:
+        - Protected Partnership
+      summary: Delete partnership document
+      description: Menghapus data dokumen kemitraan beserta aktivitas terkait.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Data kemitraan berhasil didelete.
+        '500':
+          description: Kesalahan server saat menghapus data.
+
+  /google/events:
+    get:
+      tags:
+        - Protected Google Calendar
+      summary: Get Google Calendar events
+      description: Mengambil seluruh agenda rapat/kegiatan terdaftar dari Google Calendar.
+      responses:
+        '200':
+          description: Agenda event kalender Google berhasil dimuat.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      example: "7xxx_google_event"
+                    summary:
+                      type: string
+                      example: "Rapat Pleno Fakultas"
+                    description:
+                      type: string
+                    start:
+                      type: object
+                      properties:
+                        dateTime:
+                          type: string
+                          format: date-time
+                    end:
+                      type: object
+                      properties:
+                        dateTime:
+                          type: string
+                          format: date-time
+        '401':
+          description: Sesi Google Calendar tidak terhubung.
+        '500':
+          description: Gagal terhubung ke server Google.
+    post:
+      tags:
+        - Protected Google Calendar
+      summary: Add new Google Calendar event
+      description: Membuat agenda rapat baru langsung terintegrasi ke Google Calendar.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - summary
+                - start
+                - end
+              properties:
+                summary:
+                  type: string
+                  example: "Rapat Pembahasan KM TW1"
+                description:
+                  type: string
+                  example: "Pembahasan realisasi data evaluasi kinerja unit kerja."
+                start:
+                  type: object
+                  properties:
+                    dateTime:
+                      type: string
+                      format: date-time
+                      example: "2026-05-20T09:00:00+07:00"
+                    timeZone:
+                      type: string
+                      example: "Asia/Jakarta"
+                end:
+                  type: object
+                  properties:
+                    dateTime:
+                      type: string
+                      format: date-time
+                      example: "2026-05-20T11:00:00+07:00"
+                    timeZone:
+                      type: string
+                      example: "Asia/Jakarta"
+      responses:
+        '200':
+          description: Event Google Calendar berhasil didaftarkan.
+        '401':
+          description: Akun Google Calendar belum dikoneksikan.
+
+  /contract-management:
+    get:
+      tags:
+        - Protected Contract Management
+      summary: Get Contract Management (KM) list
+      description: Mengambil data evaluasi kontrak kerja / Key Performance Indicator (KPI) unit FEB.
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 15
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: quarterly
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: unitId
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Data evaluasi kinerja unit berhasil dimuat.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Successfully fetch KM data"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ContractManagement'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '400':
+          description: Parameter pagination tidak valid.
+        '403':
+          description: User tidak memiliki hak wewenang akses unit.
+        '500':
+          description: Terjadi kesalahan server.
+    post:
+      tags:
+        - Protected Contract Management
+      summary: Create Contract Management (KM) data with assignments
+      description: Membuat indikator kontrak kinerja baru dan menugaskannya langsung ke beberapa Unit sasaran sekaligus.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContractManagementCreate'
+      responses:
+        '201':
+          description: Data Kontrak Kinerja berhasil ditambahkan.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Successfully created Contract Management Data"
+                  data:
+                    $ref: '#/components/schemas/ContractManagement'
+        '400':
+          description: Data tanggung jawab (responsibility) kosong, atau ID Unit yang dipilih tidak valid.
+        '500':
+          description: Kesalahan server saat menyimpan data kontrak.
+
+  /contract-management/stats:
+    get:
+      tags:
+        - Protected Contract Management
+      summary: Get KM dashboard statistics
+      description: Mengambil data rekap pencapaian indikator kinerja (Total Kinerja, Rata-rata Pencapaian, Target Tercapai, Total Nilai).
+      parameters:
+        - name: quarterly
+          in: query
+          required: false
+          schema:
+            type: string
+            default: "TW-4"
+        - name: year
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Statistik dashboard KM berhasil dimuat.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ContractStatItem'
+        '500':
+          description: Gagal memuat data statistik.
+
+  /contract-management/{id}:
+    get:
+      tags:
+        - Protected Contract Management
+      summary: Get Contract Management detail by ID
+      description: Mengambil detail informasi indikator kontrak kinerja lengkap dengan rincian unit yang ditugaskan.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detail data kontrak berhasil didapatkan.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Berhasil mengambil detail data KM"
+                  data:
+                    $ref: '#/components/schemas/ContractManagement'
+        '400':
+          description: Format ID tidak valid.
+        '404':
+          description: Data kontrak tidak ditemukan.
+        '500':
+          description: Kesalahan server.
+    put:
+      tags:
+        - Protected Contract Management
+      summary: Update Contract Management (KM)
+      description: Mengubah rumusan indikator dan memperbarui unit kerja yang ditugaskan.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContractManagementUpdate'
+      responses:
+        '200':
+          description: Data kontrak kinerja berhasil diupdate.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Data successfully updated"
+                  data:
+                    $ref: '#/components/schemas/ContractManagement'
+        '404':
+          description: Data kontrak tidak ditemukan.
+        '500':
+          description: Gagal mengupdate data kontrak.
+    delete:
+      tags:
+        - Protected Contract Management
+      summary: Delete Contract Management (KM)
+      description: Menghapus data indikator evaluasi kontrak kerja secara permanen dari sistem.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Data berhasil didelete.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Data successfully deleted"
+        '404':
+          description: Data kontrak tidak ditemukan.
+        '500':
+          description: Gagal menghapus data.
+
+  /contract-management/{id}/update-assignment:
+    patch:
+      tags:
+        - Protected Contract Management
+      summary: Update unit realization performance
+      description: Menginputkan data capaian realisasi kinerja triwulan unit dan catatan penjelas.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID Assignment (penugasan unit).
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignmentRealizationUpdate'
+      responses:
+        '200':
+          description: Data realisasi unit berhasil disimpan.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Realisasi dan catatan berhasil disimpan"
+                  data:
+                    $ref: '#/components/schemas/ContractAssignment'
+        '404':
+          description: Data penugasan unit tidak ditemukan.
+        '500':
+          description: Gagal menyimpan data realisasi.
+
+  /activity-monitoring:
+    get:
+      tags:
+        - Protected Activity Monitoring
+      summary: Get Activity Monitoring list (Conflict Detector)
+      description: Mengambil seluruh daftar agenda monitoring kegiatan unit, lengkap dengan deteksi otomatis konflik ruangan dan pejabat terkait.
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: unit
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Daftar kegiatan termonitor berhasil dimuat.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Berhasil mengambil data monitoring kegiatan"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ActivityMonitoring'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '400':
+          description: Pengisian parameter enum filter salah.
+        '500':
+          description: Terjadi kesalahan server.
+    post:
+      tags:
+        - Protected Activity Monitoring
+      summary: Create new activity monitoring (With Conflict Validation)
+      description: Menjadwalkan kegiatan baru dengan validasi otomatis bentrok ruangan dan bentrok pejabat (Rektor, Wadek, Dekan, dll).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivityMonitoringCreate'
+      responses:
+        '201':
+          description: Kegiatan berhasil disimpan.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Kegiatan berhasil ditambahkan"
+                  data:
+                    $ref: '#/components/schemas/ActivityMonitoring'
+        '400':
+          description: Parameter wajib kosong, detail lokasi ruangan 'Lainnya' belum diisi, atau format data tidak valid.
+        '500':
+          description: Terjadi kesalahan server.
+
+  /activity-monitoring/{id}:
+    put:
+      tags:
+        - Protected Activity Monitoring
+      summary: Update activity monitoring details
+      description: Memperbarui informasi kegiatan monitor dengan evaluasi ulang konflik ruangan dan pejabat.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivityMonitoringCreate'
+      responses:
+        '200':
+          description: Kegiatan monitoring berhasil diperbarui.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Kegiatan berhasil diperbarui."
+                  data:
+                    $ref: '#/components/schemas/ActivityMonitoring'
+        '404':
+          description: Data kegiatan tidak ditemukan.
+        '500':
+          description: Server error.
+    delete:
+      tags:
+        - Protected Activity Monitoring
+      summary: Delete activity monitoring
+      description: Menghapus data monitoring kegiatan secara permanen.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Kegiatan berhasil terhapus.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Delete activity success"
+        '500':
+          description: Gagal menghapus kegiatan.
+    patch:
+      tags:
+        - Protected Activity Monitoring
+      summary: Patch activity date (Drag and Drop Friendly)
+      description: Memperbarui tanggal mulai kegiatan dengan mempertahankan durasi rentang aslinya (cocok untuk kalender drag-and-drop).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tanggal
+              properties:
+                tanggal:
+                  type: string
+                  format: date
+                  description: Tanggal baru YYYY-MM-DD.
+                  example: "2026-05-25"
+      responses:
+        '200':
+          description: Tanggal kegiatan berhasil diperbarui.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Activity Date successfully updated"
+                  data:
+                    $ref: '#/components/schemas/ActivityMonitoring'
+        '400':
+          description: Tanggal baru wajib dikirimkan.
+        '404':
+          description: Kegiatan tidak ditemukan.
+        '500':
+          description: Terjadi kesalahan.
+
+  /management-reports:
+    get:
+      tags:
+        - Protected Management Reports
+      summary: Get Management Reports checklist
+      description: Mengambil seluruh checklist target laporan manajemen tahunan civitas akademika.
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: year
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Daftar checklist laporan berhasil diambil.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Berhasil mengambil data laporan manajemen"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ManagementReport'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '500':
+          description: Terjadi kesalahan server.
+    post:
+      tags:
+        - Protected Management Reports
+      summary: Create new management report indicator
+      description: Menambahkan indikator laporan checklist manajemen baru ke tahun tertentu.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ManagementReportCreate'
+      responses:
+        '201':
+          description: Indikator laporan berhasil ditambahkan.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Indikator laporan berhasil ditambahkan."
+                  data:
+                    $ref: '#/components/schemas/ManagementReport'
+        '400':
+          description: Indikator nama kosong.
+        '409':
+          description: Indikator sudah terdaftar di tahun tersebut.
+        '500':
+          description: Kesalahan server.
+
+  /management-reports/{id}:
+    put:
+      tags:
+        - Protected Management Reports
+      summary: Update management report indicator
+      description: Mengubah data deskripsi indikator laporan checklist manajemen.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ManagementReportCreate'
+      responses:
+        '200':
+          description: Data checklist berhasil diperbarui.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Data berhasil diperbarui"
+                  data:
+                    $ref: '#/components/schemas/ManagementReport'
+        '404':
+          description: Data laporan tidak ditemukan.
+        '409':
+          description: Indikator sejenis sudah ada di tahun tersebut.
+        '500':
+          description: Server error.
+    delete:
+      tags:
+        - Protected Management Reports
+      summary: Delete management report
+      description: Menghapus indikator laporan secara permanen dari sistem.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Laporan berhasil terhapus.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Report delted successfully"
+        '500':
+          description: Gagal menghapus.
+
+  /management-reports/{id}/toggle:
+    patch:
+      tags:
+        - Protected Management Reports
+      summary: Toggle quarterly checklist status
+      description: Menandai selesai/belum laporan manajemen pada triwulan tertentu.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - quarter
+                - value
+              properties:
+                quarter:
+                  type: string
+                  enum: [tw1, tw2, tw3, tw4]
+                  example: "tw1"
+                value:
+                  type: boolean
+                  example: true
+      responses:
+        '200':
+          description: Status Triwulan berhasil diubah.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Status TW1 berhasil diubah."
+                  data:
+                    $ref: '#/components/schemas/ManagementReport'
+        '400':
+          description: Nama quarter atau value boolean tidak valid.
+        '500':
+          description: Gagal merubah status checklist.
+
+  /meetings:
+    get:
+      tags:
+        - Protected Meetings
+      summary: Get all meetings
+      description: Mengambil seluruh daftar rapat terjadwal beserta evaluasi status dinamis rapat.
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 15
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Daftar rapat berhasil dimuat.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Berhasil mengambil data rapat"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MeetingBasic'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '500':
+          description: Gagal mengambil data.
+    post:
+      tags:
+        - Protected Meetings
+      summary: Schedule a new meeting (With Agendas & Action Items)
+      description: Menjadwalkan rapat baru lengkap dengan susunan Agenda dan Action Items tindak lanjut.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeetingCreate'
+      responses:
+        '201':
+          description: Rapat berhasil disimpan.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Rapat berhasil dijadwalkan."
+                  data:
+                    $ref: '#/components/schemas/MeetingFull'
+        '400':
+          description: Data wajib kosong, detail lokasi 'Lainnya' belum diisi, atau agenda kosong.
+        '500':
+          description: Kesalahan server.
+
+  /meetings/{id}:
+    get:
+      tags:
+        - Protected Meetings
+      summary: Get meeting details (With Agendas & Action Items)
+      description: Mengambil detail rapat secara utuh dari agenda hingga tindak lanjut action items.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detail rapat berhasil didapatkan.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Berhasil mengambil data rapat dari id"
+                  data:
+                    $ref: '#/components/schemas/MeetingFull'
+        '404':
+          description: Rapat tidak ditemukan.
+        '500':
+          description: Gagal memuat data rapat.
+    put:
+      tags:
+        - Protected Meetings
+      summary: Update meeting, Agendas, & Action Items (Sync)
+      description: Memperbarui detail rapat dengan sinkronisasi pintar otomatis untuk agenda dan action items.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeetingUpdate'
+      responses:
+        '200':
+          description: Notulensi dan detail rapat berhasil diperbarui.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Data notulensi berhasil diperbarui."
+                  data:
+                    $ref: '#/components/schemas/MeetingFull'
+        '404':
+          description: Rapat tidak ditemukan.
+        '500':
+          description: Gagal mengupdate rapat.
+    delete:
+      tags:
+        - Protected Meetings
+      summary: Delete meeting
+      description: Menghapus rapat beserta data agenda dan action items pendukungnya.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Rapat berhasil dihapus.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Meeting deleted successfully"
+        '500':
+          description: Terjadi kesalahan.
+
+  # ================= FASE 3: PROTECTED ROUTES =================
+  /lecturers:
+    get:
+      tags:
+        - Protected Lecturers & Staffs
+      summary: Get all lecturers (Dosen)
+      description: Mengambil seluruh daftar Dosen FEB Telkom University (mendukung pencarian berdasarkan Nama atau NIP).
+      parameters:
+        - name: search
+          in: query
+          required: false
+          description: Pencarian berdasarkan Nama atau NIP Dosen.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Daftar dosen berhasil dimuat.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Berhasil mengambil data dosen"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Lecturer'
+        '500':
+          description: Terjadi kesalahan server.
+
+  /staffs:
+    get:
+      tags:
+        - Protected Lecturers & Staffs
+      summary: Get all TPA staffs
+      description: Mengambil seluruh daftar Tenaga Penunjang Akademik (TPA) FEB Telkom University (mendukung pencarian berdasarkan Nama atau NIP).
+      parameters:
+        - name: search
+          in: query
+          required: false
+          description: Pencarian berdasarkan Nama atau NIP Staf TPA.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Daftar staf TPA berhasil dimuat.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Berhasil mengambil data TPA"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EmployeeTPA'
+        '500':
+          description: Terjadi kesalahan server.
+
+  /halodekan/tickets:
+    get:
+      tags:
+        - Protected HaloDekan
+      summary: Get student's own complaint tickets (Mahasiswa Only)
+      description: Mengambil seluruh riwayat tiket pengaduan yang pernah diajukan oleh mahasiswa yang sedang login.
+      responses:
+        '200':
+          description: Riwayat tiket pengaduan mahasiswa berhasil dimuat.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ComplainmentTicket'
+        '500':
+          description: Terjadi kesalahan server.
+    post:
+      tags:
+        - Protected HaloDekan
+      summary: Create a new complaint ticket (Mahasiswa Only)
+      description: Membuat pengaduan/keluhan baru lengkap dengan kategori keluhan dan lampiran berkas pendukung.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComplainmentTicketCreate'
+      responses:
+        '201':
+          description: Tiket pengaduan berhasil dikirim ke antrean Admin.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Pengaduan berhasil dikirim!"
+                  data:
+                    $ref: '#/components/schemas/ComplainmentTicket'
+        '400':
+          description: Parameter Kategori atau Deskripsi wajib diisi.
+        '500':
+          description: Gagal membuat tiket pengaduan.
+
+  /halodekan/tickets/upload-attachments:
+    post:
+      tags:
+        - Protected HaloDekan
+      summary: Upload complaint ticket attachments
+      description: Mengunggah maksimal 3 lampiran file pendukung pengaduan (Maksimal 1MB per file, format Gambar/PDF/Word/Excel) ke Vercel Blob.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - attachments
+              properties:
+                attachments:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Array dari berkas lampiran pendukung.
+      responses:
+        '200':
+          description: Semua berkas berhasil diunggah.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Semua lampiran berhasil diunggah"
+                  urls:
+                    type: array
+                    items:
+                      type: string
+                      example: "https://xxxx.vercel-storage.com/tickets/1715830000-bukti.pdf"
+        '400':
+          description: Berkas tidak ada atau melebihi batas ukuran/format file tidak valid.
+        '500':
+          description: Terjadi kesalahan server saat menyimpan ke Blob.
+
+  /halodekan/tickets/{id}:
+    get:
+      tags:
+        - Protected HaloDekan
+      summary: Get complaint ticket detail by ID
+      description: Mengambil rincian detail tiket pengaduan beserta riwayat obrolan/komentar dan riwayat status (Akses dibatasi hanya untuk pembuat tiket, Admin, dan Dekanat).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID Tiket Pengaduan (integer).
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detail tiket berhasil dimuat.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/ComplainmentTicket'
+        '403':
+          description: User dilarang melihat tiket pengaduan milik orang lain.
+        '404':
+          description: Tiket tidak ditemukan.
+        '500':
+          description: Terjadi kesalahan.
+
+  /halodekan/admin/tickets:
+    get:
+      tags:
+        - Protected HaloDekan
+      summary: Get all complaint tickets for admin triage (Admin Only)
+      description: Mengambil seluruh antrean tiket pengaduan masuk untuk proses sortir (triage) admin.
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Filter status pengaduan.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Daftar tiket untuk admin berhasil dimuat.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Tickets successfully fetched"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ComplainmentTicket'
+        '500':
+          description: Gagal memuat data antrean.
+
+  /halodekan/admin/tickets/{id}/triage:
+    patch:
+      tags:
+        - Protected HaloDekan
+      summary: Verify / triage incoming complaint ticket (Admin Only)
+      description: Memverifikasi tiket keluhan mahasiswa untuk diproses lebih lanjut, dialihkan ke Dekan, atau langsung diselesaikan/ditolak.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID Tiket.
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [InProgress, EscalatedToDean, Resolved, Cancelled, Rejected]
+                  description: Keputusan status sortir admin.
+                  example: "EscalatedToDean"
+                actionNote:
+                  type: string
+                  description: Catatan tindakan admin.
+                  example: "Keluhan penting mengenai AC ruang kuliah, eskalasi ke Dekan."
+      responses:
+        '200':
+          description: Sortir verifikasi tiket berhasil disimpan.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Ticket successfully updated to status: EscalatedToDean"
+                  data:
+                    $ref: '#/components/schemas/ComplainmentTicket'
+        '400':
+          description: Pilihan status sortir tidak valid.
+        '500':
+          description: Gagal memproses verifikasi.
+
+  /halodekan/dekan/tickets:
+    get:
+      tags:
+        - Protected HaloDekan
+      summary: Get all escalated tickets for Dekanat (Dekan Only)
+      description: Mengambil seluruh daftar pengaduan mahasiswa yang telah diverifikasi admin dan membutuhkan disposisi dari Dekan.
+      responses:
+        '200':
+          description: Daftar disposisi untuk Dekan berhasil dimuat.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ComplainmentTicket'
+        '500':
+          description: Gagal memuat data disposisi Dekan.
+
+  /halodekan/dekan/tickets/{id}:
+    get:
+      tags:
+        - Protected HaloDekan
+      summary: Get dekanat escalated ticket detail (Dekan Only)
+      description: Mengambil detail informasi pengaduan eskalasi untuk dianalisis oleh Dekanat.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detail pengaduan berhasil dimuat.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/ComplainmentTicket'
+        '404':
+          description: Tiket tidak ditemukan.
+        '500':
+          description: Gagal mengambil detail.
+
+  /halodekan/dekan/tickets/{id}/assign:
+    patch:
+      tags:
+        - Protected HaloDekan
+      summary: Disposisi / assign ticket to Unit (Dekan Only)
+      description: Mendisposisikan tiket pengaduan ke Unit kerja tertentu (misalnya LAA, SDM Keuangan, Urusan Kemahasiswaan) agar ditindaklanjuti.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - unitId
+              properties:
+                unitId:
+                  type: integer
+                  description: ID Unit struktural pelaksana tindak lanjut.
+                  example: 3
+                actionNote:
+                  type: string
+                  description: Instruksi / arahan Dekan untuk Unit kerja.
+                  example: "Tolong segera berkoordinasi dengan logistik dan perbaiki AC ruangan tersebut."
+      responses:
+        '200':
+          description: Tiket pengaduan berhasil didisposisikan ke Unit.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Tiket berhasil ditugaskan ke Unit terkait."
+                  data:
+                    $ref: '#/components/schemas/ComplainmentTicket'
+        '400':
+          description: ID Unit kerja sasaran wajib dipilih.
+        '404':
+          description: Tidak ada penanggung jawab aktif (Kaur/TPA) di Unit sasaran tersebut.
+        '500':
+          description: Terjadi kesalahan.
+
+  /halodekan/dekan/tickets/{id}/approve:
+    patch:
+      tags:
+        - Protected HaloDekan
+      summary: Approve or Reject unit resolution proof (Dekan Only)
+      description: Menilai bukti tindak lanjut penyelesaian dari unit kerja. Dekan dapat menandai Selesai (Resolved) atau Mengembalikan untuk direvisi (RevisionNeeded).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [Resolved, RevisionNeeded]
+                  description: Status persetujuan Dekan.
+                  example: "Resolved"
+                actionNote:
+                  type: string
+                  description: Catatan persetujuan / umpan balik revisi Dekan.
+                  example: "Pekerjaan rapi, AC sudah dingin kembali. Tiket diselesaikan."
+      responses:
+        '200':
+          description: Keputusan persetujuan Dekan berhasil disimpan.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Tiket dinyatakan Selesai!"
+                  data:
+                    $ref: '#/components/schemas/ComplainmentTicket'
+        '400':
+          description: Pilihan status persetujuan Dekan tidak valid.
+        '500':
+          description: Gagal memproses persetujuan Dekan.
+
+  /halodekan/unit/tickets:
+    get:
+      tags:
+        - Protected HaloDekan
+      summary: Get all assigned tickets for Unit (Unit Only)
+      description: Mengambil seluruh daftar tugas disposisi pengaduan yang diarahkan ke Unit Kerja yang bersangkutan.
+      responses:
+        '200':
+          description: Daftar tugas disposisi Unit berhasil dimuat.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ComplainmentTicket'
+        '500':
+          description: Gagal memuat daftar tugas Unit.
+
+  /halodekan/unit/tickets/{id}:
+    get:
+      tags:
+        - Protected HaloDekan
+      summary: Get unit assigned ticket detail (Unit Only)
+      description: Mengambil detail rincian tugas disposisi pengaduan yang menjadi wewenang Unit Kerja yang bersangkutan.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detail tugas unit berhasil dimuat.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/ComplainmentTicket'
+        '403':
+          description: Akses ditolak. Laporan ini bukan wewenang Unit Anda atau tim Anda.
+        '404':
+          description: Tugas pengaduan tidak ditemukan.
+        '500':
+          description: Gagal mengambil detail tugas.
+
+  /halodekan/unit/tickets/{id}/resolve:
+    patch:
+      tags:
+        - Protected HaloDekan
+      summary: Submit resolution proof (Unit Only)
+      description: Mengirimkan catatan penyelesaian beserta bukti fisik foto/berkas penanganan (minimal 1 berkas) dari Unit ke Dekan untuk ditinjau.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - resolutionProofUrls
+              properties:
+                resolutionNote:
+                  type: string
+                  description: Catatan penjelas hasil penyelesaian oleh unit kerja.
+                  example: "Kabel AC yang terbakar sudah diganti baru oleh teknisi vendor."
+                resolutionProofUrls:
+                  type: array
+                  items:
+                    type: string
+                  description: URL berkas lampiran bukti penanganan fisik dari Vercel Blob.
+                  example: ["https://xxxx.vercel-storage.com/tickets/1715830000-bukti-acc.png"]
+      responses:
+        '200':
+          description: Bukti penanganan berhasil dikirimkan ke Dekan.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Bukti penyelesaian berhasil dikirim ke Dekan."
+                  data:
+                    $ref: '#/components/schemas/ComplainmentTicket'
+        '400':
+          description: Unit wajib melampirkan minimal 1 URL bukti penanganan fisik.
+        '500':
+          description: Gagal mengirim bukti penyelesaian.
+
+  /units:
+    get:
+      tags:
+        - Protected Units
+      summary: Get all structural units
+      description: Mengambil seluruh daftar unit struktural di lingkungan FEB Telkom University.
+      parameters:
+        - name: search
+          in: query
+          required: false
+          description: Cari unit berdasarkan nama.
+          schema:
+            type: string
+        - name: category
+          in: query
+          required: false
+          description: Filter unit berdasarkan tipe kategori.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Daftar unit struktural berhasil dimuat.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Units fetched successfully"
+                  units:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Unit'
+        '500':
+          description: Terjadi kesalahan server.
+    post:
+      tags:
+        - Protected Units
+      summary: Create new structural unit
+      description: Menambahkan data unit struktural baru ke dalam sistem.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - category
+              properties:
+                name:
+                  type: string
+                  example: "Prodi S1 Akuntansi"
+                category:
+                  type: string
+                  enum: [Fakultas, Wadek, KK, Prodi, Kaur, Umum]
+                  example: "Prodi"
+      responses:
+        '201':
+          description: Unit struktural baru berhasil dibuat.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Unit created successfully"
+                  data:
+                    $ref: '#/components/schemas/Unit'
+        '400':
+          description: Nama unit atau kategori unit kosong.
+        '500':
+          description: Gagal menyimpan data unit.
+
+  /units/{id}:
+    put:
+      tags:
+        - Protected Units
+      summary: Update structural unit by ID
+      description: Memperbarui data nama atau kategori unit struktural berdasarkan ID.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Prodi S1 Akuntansi (Revisi)"
+                category:
+                  type: string
+                  enum: [Fakultas, Wadek, KK, Prodi, Kaur, Umum]
+                  example: "Prodi"
+      responses:
+        '200':
+          description: Data unit struktural berhasil diperbarui.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Unit updated successfully"
+                  data:
+                    $ref: '#/components/schemas/Unit'
+        '400':
+          description: Payload kosong / tidak ada data yang diperbarui.
+        '404':
+          description: Unit tidak ditemukan.
+        '500':
+          description: Gagal memperbarui data.
+    delete:
+      tags:
+        - Protected Units
+      summary: Delete structural unit by ID
+      description: Menghapus data unit struktural dari sistem secara permanen berdasarkan ID.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Unit struktural berhasil dihapus.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Unit deleted successfully"
+        '400':
+          description: Gagal menghapus unit karena masih memiliki relasi aktif ke Pengguna atau Kontrak Kinerja.
+        '404':
+          description: Unit tidak ditemukan.
+        '500':
+          description: Terjadi kesalahan.
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # --- Reusable Schemas ---
+    UserBasic:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "clzxxxxxx0000xxxx"
+        name:
+          type: string
+          example: "Rofi"
+        username:
+          type: string
+          example: "admin_feb"
+        role:
+          type: string
+          example: "admin"
+
+    UserFull:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "clzxxxxxx0000xxxx"
+        username:
+          type: string
+          example: "admin_feb"
+        name:
+          type: string
+          example: "Ahmad Sidik"
+        role:
+          type: string
+          example: "admin"
+        email:
+          type: string
+          format: email
+          nullable: true
+          example: "ahmadsidik@telkomuniversity.ac.id"
+        googleEmail:
+          type: string
+          format: email
+          nullable: true
+          example: "ahmadsidik.google@gmail.com"
+        avatarUrl:
+          type: string
+          nullable: true
+          example: "https://xxxx.vercel-storage.com/profiles/avatar.png"
+        supervisorId:
+          type: integer
+          nullable: true
+          example: null
+        unitId:
+          type: integer
+          nullable: true
+          example: 1
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-05-18T03:30:00Z"
+
+    Ticket:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "ticket-101"
+        name:
+          type: string
+          example: "Keluhan AC Ruang D301 Mati"
+        category:
+          type: string
+          example: "Sarana & Prasarana"
+        description:
+          type: string
+          example: "AC di ruangan D301 berbunyi bising dan tidak mengeluarkan udara dingin."
+        attachmentUrl:
+          type: string
+          nullable: true
+          example: "https://xxxx.vercel-storage.com/tickets/1715830000-bukti.png"
+        status:
+          type: string
+          enum: [open, InProgress, EscalatedToDean, Resolved, Cancelled, Rejected, RevisionNeeded]
+          example: "open"
+        actionNote:
+          type: string
+          nullable: true
+          example: "Sudah dialihkan ke bagian logistik."
+        assignedToId:
+          type: string
+          nullable: true
+          example: "clzxxxxxx0000xxxx"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-05-18T03:30:00Z"
+
+    Schedule:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 12
+        recipients:
+          type: array
+          items:
+            type: string
+          example: ["081234567890"]
+        eventTitle:
+          type: string
+          example: "Ujian Akhir Semester"
+        eventDescription:
+          type: string
+          example: "Persiapkan kartu ujian sebelum masuk ruang kelas."
+        eventTime:
+          type: string
+          format: date-time
+          example: "2026-06-15T08:00:00Z"
+        reminderTime:
+          type: string
+          format: date-time
+          example: "2026-06-14T08:00:00Z"
+        createdBy:
+          type: string
+          example: "admin_akademik"
+        status:
+          type: string
+          example: "pending"
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Pesan kesalahan atau detail kegagalan."
+        error:
+          type: string
+          example: "Detail error teknis (opsional)"
+
+    # --- Phase 2 Schemas ---
+    Contact:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "Dr. Ir. John Doe, M.T."
+        phoneNumber:
+          type: string
+          example: "08123456789"
+        notes:
+          type: string
+          nullable: true
+          example: "Dosen Wali angkatan 2024"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-05-18T03:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2026-05-18T03:30:00Z"
+
+    ContactCreate:
+      type: object
+      required:
+        - name
+        - phoneNumber
+      properties:
+        name:
+          type: string
+          example: "Dr. Ir. John Doe, M.T."
+        phoneNumber:
+          type: string
+          example: "08123456789"
+        notes:
+          type: string
+          example: "Dosen Wali angkatan 2024"
+
+    PartnershipDocument:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 5
+        partnerName:
+          type: string
+          example: "PT Telkom Indonesia"
+        yearIssued:
+          type: integer
+          example: 2025
+        docType:
+          type: string
+          example: "MoU"
+        scope:
+          type: string
+          example: "nasional"
+        picExternal:
+          type: string
+          nullable: true
+          example: "Budi Santoso"
+        picExternalPhone:
+          type: string
+          nullable: true
+          example: "0811223344"
+        picInternal:
+          type: string
+          nullable: true
+          example: "Andi Wijaya"
+        docNumberInternal:
+          type: string
+          nullable: true
+          example: "015/FEB-TELU/MoU/2025"
+        docNumberExternal:
+          type: string
+          nullable: true
+          example: "TELKOM/MoU-021/2025"
+        partnershipType:
+          type: string
+          nullable: true
+          example: "Pendidikan"
+        signingType:
+          type: string
+          nullable: true
+          example: "Desk-to-desk"
+        docLink:
+          type: string
+          nullable: true
+          example: "https://drive.google.com/..."
+        duration:
+          type: string
+          nullable: true
+          example: "5 tahun"
+        dateCreated:
+          type: string
+          format: date
+          nullable: true
+          example: "2025-01-10"
+        dateSigned:
+          type: string
+          format: date
+          nullable: true
+          example: "2025-01-15"
+        validUntil:
+          type: string
+          format: date
+          nullable: true
+          example: "2030-01-15"
+        notes:
+          type: string
+          nullable: true
+          example: "Kerjasama Beasiswa dan Magang"
+        hasHardcopy:
+          type: boolean
+          example: true
+        hasSoftcopy:
+          type: boolean
+          example: true
+        activities:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartnershipActivity'
+
+    PartnershipActivity:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 10
+        name:
+          type: string
+          example: "Program Magang Mahasiswa"
+        category:
+          type: string
+          nullable: true
+          example: "Pendidikan"
+        status:
+          type: string
+          example: "BelumTerlaksana"
+        notes:
+          type: string
+          nullable: true
+        evidenceLink:
+          type: string
+          nullable: true
+        documentId:
+          type: integer
+          example: 5
+
+    PartnershipCreate:
+      type: object
+      required:
+        - partnerName
+        - docType
+        - scope
+      properties:
+        partnerName:
+          type: string
+          example: "PT Telkom Indonesia"
+        yearIssued:
+          type: integer
+          example: 2025
+        docType:
+          type: string
+          enum: [MoU, MoA, IA]
+          example: "MoU"
+        scope:
+          type: string
+          example: "nasional"
+        picExternal:
+          type: string
+        picExternalPhone:
+          type: string
+        picInternal:
+          type: string
+        docNumberInternal:
+          type: string
+        docNumberExternal:
+          type: string
+        partnershipType:
+          type: string
+        signingType:
+          type: string
+        docLink:
+          type: string
+        duration:
+          type: string
+        dateCreated:
+          type: string
+          format: date
+        dateSigned:
+          type: string
+          format: date
+        validUntil:
+          type: string
+          format: date
+        notes:
+          type: string
+        hasHardcopy:
+          type: boolean
+          default: false
+        hasSoftcopy:
+          type: boolean
+          default: false
+        activities:
+          type: array
+          items:
+            type: string
+          example: ["JointResearch", "Pendidikan"]
+
+    PartnershipUpdate:
+      type: object
+      properties:
+        partnerName:
+          type: string
+        yearIssued:
+          type: integer
+        docType:
+          type: string
+        scope:
+          type: string
+        isStatusUpdate:
+          type: boolean
+        activities:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+              status:
+                type: string
+              notes:
+                type: string
+              evidenceLink:
+                type: string
+        deletedActivityIds:
+          type: array
+          items:
+            type: integer
+
+    ContractManagement:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 3
+        ContractManagementCategory:
+          type: string
+          nullable: true
+          example: "EVALUASI JALUR KINERJA UTAMA"
+        subCategory:
+          type: string
+          nullable: true
+          example: "Pendidikan & Pengajaran"
+        responsibility:
+          type: string
+          example: "Persentase Dosen Bergelar S3"
+        unitOfMeasurement:
+          type: string
+          nullable: true
+          example: "%"
+        year:
+          type: integer
+          nullable: true
+          example: 2026
+        targetTw1:
+          type: string
+          nullable: true
+        targetTw2:
+          type: string
+          nullable: true
+        targetTw3:
+          type: string
+          nullable: true
+        targetTw4:
+          type: string
+          nullable: true
+          example: "60%"
+        weightTw1:
+          type: number
+          format: float
+          nullable: true
+        weightTw2:
+          type: number
+          format: float
+          nullable: true
+        weightTw3:
+          type: number
+          format: float
+          nullable: true
+        weightTw4:
+          type: number
+          format: float
+          nullable: true
+          example: 1.5
+        min:
+          type: number
+          format: float
+          nullable: true
+        max:
+          type: number
+          format: float
+          nullable: true
+        strategy:
+          type: string
+          nullable: true
+        definition:
+          type: string
+          nullable: true
+        objective:
+          type: string
+          nullable: true
+        indicatorCalc:
+          type: string
+          nullable: true
+        assignments:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContractAssignment'
+
+    ContractAssignment:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 8
+        contractId:
+          type: integer
+          example: 3
+        unitId:
+          type: integer
+          example: 2
+        realizationTw1:
+          type: string
+          nullable: true
+        realizationTw2:
+          type: string
+          nullable: true
+        realizationTw3:
+          type: string
+          nullable: true
+        realizationTw4:
+          type: string
+          nullable: true
+        inputNote:
+          type: string
+          nullable: true
+
+    ContractManagementCreate:
+      type: object
+      required:
+        - responsibility
+      properties:
+        ContractManagementCategory:
+          type: string
+        subCategory:
+          type: string
+        responsibility:
+          type: string
+          example: "Persentase Dosen Bergelar S3"
+        unitOfMeasurement:
+          type: string
+        year:
+          type: integer
+        targetTw1:
+          type: string
+        targetTw2:
+          type: string
+        targetTw3:
+          type: string
+        targetTw4:
+          type: string
+        weightTw1:
+          type: number
+        weightTw2:
+          type: number
+        weightTw3:
+          type: number
+        weightTw4:
+          type: number
+        min:
+          type: number
+        max:
+          type: number
+        unitIds:
+          type: array
+          items:
+            type: integer
+          example: [2, 3]
+        strategy:
+          type: string
+        definition:
+          type: string
+        objective:
+          type: string
+        indicatorCalc:
+          type: string
+
+    ContractManagementUpdate:
+      type: object
+      properties:
+        responsibility:
+          type: string
+        targetTw4:
+          type: string
+        weightTw4:
+          type: number
+        unitIds:
+          type: array
+          items:
+            type: integer
+
+    AssignmentRealizationUpdate:
+      type: object
+      properties:
+        realizationTw1:
+          type: string
+        realizationTw2:
+          type: string
+        realizationTw3:
+          type: string
+        realizationTw4:
+          type: string
+          example: "62%"
+        inputNote:
+          type: string
+          example: "Sudah melebihi target dari fakultas."
+
+    ContractStatItem:
+      type: object
+      properties:
+        title:
+          type: string
+          example: "Total Responsibility"
+        value:
+          type: string
+          example: "45"
+        change:
+          type: string
+          example: "+8 items"
+        trend:
+          type: string
+          example: "up"
+        description:
+          type: string
+          example: "dari triwulan lalu"
+        iconKey:
+          type: string
+          example: "FileText"
+
+    ActivityMonitoring:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 15
+        title:
+          type: string
+          example: "Koordinasi Ujian Susulan"
+        date:
+          type: string
+          format: date
+          example: "2026-05-18"
+        endDate:
+          type: string
+          format: date
+          nullable: true
+        startTime:
+          type: string
+          example: "09:00"
+        endTime:
+          type: string
+          example: "11:00"
+        participants:
+          type: string
+          nullable: true
+          example: "15 orang"
+        description:
+          type: string
+          nullable: true
+        unit:
+          type: string
+          example: "UrusanLayananAkademik"
+        otherUnit:
+          type: string
+          nullable: true
+        room:
+          type: string
+          example: "RuangRapatMiossuLt1"
+        locationDetail:
+          type: string
+          nullable: true
+        officials:
+          type: array
+          items:
+            type: string
+          example: ["KaurAkademik"]
+        status:
+          type: string
+          enum: [Normal, RoomConflict, OfficialConflict, DoubleConflict]
+          example: "Normal"
+
+    ActivityMonitoringCreate:
+      type: object
+      required:
+        - title
+        - date
+        - startTime
+        - endTime
+        - unit
+        - room
+      properties:
+        title:
+          type: string
+          example: "Koordinasi Ujian Susulan"
+        date:
+          type: string
+          format: date
+          example: "2026-05-18"
+        endDate:
+          type: string
+          format: date
+        startTime:
+          type: string
+          example: "09:00"
+        endTime:
+          type: string
+          example: "11:00"
+        participants:
+          type: string
+        description:
+          type: string
+        unit:
+          type: string
+          example: "Urusan Layanan Akademik"
+        otherUnit:
+          type: string
+        room:
+          type: string
+          example: "Ruang Rapat Miossu lt. 1"
+        locationDetail:
+          type: string
+        officials:
+          type: array
+          items:
+            type: string
+          example: ["Kaur Akademik"]
+
+    ManagementReport:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 4
+        indicator:
+          type: string
+          example: "Laporan Evaluasi Pembelajaran Dosen (EDOM)"
+        year:
+          type: integer
+          example: 2026
+        evidenceLink:
+          type: string
+          nullable: true
+          example: "https://link-bukti-laporan.com/edom"
+        tw1:
+          type: boolean
+          example: true
+        tw2:
+          type: boolean
+          example: false
+        tw3:
+          type: boolean
+          example: false
+        tw4:
+          type: boolean
+          example: false
+
+    ManagementReportCreate:
+      type: object
+      required:
+        - indicator
+      properties:
+        indicator:
+          type: string
+          example: "Laporan EDOM"
+        year:
+          type: integer
+        evidenceLink:
+          type: string
+        tw1:
+          type: boolean
+          default: false
+        tw2:
+          type: boolean
+          default: false
+        tw3:
+          type: boolean
+          default: false
+        tw4:
+          type: boolean
+          default: false
+
+    MeetingBasic:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 6
+        title:
+          type: string
+          example: "Rapat Koordinasi Persiapan Perkuliahan"
+        date:
+          type: string
+          format: date-time
+          example: "2026-05-18T00:00:00Z"
+        startTime:
+          type: string
+          format: date-time
+          example: "2026-05-18T09:00:00Z"
+        endTime:
+          type: string
+          format: date-time
+          example: "2026-05-18T11:00:00Z"
+        room:
+          type: string
+          example: "RuangRapatManterawuLt2"
+        locationDetail:
+          type: string
+          nullable: true
+        leader:
+          type: string
+          example: "Dekan FEB"
+        notetaker:
+          type: string
+          example: "Sekretariat Dekanat"
+        status:
+          type: string
+          example: "Berlangsung"
+        hasNotulensi:
+          type: boolean
+          example: true
+
+    MeetingFull:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 6
+        title:
+          type: string
+        date:
+          type: string
+          format: date-time
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        room:
+          type: string
+        locationDetail:
+          type: string
+          nullable: true
+        leader:
+          type: string
+        notetaker:
+          type: string
+        participants:
+          type: array
+          items:
+            type: string
+          example: ["Andi", "Budi"]
+        status:
+          type: string
+          example: "Selesai"
+        notes:
+          type: string
+          example: "Rapat berjalan kondusif."
+        agendas:
+          type: array
+          items:
+            $ref: '#/components/schemas/MeetingAgenda'
+
+    MeetingAgenda:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 12
+        meetingId:
+          type: integer
+          example: 6
+        title:
+          type: string
+          example: "Agenda 1"
+        discussion:
+          type: string
+        decision:
+          type: string
+        actionItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/MeetingActionItem'
+
+    MeetingActionItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 22
+        agendaId:
+          type: integer
+          example: 12
+        task:
+          type: string
+        pic:
+          type: string
+        deadline:
+          type: string
+          format: date-time
+        status:
+          type: string
+          example: "Open"
+        notes:
+          type: string
+          nullable: true
+
+    MeetingCreate:
+      type: object
+      required:
+        - title
+        - date
+        - startTime
+        - endTime
+        - leader
+        - room
+        - agendas
+      properties:
+        title:
+          type: string
+          example: "Rapat Koordinasi Persiapan Perkuliahan"
+        date:
+          type: string
+          format: date-time
+          example: "2026-05-18T00:00:00.000Z"
+        startTime:
+          type: string
+          format: date-time
+          example: "2026-05-18T09:00:00.000Z"
+        endTime:
+          type: string
+          format: date-time
+          example: "2026-05-18T11:00:00.000Z"
+        room:
+          type: string
+          example: "Ruang Rapat Manterawu lt. 2"
+        locationDetail:
+          type: string
+        leader:
+          type: string
+        notetaker:
+          type: string
+        participants:
+          type: array
+          items:
+            type: string
+        notes:
+          type: string
+        agendas:
+          type: array
+          items:
+            type: object
+            required:
+              - title
+            properties:
+              title:
+                type: string
+                example: "Agenda 1"
+              discussion:
+                type: string
+              decision:
+                type: string
+              actionItems:
+                type: array
+                items:
+                  type: object
+                  required:
+                    - task
+                    - pic
+                    - deadline
+                  properties:
+                    task:
+                      type: string
+                    pic:
+                      type: string
+                    deadline:
+                      type: string
+                      format: date-time
+                    notes:
+                      type: string
+
+    MeetingUpdate:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+        status:
+          type: string
+          enum: [Selesai, Berlangsung, Terjadwal, Batal]
+        agendas:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              title:
+                type: string
+              discussion:
+                type: string
+              decision:
+                type: string
+              actionItems:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    task:
+                      type: string
+                    pic:
+                      type: string
+                    deadline:
+                      type: string
+                      format: date-time
+                    status:
+                      type: string
+                    notes:
+                      type: string
+
+    Pagination:
+      type: object
+      properties:
+        totalItems:
+          type: integer
+          example: 45
+        totalPages:
+          type: integer
+          example: 3
+        currentPage:
+          type: integer
+          example: 1
+        pageSize:
+          type: integer
+          example: 15
+
+    # --- Phase 3 Master Schemas ---
+    Lecturer:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 2
+        nip:
+          type: string
+          example: "19800101XXXXXXXXXX"
+        nuptk:
+          type: string
+          nullable: true
+          example: "1234567890123456"
+        frontTitle:
+          type: string
+          nullable: true
+          example: "Dr."
+        name:
+          type: string
+          example: "Ahmad Sidik Rofi, M.T."
+        backTitle:
+          type: string
+          nullable: true
+          example: "M.T."
+        prodi:
+          type: string
+          example: "S1 Akuntansi"
+        lecturerCode:
+          type: string
+          nullable: true
+          example: "ASR"
+        education:
+          type: string
+          nullable: true
+          example: "S3 - Doktor Teknik"
+        jobFunctional:
+          type: string
+          nullable: true
+          example: "Lektor Kepala"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    EmployeeTPA:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 5
+        name:
+          type: string
+          example: "Budi Santoso, A.Md."
+        nip:
+          type: string
+          example: "20900115XXXX"
+        workUnit:
+          type: string
+          example: "Urusan SDM & Keuangan"
+        employmentStatus:
+          type: string
+          example: "Pegawai Tetap"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Unit:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 3
+        name:
+          type: string
+          example: "Urusan Layanan Akademik"
+        category:
+          type: string
+          enum: [Fakultas, Wadek, KK, Prodi, Kaur, Umum]
+          example: "Kaur"
+
+    ComplainmentTicket:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 10
+        ticketCode:
+          type: string
+          example: "TCK-20260518-0001"
+        userId:
+          type: integer
+          example: 4
+        name:
+          type: string
+          nullable: true
+          example: "Rofi"
+        assignedToId:
+          type: integer
+          nullable: true
+          example: 12
+        category:
+          type: string
+          enum: [Akademik, Kemahasiswaan, Keuangan, Fasilitas, SumberDaya, Lainnya]
+          example: "Fasilitas"
+        description:
+          type: string
+          example: "AC di ruangan D301 tidak dingin dan berbunyi bising."
+        attachmentUrl:
+          type: array
+          items:
+            type: string
+          example: ["https://xxxx.vercel-storage.com/tickets/1715830000-bukti.png"]
+        resolutionProofUrls:
+          type: array
+          items:
+            type: string
+          example: ["https://xxxx.vercel-storage.com/tickets/1715830000-selesai.png"]
+        resolutionNote:
+          type: string
+          nullable: true
+          example: "Teknisi logistik sudah mengganti freon AC dan membersihkan filter."
+        status:
+          type: string
+          enum: [Submitted, InProgress, AssignedToUnit, WaitingApproval, RevisionNeeded, Resolved, Cancelled, Rejected, Close]
+          example: "Submitted"
+        actionNote:
+          type: string
+          nullable: true
+          example: "Diteruskan ke Urusan LAA untuk ditindaklanjuti."
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-05-18T03:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2026-05-18T03:30:00Z"
+        ticketComments:
+          type: array
+          items:
+            $ref: '#/components/schemas/TicketComment'
+        histories:
+          type: array
+          items:
+            $ref: '#/components/schemas/TicketHistory'
+
+    ComplainmentTicketCreate:
+      type: object
+      required:
+        - category
+        - description
+      properties:
+        name:
+          type: string
+          example: "Keluhan AC D301"
+        category:
+          type: string
+          enum: [Akademik, Kemahasiswaan, Keuangan, Fasilitas, SumberDaya, Lainnya]
+          example: "Fasilitas"
+        description:
+          type: string
+          example: "AC di ruangan D301 tidak dingin dan berbunyi bising."
+        attachmentUrl:
+          type: array
+          items:
+            type: string
+          example: ["https://xxxx.vercel-storage.com/tickets/1715830000-bukti.png"]
+
+    TicketComment:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 121
+        ticketId:
+          type: integer
+          example: 10
+        senderId:
+          type: integer
+          example: 12
+        message:
+          type: string
+          example: "Apakah teknisi sudah berada di lokasi?"
+        attachmentUrls:
+          type: array
+          items:
+            type: string
+          example: []
+        createdAt:
+          type: string
+          format: date-time
+
+    TicketHistory:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 301
+        ticketId:
+          type: integer
+          example: 10
+        actorId:
+          type: integer
+          example: 4
+        actionType:
+          type: string
+          example: "SUBMITTED"
+        message:
+          type: string
+          nullable: true
+          example: "Tiket pengaduan pertama kali didaftarkan oleh mahasiswa."
+        createdAt:
+          type: string
+          format: date-time
