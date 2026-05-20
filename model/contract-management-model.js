@@ -154,6 +154,7 @@ async function getContractManagementDataQuery(page = 1, limit = 15, search = "",
                 unitOfMeasurement: true,
                 targetTw1: true, targetTw2: true, targetTw3: true, targetTw4: true,
                 weightTw1: true, weightTw2: true, weightTw3: true, weightTw4: true,
+                realizationTw1: true, realizationTw2: true, realizationTw3: true, realizationTw4: true,
                 definition: true,
                 objective: true,
                 indicatorCalc: true,
@@ -234,46 +235,70 @@ async function createContractManagementQueryWithAssignment(payload) {
 }
 
 async function updateContractManagementQuery(id, payload) {
-    const { unitIds, ...updateData } = payload
+    const { unitIds, ...updateData } = payload;
 
-    // 2. Tarik data lama untuk mencari tahu Unit apa saja yang terdaftar saat ini
+    // 1. Tarik data lama
     const existingData = await prisma.contractManagement.findUnique({
         where: { id: parseInt(id) },
         include: { assignments: true }
-    })
+    });
+
     if (!existingData) {
-        throw new Error("RecordNotFound")
+        throw new Error("RecordNotFound");
     }
 
+    const updatedContractData = { ...existingData, ...updateData };
+    const quarters = [1, 2, 3, 4];
+
+    // ======================================================
+    // 2. Hitung Otomatis Capaian (Achievement) FAKULTAS (Master)
+    // ======================================================
+    quarters.forEach(q => {
+        const currentRealization = updateData[`realizationTw${q}`] !== undefined
+            ? updateData[`realizationTw${q}`]
+            : existingData[`realizationTw${q}`];
+
+        if (currentRealization !== null && currentRealization !== undefined) {
+            const calcMasterData = {
+                responsibility: updatedContractData.responsibility,
+                weight: updatedContractData[`weightTw${q}`],
+                target: updatedContractData[`targetTw${q}`],
+                realization: currentRealization,
+                min: updatedContractData.min,
+                max: updatedContractData.max
+            };
+
+            const resultMasterKM = calculateKM(calcMasterData);
+            updateData[`achievementTw${q}`] = resultMasterKM.achievement;
+        } else if (updateData[`realizationTw${q}`] === null) {
+            updateData[`achievementTw${q}`] = null;
+        }
+    });
+
+    // ======================================================
+    // 3. Inisialisasi Transaksi Database (Simpan data Fakultas)
+    // ======================================================
     const prismaOperations = [
         prisma.contractManagement.update({
             where: { id: parseInt(id) },
             data: updateData
         })
-    ]
+    ];
 
-    // 4. Sinkronisasi Unit (Jika Admin merubah pilihan unitIds)
+    // ======================================================
+    // 4. Sinkronisasi Unit
+    // ======================================================
     if (Array.isArray(unitIds)) {
-        // Ambil ID unit yang sudah ada di database (Lama)
         const currentUnitIds = existingData.assignments.map(a => a.unitId);
-
-        // Cari unit yang baru dicentang (Ada di input baru, tapi tidak ada di database)
         const unitsToAdd = unitIds.filter(id => !currentUnitIds.includes(id));
-
-        // Cari unit yang uncheck/dihapus (Ada di database, tapi tidak ada di input baru)
         const unitsToRemove = currentUnitIds.filter(id => !unitIds.includes(id));
 
-        // Operasi B: Hapus assignment untuk unit yang di-uncheck
         if (unitsToRemove.length > 0) {
             prismaOperations.push(prisma.contractAssignment.deleteMany({
-                where: {
-                    contractId: parseInt(id),
-                    unitId: { in: unitsToRemove }
-                }
+                where: { contractId: parseInt(id), unitId: { in: unitsToRemove } }
             }));
         }
 
-        // Operasi C: Buat assignment baru untuk unit yang baru dicentang
         if (unitsToAdd.length > 0) {
             prismaOperations.push(prisma.contractAssignment.createMany({
                 data: unitsToAdd.map(newUnitId => ({
@@ -284,10 +309,9 @@ async function updateContractManagementQuery(id, payload) {
         }
     }
 
-    // 5. Rekalkulasi capaian (achievement) untuk assignment yang sudah ada jika target/bobot berubah
-    const updatedContractData = { ...existingData, ...updateData };
-    const quarters = [1, 2, 3, 4];
-
+    // ======================================================
+    // 5. Rekalkulasi Capaian UNIT (Jika Target/Bobot Berubah)
+    // ======================================================
     existingData.assignments.forEach(assignment => {
         const assignmentUpdateData = {};
         let shouldUpdate = false;
@@ -313,7 +337,6 @@ async function updateContractManagementQuery(id, payload) {
         });
 
         if (shouldUpdate) {
-            // Pastikan tidak mengupdate assignment yang mau dihapus
             const isRemoved = Array.isArray(unitIds) && !unitIds.includes(assignment.unitId);
             if (!isRemoved) {
                 prismaOperations.push(prisma.contractAssignment.update({
@@ -324,8 +347,9 @@ async function updateContractManagementQuery(id, payload) {
         }
     });
 
-    await prisma.$transaction(prismaOperations)
-    return await getContractManagementByIdQuery(id)
+    // 6. Eksekusi semua secara bersamaan!
+    await prisma.$transaction(prismaOperations);
+    return await getContractManagementByIdQuery(id);
 }
 
 async function deleteContractManagementQuery(id) {
@@ -365,6 +389,11 @@ async function updateAssignementQuery(assignmentId, updateData) {
             dataToUpdate[`achievementTw${q}`] = resultKM.achievement;
             dataToUpdate[`persRealTw${q}`] = resultKM.persReal;
             dataToUpdate[`valueTw${q}`] = resultKM.value;
+        } else if (realizationVal === null || realizationVal === "") {
+            dataToUpdate[`realizationTw${q}`] = null;
+            dataToUpdate[`achievementTw${q}`] = null;
+            dataToUpdate[`persRealTw${q}`] = null;
+            dataToUpdate[`valueTw${q}`] = null;
         }
     });
 

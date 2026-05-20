@@ -262,7 +262,12 @@ async function updateContractManagement(req, res) {
         if (payload.weightTw1 !== undefined) cleanPayload.weightTw1 = payload.weightTw1 ? parseFloat(payload.weightTw1) : null;
         if (payload.weightTw2 !== undefined) cleanPayload.weightTw2 = payload.weightTw2 ? parseFloat(payload.weightTw2) : null;
         if (payload.weightTw3 !== undefined) cleanPayload.weightTw3 = payload.weightTw3 ? parseFloat(payload.weightTw3) : null;
-        if (payload.weightTw4 !== undefined) cleanPayload.weightTw4 = payload.weightTw4 ? parseFloat(payload.weightTw4) : null;
+        if (payload.weightTw4 !== undefined) cleanPayload.weightTw4 = payload.weightTw4 ? parseFloat(payload.weightTw4) : null
+
+        if (payload.realizationTw1 !== undefined) cleanPayload.realizationTw1 = payload.realizationTw1 !== null ? parseFloat(payload.realizationTw1) : null;
+        if (payload.realizationTw2 !== undefined) cleanPayload.realizationTw2 = payload.realizationTw2 !== null ? parseFloat(payload.realizationTw2) : null;
+        if (payload.realizationTw3 !== undefined) cleanPayload.realizationTw3 = payload.realizationTw3 !== null ? parseFloat(payload.realizationTw3) : null;
+        if (payload.realizationTw4 !== undefined) cleanPayload.realizationTw4 = payload.realizationTw4 !== null ? parseFloat(payload.realizationTw4) : null;
 
         if (payload.min !== undefined) cleanPayload.min = payload.min ? parseFloat(payload.min) : null;
         if (payload.max !== undefined) cleanPayload.max = payload.max ? parseFloat(payload.max) : null;

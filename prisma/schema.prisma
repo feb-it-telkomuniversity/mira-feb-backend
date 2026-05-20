@@ -218,6 +218,16 @@ model ContractManagement {
   weightTw3 Float? @map("weight_tw3")
   weightTw4 Float? @map("weight_tw4")
 
+  realizationTw1 Float? @map("realization_tw1")
+  realizationTw2 Float? @map("realization_tw2")
+  realizationTw3 Float? @map("realization_tw3")
+  realizationTw4 Float? @map("realization_tw4")
+
+  achievementTw1 Float? @map("achievement_tw1")
+  achievementTw2 Float? @map("achievement_tw2")
+  achievementTw3 Float? @map("achievement_tw3")
+  achievementTw4 Float? @map("achievement_tw4")
+
   max      Float?
   min      Float?
   strategy String? @db.Text

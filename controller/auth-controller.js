@@ -97,7 +97,7 @@ async function registerUser(req, res) {
             user: newUser
         })
     } catch (error) {
-        console.error('Register admin error: ', error)
+        console.error('Register error: ', error)
         res.status(500).json({
             success: false,
             message: 'Internal server error'
