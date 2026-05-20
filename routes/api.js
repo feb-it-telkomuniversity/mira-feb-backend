@@ -156,8 +156,8 @@ route.delete('/units/:id', deleteUnit)
 // ==== Unit ====
 
 // ==== RTM ====
+route.post('/rtm', createRtmMeeting)
 route.get('/rtm', getAllRtm)
 route.get('/rtm/:id', getRtmById)
-route.post('/rtm', createRtmMeeting)
 
 export default route
