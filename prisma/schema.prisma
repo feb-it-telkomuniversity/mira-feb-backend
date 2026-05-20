@@ -492,6 +492,72 @@ model Unit {
   @@map("units")
 }
 
+// ==== RTM ====
+model RtmMeeting {
+  id Int @id @default(autoincrement())
+
+  // === Section 1: Input Kegiatan Rapat ===
+  sotk         String?
+  pic          String? // Pembuat Risalah RTM
+  meetingDate  DateTime? @map("meeting_date") // Tanggal RTM
+  name         String // Nama RTM
+  participants String?   @db.Text // Peserta RTM (Bisa panjang)
+
+  // === Section 2: Materi Rapat ===
+  materials String[]
+
+  // === Section 3: Header Risalah (Kop) ===
+  documentDate DateTime? @map("document_date") // Tanggal di tabel Kop
+  location     String? // Tempat
+  agenda       String?   @db.Text // Agenda
+
+  // === Section 4: Signatures (Tanda Tangan) ===
+  preparedByName     String? @map("prepared_by_name")
+  preparedByPosition String? @map("prepared_by_position")
+
+  reviewedByName     String? @map("reviewed_by_name")
+  reviewedByPosition String? @map("reviewed_by_position")
+
+  approvedByName     String? @map("approved_by_name")
+  approvedByPosition String? @map("approved_by_position")
+
+  signatureLocation String?   @map("signature_location")
+  signatureDate     DateTime? @map("signature_date")
+
+  // === Relasi ke Baris Tabel Pembahasan ===
+  discussions RtmDiscussion[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("rtm_meetings")
+}
+
+// ==========================================
+// 2. Tabel Anak untuk Baris Pembahasan (Tabel Gambar 3)
+// ==========================================
+model RtmDiscussion {
+  id           Int @id @default(autoincrement())
+  rtmMeetingId Int @map("rtm_meeting_id")
+
+  // Field ini dibuat opsional (?) karena user mungkin tambah baris kosong dulu baru diisi bertahap
+  topic      String? @db.Text // Topik
+  problem    String? @db.Text // Pembahasan / Permasalahan
+  actionPlan String? @db.Text // Rencana Tindakan / Perbaikan
+  outcome    String? @db.Text // Luaran / Outcomes
+  pic        String? // PIC
+  target     String? // Target (Pake string biar fleksibel misal "Akhir Q3" atau "30 Mei")
+  status     String? // Status
+
+  // Relasi balik ke tabel induk (onDelete Cascade wajib biar gak orphaned data)
+  meeting RtmMeeting @relation(fields: [rtmMeetingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("rtm_discussions")
+}
+
 model OtpRequest {
   id        Int      @id @default(autoincrement())
   email     String   @unique
