@@ -494,14 +494,15 @@ model Unit {
 
 // ==== RTM ====
 model RtmMeeting {
-  id Int @id @default(autoincrement())
+  id      Int     @id @default(autoincrement())
+  rtmCode String? @map("rtm_code")
 
   // === Section 1: Input Kegiatan Rapat ===
   sotk         String?
-  pic          String? // Pembuat Risalah RTM
-  meetingDate  DateTime? @map("meeting_date") // Tanggal RTM
-  name         String // Nama RTM
-  participants String?   @db.Text // Peserta RTM (Bisa panjang)
+  pic          String?
+  meetingDate  DateTime? @map("meeting_date")
+  name         String
+  participants String?   @db.Text
 
   // === Section 2: Materi Rapat ===
   materials String[]

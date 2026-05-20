@@ -4,7 +4,7 @@ import { signIn, getUsers, registerUser, deleteUser, updateUser, updateMyProfile
 import { handleCreateSchedule, getSchedulesByMonth, handleCancelSchedule, handleDeleteSchedule } from '../controller/schedule-controller.js';
 import { createContact, getContacts, handleDeleteContact, updateContact } from '../controller/contacts-controller.js';
 import { createPartnershipData, deletePartnershipData, getPartnershipCharts, getPartnershipData, getPartnershipStats, getPartnershipSummaryStats, updatePartnershipData } from '../controller/partnership-controller.js';
-import { addEvent, getEvents, getGoogleEvents, googleLogin, googleRedirect } from '../controller/google-calendar-controller.js';
+import { addEvent, getGoogleEvents, googleLogin, googleRedirect } from '../controller/google-calendar-controller.js';
 import { createContractManagementWithAssignment, deleteContractManagement, getContractManagementById, getContractManagementData, getContractStats, reorderContracts, updateAssignment, updateContractManagement } from '../controller/contract-management-controller.js';
 import { createActivityMonitoring, getActivityMonitoringList, deleteActivityMonitoring, updateActivityMonitoring, patchActivityDates } from '../controller/activity-monitoring-controller.js'
 import { createManagementReport, deleteManagementReport, getManagementReportList, toggleReportStatus, updateManagementReport } from '../controller/management-report-controller.js'
@@ -15,6 +15,7 @@ import { createUnit, getUnits, updateUnit, deleteUnit } from '../controller/unit
 import { verifyRole, verifyToken } from '../middleware/auth-middleware.js'
 import multer from 'multer'
 import { loginWithGoogle } from '../controller/login-controller.js';
+import { createRtmMeeting, getAllRtm, getRtmById } from '../controller/rtm-controller.js';
 
 const route = Router()
 
@@ -154,5 +155,9 @@ route.put('/units/:id', updateUnit)
 route.delete('/units/:id', deleteUnit)
 // ==== Unit ====
 
+// ==== RTM ====
+route.get('/rtm', getAllRtm)
+route.get('/rtm/:id', getRtmById)
+route.post('/rtm', createRtmMeeting)
 
 export default route
