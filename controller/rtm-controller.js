@@ -1,9 +1,17 @@
-import { createRtmMeetingQuery, getAllRtmQuery, getRtmByIdQuery } from "../model/rtm-model.js";
+import { createRtmMeetingQuery, deleteRtmQuery, getAllRtmQuery, getRtmByIdQuery } from "../model/rtm-model.js";
 
 async function getAllRtm(req, res) {
     try {
-        const data = await getAllRtmQuery();
+        const { search, startDate, endDate, material } = req.query;
 
+        const filters = {
+            search,
+            startDate,
+            endDate,
+            material
+        }
+
+        const data = await getAllRtmQuery(filters);
         return res.status(200).json({
             success: true,
             message: "Berhasil mengambil daftar kegiatan rapat",
@@ -56,7 +64,7 @@ async function createRtmMeeting(req, res) {
     try {
         const {
             // Section 1 & 2: Input Rapat
-            sotk, pic, meetingDate, name, participants, materials,
+            sotk, rtmCode, pic, meetingDate, name, participants, materials,
             // Section 3: Header Risalah
             documentDate, location, agenda,
             // Section 4: Signatures
@@ -77,6 +85,7 @@ async function createRtmMeeting(req, res) {
 
         const payload = {
             sotk: sotk || null,
+            rtmCode: rtmCode || null,
             pic: pic || null,
             meetingDate: meetingDate ? new Date(meetingDate) : null,
             name,
@@ -127,8 +136,28 @@ async function createRtmMeeting(req, res) {
     }
 }
 
+async function deleteRtm(req, res) {
+    try {
+        const { id } = req.params;
+        if (!id) return res.status(400).json({ success: false, message: "ID wajib diisi" });
+
+        await deleteRtmQuery(id);
+
+        return res.status(200).json({
+            success: true,
+            message: "Data RTM beserta notulanya berhasil dihapus"
+        });
+    } catch (error) {
+        if (error.code === 'P2025') {
+            return res.status(404).json({ success: false, message: "Data tidak ditemukan" });
+        }
+        return res.status(500).json({ success: false, error: error.message });
+    }
+}
+
 export {
     getAllRtm,
     getRtmById,
     createRtmMeeting,
+    deleteRtm
 }
