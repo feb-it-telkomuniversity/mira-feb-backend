@@ -58,7 +58,8 @@ async function signIn(req, res) {
                 id: user.id,
                 name: user.name,
                 username: user.username,
-                role: user.role
+                role: user.role,
+                accessibleMenus: user.accessibleMenus || []
             }
         })
     } catch (error) {
@@ -72,7 +73,7 @@ async function signIn(req, res) {
 
 async function registerUser(req, res) {
     try {
-        const { username, password, name, role, supervisorId, unitId } = req.body
+        const { username, password, name, role, supervisorId, unitId, accessibleMenus } = req.body
         if (!username || !name || !password || !role || !unitId) {
             return res.status(400).json({
                 success: false,
@@ -90,7 +91,7 @@ async function registerUser(req, res) {
 
         const hashedPassword = await bcrypt.hash(password, 10)
 
-        const newUser = await createUserQuery(username, hashedPassword, name, role, supervisorId, unitId)
+        const newUser = await createUserQuery(username, hashedPassword, name, role, supervisorId, unitId, accessibleMenus)
         res.status(201).json({
             success: true,
             message: "User created successfuly",
@@ -143,7 +144,7 @@ async function deleteUser(req, res) {
 async function updateUser(req, res) {
     try {
         const { id } = req.params
-        const { username, name, password, role, supervisorId, unitId } = req.body
+        const { username, name, password, role, supervisorId, unitId, accessibleMenus } = req.body
 
         const updateData = {}
         if (username) updateData.username = username
@@ -155,6 +156,7 @@ async function updateUser(req, res) {
         if (unitId !== undefined) {
             updateData.unitId = unitId ? parseInt(unitId) : null
         }
+        if (accessibleMenus) updateData.accessibleMenus = accessibleMenus
 
         if (password) {
             updateData.password = await bcrypt.hash(password, 10)
@@ -493,7 +495,7 @@ const verifyOtp = async (req, res) => {
         res.status(200).json({
             success: true,
             message: 'Login successful',
-            user: { id: user.id, name: user.name, username: user.username, role: user.role }
+            user: { id: user.id, name: user.name, username: user.username, role: user.role, accessibleMenus: user.accessibleMenus || [] }
         });
 
     } catch (error) {

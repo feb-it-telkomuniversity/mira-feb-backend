@@ -21,9 +21,10 @@ model Users {
   unitId Int?  @map("unit_id")
   unit   Unit? @relation(fields: [unitId], references: [id])
 
-  phoneNumber String? @unique @db.VarChar(30)
-  identifier  String? @db.VarChar(255)
-  avatarUrl   String?
+  phoneNumber     String?  @unique @db.VarChar(30)
+  identifier      String?  @db.VarChar(255)
+  avatarUrl       String?
+  accessibleMenus String[] @default([]) @map("accessible_menus")
 
   conversations Conversation[]
 

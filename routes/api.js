@@ -15,7 +15,7 @@ import { createUnit, getUnits, updateUnit, deleteUnit } from '../controller/unit
 import { verifyRole, verifyToken } from '../middleware/auth-middleware.js'
 import multer from 'multer'
 import { loginWithGoogle } from '../controller/login-controller.js';
-import { createRtmMeeting, deleteRtm, getAllRtm, getRtmById } from '../controller/rtm-controller.js';
+import { createRtmMeeting, deleteRtm, getAllRtm, getRtmById, updateRtmMeeting } from '../controller/rtm-controller.js';
 
 const route = Router()
 
@@ -159,6 +159,8 @@ route.delete('/units/:id', deleteUnit)
 route.post('/rtm', createRtmMeeting)
 route.get('/rtm', getAllRtm)
 route.get('/rtm/:id', getRtmById)
+route.put('/rtm/:id', updateRtmMeeting)
 route.delete('/rtm/:id', deleteRtm)
+// ==== RTM ====
 
 export default route

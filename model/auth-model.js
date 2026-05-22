@@ -1,7 +1,7 @@
 import prisma from "../utils/prisma.js";
 
 
-async function createUserQuery(username, hashedPassword, name, role, supervisorId, unitId) {
+async function createUserQuery(username, hashedPassword, name, role, supervisorId, unitId, accessibleMenus) {
     return await prisma.users.create({
         data: {
             username: username,
@@ -9,7 +9,8 @@ async function createUserQuery(username, hashedPassword, name, role, supervisorI
             name: name,
             role: role,
             supervisorId: supervisorId,
-            unitId: unitId
+            unitId: unitId,
+            accessibleMenus: accessibleMenus
         }
     })
 }

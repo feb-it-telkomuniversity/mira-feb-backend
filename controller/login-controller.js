@@ -91,7 +91,8 @@ export async function loginWithGoogle(req, res) {
                 id: user.id,
                 name: user.name,
                 username: user.username,
-                role: user.role
+                role: user.role,
+                accessibleMenus: user.accessibleMenus || []
             }
         })
     } catch (error) {

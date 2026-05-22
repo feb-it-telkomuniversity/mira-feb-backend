@@ -76,7 +76,7 @@ async function createRtmMeetingQuery(payload) {
 }
 
 async function updateRtmQuery(id, payload) {
-    const { discussion, ...meetingData } = payload
+    const { discussions, ...meetingData } = payload
     return await prisma.rtmMeeting.update({
         where: { id: parseInt(id) },
         data: {

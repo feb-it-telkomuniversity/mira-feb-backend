@@ -1,4 +1,4 @@
-import { createRtmMeetingQuery, deleteRtmQuery, getAllRtmQuery, getRtmByIdQuery } from "../model/rtm-model.js";
+import { createRtmMeetingQuery, deleteRtmQuery, getAllRtmQuery, getRtmByIdQuery, updateRtmQuery } from "../model/rtm-model.js";
 
 async function getAllRtm(req, res) {
     try {
@@ -136,6 +136,74 @@ async function createRtmMeeting(req, res) {
     }
 }
 
+async function updateRtmMeeting(req, res) {
+    try {
+        const { id } = req.params;
+        const {
+            sotk, rtmCode, pic, meetingDate, name, participants, materials,
+            documentDate, location, agenda,
+            preparedByName, preparedByPosition,
+            reviewedByName, reviewedByPosition,
+            approvedByName, approvedByPosition,
+            signatureLocation, signatureDate,
+            discussions
+        } = req.body;
+
+        if (!id) return res.status(400).json({ success: false, message: "ID wajib diisi" });
+
+        // Susun payload (Sama persis kayak create, tapi tanpa rtmCode karena nomor surat ga boleh berubah)
+        const payload = {
+            sotk: sotk || null,
+            rtmCode: rtmCode || null,
+            pic: pic || null,
+            meetingDate: meetingDate ? new Date(meetingDate) : null,
+            name: name || undefined,
+            participants: participants || null,
+            materials: Array.isArray(materials) ? materials : undefined,
+
+            documentDate: documentDate ? new Date(documentDate) : null,
+            location: location || null,
+            agenda: agenda || null,
+
+            preparedByName: preparedByName || null,
+            preparedByPosition: preparedByPosition || null,
+            reviewedByName: reviewedByName || null,
+            reviewedByPosition: reviewedByPosition || null,
+            approvedByName: approvedByName || null,
+            approvedByPosition: approvedByPosition || null,
+            signatureLocation: signatureLocation || null,
+            signatureDate: signatureDate ? new Date(signatureDate) : null,
+        };
+
+        // Mapping tabel pembahasan
+        if (Array.isArray(discussions)) {
+            payload.discussions = discussions.map(item => ({
+                topic: item.topic || null,
+                problem: item.problem || null,
+                actionPlan: item.actionPlan || null,
+                outcome: item.outcome || null,
+                pic: item.pic || null,
+                target: item.target || null,
+                status: item.status || null
+            }));
+        }
+
+        const updatedRtm = await updateRtmQuery(id, payload);
+
+        return res.status(200).json({
+            success: true,
+            message: "Risalah rapat berhasil diperbarui",
+            data: updatedRtm
+        });
+
+    } catch (error) {
+        if (error.code === 'P2025') {
+            return res.status(404).json({ success: false, message: "Data tidak ditemukan" });
+        }
+        return res.status(500).json({ success: false, error: error.message });
+    }
+}
+
 async function deleteRtm(req, res) {
     try {
         const { id } = req.params;
@@ -159,5 +227,6 @@ export {
     getAllRtm,
     getRtmById,
     createRtmMeeting,
-    deleteRtm
+    updateRtmMeeting,
+    deleteRtm,
 }
