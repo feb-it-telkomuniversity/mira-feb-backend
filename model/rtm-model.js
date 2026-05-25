@@ -39,7 +39,7 @@ async function getAllRtmQuery(filters = {}) {
             where.meetingDate.gte = new Date(filters.startDate)
         }
         if (filters.endDate) {
-            where.meetingDate.gte = new Date(filters.endDate)
+            where.meetingDate.lte = new Date(filters.endDate)
         }
     }
 
@@ -49,6 +49,13 @@ async function getAllRtmQuery(filters = {}) {
         }
     }
 
+    if (filters.status) {
+        where.discussions = {
+            some: {
+                status: { contains: filters.status, mode: 'insensitive' }
+            }
+        }
+    }
     return await prisma.rtmMeeting.findMany({
         where: where,
         orderBy: {

@@ -2,13 +2,14 @@ import { createRtmMeetingQuery, deleteRtmQuery, getAllRtmQuery, getRtmByIdQuery,
 
 async function getAllRtm(req, res) {
     try {
-        const { search, startDate, endDate, material } = req.query;
+        const { search, startDate, endDate, material, status } = req.query;
 
         const filters = {
             search,
             startDate,
             endDate,
-            material
+            material,
+            status
         }
 
         const data = await getAllRtmQuery(filters);
