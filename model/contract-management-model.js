@@ -3,15 +3,15 @@ import prisma from "../utils/prisma.js";
 
 // Helper untuk menentukan TW sebelumnya
 const getPrevQuarter = (current) => {
-    const map = { "TW-1": "TW-4", "TW-2": "TW-1", "TW-3": "TW-2", "TW-4": "TW-3" };
-    return map[current] || null; // Jika TW-1, idealnya cek tahun sebelumnya, tapi utk simpel kita return TW-4
-};
+    const map = { "TW-1": "TW-4", "TW-2": "TW-1", "TW-3": "TW-2", "TW-4": "TW-3" }
+    return map[current] || null
+}
 
 export const getContractStatsQuery = async (currentQuarter, year) => {
-    const prevQuarter = getPrevQuarter(currentQuarter);
+    const prevQuarter = getPrevQuarter(currentQuarter)
 
-    const currentYearStart = new Date(`${year}-01-01`);
-    const currentYearEnd = new Date(`${year}-12-31`);
+    const currentYearStart = new Date(`${year}-01-01`)
+    const currentYearEnd = new Date(`${year}-12-31`)
 
     const whereCurrent = {
         createdAt: { gte: currentYearStart, lte: currentYearEnd }
@@ -19,16 +19,16 @@ export const getContractStatsQuery = async (currentQuarter, year) => {
 
     const wherePrev = {
         createdAt: { gte: currentYearStart, lte: currentYearEnd }
-    };
+    }
 
-    const twNum = currentQuarter.replace('TW-', '');
-    const prevTwNum = prevQuarter ? prevQuarter.replace('TW-', '') : null;
+    const twNum = currentQuarter.replace('TW-', '')
+    const prevTwNum = prevQuarter ? prevQuarter.replace('TW-', '') : null
 
-    const avgField = {};
-    avgField[`achievementTw${twNum}`] = true;
+    const avgField = {}
+    avgField[`achievementTw${twNum}`] = true
 
-    const sumField = {};
-    sumField[`valueTw${twNum}`] = true;
+    const sumField = {}
+    sumField[`valueTw${twNum}`] = true
 
     // --- 1. Fetch Data Saat Ini ---
     const [
@@ -54,17 +54,17 @@ export const getContractStatsQuery = async (currentQuarter, year) => {
             _sum: sumField,
             where: { contract: whereCurrent }
         })
-    ]);
+    ])
 
     // --- 2. Fetch Data Sebelumnya (Untuk Trend) ---
     // Jika prevQuarter null (misal data awal tahun), kita anggap 0
-    let prevStats = { count: 0, avgAch: 0, targetMet: 0, totalVal: 0 };
+    let prevStats = { count: 0, avgAch: 0, targetMet: 0, totalVal: 0 }
 
     if (prevQuarter && prevTwNum) {
-        const prevAvgField = {};
-        prevAvgField[`achievementTw${prevTwNum}`] = true;
-        const prevSumField = {};
-        prevSumField[`valueTw${prevTwNum}`] = true;
+        const prevAvgField = {}
+        prevAvgField[`achievementTw${prevTwNum}`] = true
+        const prevSumField = {}
+        prevSumField[`valueTw${prevTwNum}`] = true
 
         const [prevCount, prevAvg, prevMet, prevSum] = await prisma.$transaction([
             prisma.contractManagement.count({ where: wherePrev }),

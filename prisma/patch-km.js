@@ -81,16 +81,16 @@ async function patchDataKM() {
         }
     }
 
-    console.log(`🚀 Ditemukan ${operations.length} baris data yang siap di-patch...`);
+    console.log(`🚀 Ditemukan ${operations.length} baris data yang siap di-patch...`)
 
     // Eksekusi semua secara bersamaan biar kenceng!
-    await prisma.$transaction(operations);
+    await prisma.$transaction(operations)
 
-    console.log("✅ Selesai. Semua nilai Pers Real & Value sudah terisi otomatis!");
+    console.log("✅ Selesai. Semua nilai Pers Real & Value sudah terisi otomatis!")
 }
 
 patchDataKM()
     .catch(e => console.error(e))
     .finally(async () => {
-        await prisma.$disconnect();
-    });
+        await prisma.$disconnect()
+    })
