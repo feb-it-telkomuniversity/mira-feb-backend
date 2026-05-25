@@ -28,15 +28,19 @@ export const getContractStats = async (req, res) => {
 
         const stats = await getContractStatsQuery(currentQuarter, currentYear)
 
-        // Kita format agar mirip dengan struktur 'statsData' di Frontend kamu
+        const formatVal = (val) => new Intl.NumberFormat('id-ID', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(val);
+
         const responseData = [
             {
                 title: "Total Responsibility",
                 value: stats.totalResponsibility.value.toString(),
-                change: `${stats.totalResponsibility.formattedChange} items`, // e.g: +8 items
+                change: `${stats.totalResponsibility.formattedChange} items`,
                 trend: stats.totalResponsibility.trend,
                 description: `dari ${currentQuarter === 'TW-1' ? 'tahun' : 'triwulan'} lalu`,
-                iconKey: "FileText" // String identifier untuk icon di FE
+                iconKey: "FileText"
             },
             {
                 title: "Rata-rata Pencapaian",
@@ -56,11 +60,42 @@ export const getContractStats = async (req, res) => {
             },
             {
                 title: "Total Nilai",
-                // Format number locale (4,285)
                 value: new Intl.NumberFormat('id-ID').format(stats.totalValue.value),
-                change: `${stats.totalValue.formattedChange}`, // e.g: +3.8
+                change: `${stats.totalValue.formattedChange}`,
                 trend: stats.totalValue.trend,
                 description: "nilai kinerja",
+                iconKey: "BarChart3"
+            },
+            {
+                title: "Total Nilai TW 1",
+                value: formatVal(stats.valuePerTw.tw1.value),
+                change: stats.valuePerTw.tw1.formattedChange,
+                trend: stats.valuePerTw.tw1.trend,
+                description: "dari TW 4 tahun lalu",
+                iconKey: "BarChart3"
+            },
+            {
+                title: "Total Nilai TW 2",
+                value: formatVal(stats.valuePerTw.tw2.value),
+                change: stats.valuePerTw.tw2.formattedChange,
+                trend: stats.valuePerTw.tw2.trend,
+                description: "dari TW 1",
+                iconKey: "BarChart3"
+            },
+            {
+                title: "Total Nilai TW 3",
+                value: formatVal(stats.valuePerTw.tw3.value),
+                change: stats.valuePerTw.tw3.formattedChange,
+                trend: stats.valuePerTw.tw3.trend,
+                description: "dari TW 2",
+                iconKey: "BarChart3"
+            },
+            {
+                title: "Total Nilai TW 4",
+                value: formatVal(stats.valuePerTw.tw4.value),
+                change: stats.valuePerTw.tw4.formattedChange,
+                trend: stats.valuePerTw.tw4.trend,
+                description: "dari TW 3",
                 iconKey: "BarChart3"
             }
         ];
@@ -77,7 +112,7 @@ export const getContractStats = async (req, res) => {
             message: "Internal server error"
         });
     }
-};
+}
 
 async function getContractManagementData(req, res) {
     try {
@@ -170,8 +205,8 @@ async function createContractManagementWithAssignment(req, res) {
             year,
             targetTw1, targetTw2, targetTw3, targetTw4,
             weightTw1, weightTw2, weightTw3, weightTw4,
-            min,
-            max,
+            minTw1, minTw2, minTw3, minTw4,
+            maxTw1, maxTw2, maxTw3, maxTw4,
             unitIds,
             strategy,
             definition,
@@ -199,8 +234,14 @@ async function createContractManagementWithAssignment(req, res) {
             weightTw2: weightTw2 ? parseFloat(weightTw2) : null,
             weightTw3: weightTw3 ? parseFloat(weightTw3) : null,
             weightTw4: weightTw4 ? parseFloat(weightTw4) : null,
-            min: min ? parseFloat(min) : null,
-            max: max ? parseFloat(max) : null,
+            minTw1: minTw1 ? parseFloat(minTw1) : null,
+            minTw2: minTw2 ? parseFloat(minTw2) : null,
+            minTw3: minTw3 ? parseFloat(minTw3) : null,
+            minTw4: minTw4 ? parseFloat(minTw4) : null,
+            maxTw1: maxTw1 ? parseFloat(maxTw1) : null,
+            maxTw2: maxTw2 ? parseFloat(maxTw2) : null,
+            maxTw3: maxTw3 ? parseFloat(maxTw3) : null,
+            maxTw4: maxTw4 ? parseFloat(maxTw4) : null,
             unitIds: Array.isArray(unitIds) ? unitIds : [],
             strategy: strategy || null,
             definition: definition || null,
@@ -269,8 +310,15 @@ async function updateContractManagement(req, res) {
         if (payload.realizationTw3 !== undefined) cleanPayload.realizationTw3 = payload.realizationTw3 !== null ? parseFloat(payload.realizationTw3) : null;
         if (payload.realizationTw4 !== undefined) cleanPayload.realizationTw4 = payload.realizationTw4 !== null ? parseFloat(payload.realizationTw4) : null;
 
-        if (payload.min !== undefined) cleanPayload.min = payload.min ? parseFloat(payload.min) : null;
-        if (payload.max !== undefined) cleanPayload.max = payload.max ? parseFloat(payload.max) : null;
+        if (payload.minTw1 !== undefined) cleanPayload.minTw1 = payload.minTw1 ? parseFloat(payload.minTw1) : null;
+        if (payload.minTw2 !== undefined) cleanPayload.minTw2 = payload.minTw2 ? parseFloat(payload.minTw2) : null;
+        if (payload.minTw3 !== undefined) cleanPayload.minTw3 = payload.minTw3 ? parseFloat(payload.minTw3) : null;
+        if (payload.minTw4 !== undefined) cleanPayload.minTw4 = payload.minTw4 ? parseFloat(payload.minTw4) : null;
+        if (payload.maxTw1 !== undefined) cleanPayload.maxTw1 = payload.maxTw1 ? parseFloat(payload.maxTw1) : null;
+        if (payload.maxTw2 !== undefined) cleanPayload.maxTw2 = payload.maxTw2 ? parseFloat(payload.maxTw2) : null;
+        if (payload.maxTw3 !== undefined) cleanPayload.maxTw3 = payload.maxTw3 ? parseFloat(payload.maxTw3) : null;
+        if (payload.maxTw4 !== undefined) cleanPayload.maxTw4 = payload.maxTw4 ? parseFloat(payload.maxTw4) : null;
+
         if (payload.definition !== undefined) cleanPayload.definition = payload.definition;
         if (payload.objective !== undefined) cleanPayload.objective = payload.objective;
         if (payload.indicatorCalc !== undefined) cleanPayload.indicatorCalc = payload.indicatorCalc;

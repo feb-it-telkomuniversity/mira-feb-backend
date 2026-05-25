@@ -229,8 +229,26 @@ model ContractManagement {
   achievementTw3 Float? @map("achievement_tw3")
   achievementTw4 Float? @map("achievement_tw4")
 
-  max      Float?
-  min      Float?
+  persRealTw1 Float? @map("pers_real_tw1")
+  persRealTw2 Float? @map("pers_real_tw2")
+  persRealTw3 Float? @map("pers_real_tw3")
+  persRealTw4 Float? @map("pers_real_tw4")
+
+  valueTw1 Float? @map("value_tw1")
+  valueTw2 Float? @map("value_tw2")
+  valueTw3 Float? @map("value_tw3")
+  valueTw4 Float? @map("value_tw4")
+
+  minTw1 Float? @map("min_tw1")
+  minTw2 Float? @map("min_tw2")
+  minTw3 Float? @map("min_tw3")
+  minTw4 Float? @map("min_tw4")
+
+  maxTw1 Float? @map("max_tw1")
+  maxTw2 Float? @map("max_tw2")
+  maxTw3 Float? @map("max_tw3")
+  maxTw4 Float? @map("max_tw4")
+
   strategy String? @db.Text
 
   createdAt DateTime @default(now()) @map("created_at")

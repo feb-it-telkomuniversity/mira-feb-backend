@@ -71,7 +71,7 @@ export const getContractStatsQuery = async (currentQuarter, year) => {
             prisma.contractAssignment.aggregate({ _avg: prevAvgField, where: { contract: wherePrev } }),
             prisma.contractAssignment.count({ where: { contract: wherePrev, [`achievementTw${prevTwNum}`]: { gte: 100 } } }),
             prisma.contractAssignment.aggregate({ _sum: prevSumField, where: { contract: wherePrev } })
-        ]);
+        ])
 
         prevStats = {
             count: prevCount,
@@ -100,13 +100,44 @@ export const getContractStatsQuery = async (currentQuarter, year) => {
         totalVal: Number(currTotalValue?._sum[`valueTw${twNum}`]) || 0
     };
 
+    const currentYearStr = year.toString();
+    const prevYearStr = (parseInt(year) - 1).toString();
+
+    const [currentAgg, prevAgg] = await Promise.all([
+        prisma.contractManagement.aggregate({
+            _sum: {
+                valueTw1: true,
+                valueTw2: true,
+                valueTw3: true,
+                valueTw4: true
+            },
+            where: { year: currentYearStr }
+        }),
+        prisma.contractManagement.aggregate({
+            _sum: { valueTw4: true },
+            where: { year: prevYearStr }
+        })
+    ]);
+
+    const valTw1 = Number(currentAgg._sum.valueTw1) || 0;
+    const valTw2 = Number(currentAgg._sum.valueTw2) || 0;
+    const valTw3 = Number(currentAgg._sum.valueTw3) || 0;
+    const valTw4 = Number(currentAgg._sum.valueTw4) || 0;
+    const valPrevTw4 = Number(prevAgg._sum.valueTw4) || 0;
+
     return {
         totalResponsibility: calcTrend(currValues.count, prevStats.count),
         avgAchievement: calcTrend(currValues.avgAch, prevStats.avgAch),
         targetAchieved: calcTrend(currValues.targetMet, prevStats.targetMet),
-        totalValue: calcTrend(currValues.totalVal, prevStats.totalVal)
+        totalValue: calcTrend(currValues.totalVal, prevStats.totalVal),
+        valuePerTw: {
+            tw1: calcTrend(valTw1, valPrevTw4),
+            tw2: calcTrend(valTw2, valTw1),
+            tw3: calcTrend(valTw3, valTw2),
+            tw4: calcTrend(valTw4, valTw3)
+        }
     };
-};
+}
 
 async function getContractManagementDataQuery(page = 1, limit = 15, search = "", filters = {}) {
     const skip = (page - 1) * limit
@@ -265,12 +296,15 @@ async function updateContractManagementQuery(id, payload) {
                 weight: updatedContractData[`weightTw${q}`],
                 target: updatedContractData[`targetTw${q}`],
                 realization: currentRealization,
-                min: updatedContractData.min,
-                max: updatedContractData.max
+                min: updatedContractData[`minTw${q}`],
+                max: updatedContractData[`maxTw${q}`]
             };
 
-            const resultMasterKM = calculateKM(calcMasterData);
-            updateData[`achievementTw${q}`] = resultMasterKM.achievement;
+            const resultMasterKM = calculateKM(calcMasterData)
+            updateData[`achievementTw${q}`] = resultMasterKM.achievement
+            updateData[`persRealTw${q}`] = resultMasterKM.persReal
+            updateData[`valueTw${q}`] = resultMasterKM.value
+
         } else if (updateData[`realizationTw${q}`] === null) {
             updateData[`achievementTw${q}`] = null;
         }
@@ -324,8 +358,8 @@ async function updateContractManagementQuery(id, payload) {
                     weight: updatedContractData[`weightTw${q}`],
                     target: updatedContractData[`targetTw${q}`],
                     realization: assignment[`realizationTw${q}`],
-                    min: updatedContractData.min,
-                    max: updatedContractData.max
+                    min: updatedContractData[`minTw${q}`],
+                    max: updatedContractData[`maxTw${q}`]
                 };
 
                 const resultKM = calculateKM(calcData);
@@ -380,8 +414,8 @@ async function updateAssignementQuery(assignmentId, updateData) {
                 weight: assignment.contract[`weightTw${q}`],
                 target: assignment.contract[`targetTw${q}`],
                 realization: realizationVal,
-                min: assignment.contract.min,
-                max: assignment.contract.max
+                min: assignment.contract[`minTw${q}`],
+                max: assignment.contract[`maxTw${q}`]
             };
 
             const resultKM = calculateKM(calcData);
