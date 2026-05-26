@@ -16,6 +16,7 @@ import { verifyRole, verifyToken } from '../middleware/auth-middleware.js'
 import multer from 'multer'
 import { loginWithGoogle } from '../controller/login-controller.js';
 import { createRtmMeeting, deleteRtm, getAllRtm, getRtmById, updateRtmMeeting } from '../controller/rtm-controller.js';
+import { createSuratMasuk, deleteSuratMasuk, getAllSuratMasuk, getSuratMasukById, updateSuratMasuk } from '../controller/surat-menyurat-controller.js';
 
 const route = Router()
 
@@ -162,5 +163,14 @@ route.get('/rtm/:id', getRtmById)
 route.put('/rtm/:id', updateRtmMeeting)
 route.delete('/rtm/:id', deleteRtm)
 // ==== RTM ====
+
+// ==== Surat Menyurat ====
+route.get('/administrasi-surat/surat-masuk', getAllSuratMasuk)
+route.get('/administrasi-surat/surat-masuk/:id', getSuratMasukById)
+route.post('/administrasi-surat/surat-masuk', createSuratMasuk)
+route.put('/administrasi-surat/surat-masuk/:id', updateSuratMasuk)
+route.delete('/administrasi-surat/surat-masuk/:id', deleteSuratMasuk)
+// ==== Surat Menyurat ====
+
 
 export default route

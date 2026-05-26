@@ -588,6 +588,98 @@ model OtpRequest {
   @@map("otp_requests")
 }
 
+// ==========================================
+// SCHEMA SURAT MENYURAT
+// ==========================================
+// ==========================================
+// TAB 1: SURAT MASUK
+// ==========================================
+model SuratMasuk {
+  id               Int      @id @default(autoincrement())
+  nomorSuratAsal   String   @map("nomor_surat_asal")
+  instansiPengirim String   @map("instansi_pengirim")
+  tanggalSurat     DateTime @map("tanggal_surat")
+  tanggalDiterima  DateTime @map("tanggal_diterima")
+
+  kerahasiaan KlasifikasiSurat @default(Normal)
+  retensi     RetensiSurat     @default(SatuTahun)
+
+  perihal   String
+  ringkasan String  @db.Text
+  linkPdf   String? @map("link_pdf")
+
+  status String @default("Diterima")
+
+  disposisi DisposisiSurat[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("surat_masuk")
+}
+
+// ==========================================
+// SURAT KELUAR
+// ==========================================
+model SuratKeluar {
+  id             Int              @id @default(autoincrement())
+  nomorSurat     String?          @unique @map("nomor_surat")
+  jenisSurat     JenisSurat       @map("jenis_surat")
+  kerahasiaan    KlasifikasiSurat @default(Normal)
+  tujuanPenerima String           @map("tujuan_penerima")
+  perihal        String
+  tanggalSurat   DateTime?        @map("tanggal_surat")
+
+  // --- Field Detail untuk Canvas PDF (Tab 3) ---
+  salamPembuka         String? @map("salam_pembuka")
+  paragrafPembuka      String? @map("paragraf_pembuka") @db.Text
+  isiUtama             String  @map("isi_utama") @db.Text
+  paragrafPenutup      String? @map("paragraf_penutup") @db.Text
+  namaPenandatangan    String? @map("nama_penandatangan")
+  jabatanPenandatangan String? @map("jabatan_penandatangan")
+
+  // --- Control & Tracking (Tab 2) ---
+  status StatusSuratKeluar @default(Draft)
+
+  // Relasi ke Users (Dekan/Wadek yang klik "Setujui")
+  penyetujuId Int? @map("penyetuju_id")
+  // penyetuju         Users?               @relation("PenyetujuSurat", fields: [penyetujuId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("surat_keluar")
+}
+
+// ======================
+// DISPOSISI SURAT
+// ======================
+model DisposisiSurat {
+  id           Int @id @default(autoincrement())
+  suratMasukId Int @map("surat_masuk_id")
+
+  // Relasi ke tabel Users (Pimpinan yang mendisposisi)
+  pemberiId Int @map("pemberi_id")
+
+  // Relasi ke tabel Unit (Karena API tujuan pakai list Unit jabatan)
+  penerimaUnitId Int @map("penerima_unit_id")
+
+  instruksi  InstruksiDisposisi
+  batasWaktu DateTime?          @map("batas_waktu")
+  catatan    String?            @db.Text
+  status     StatusDisposisi    @default(BelumDiproses)
+
+  // Definisi Relasi
+  suratMasuk SuratMasuk @relation(fields: [suratMasukId], references: [id], onDelete: Cascade)
+  // pemberi       Users                  @relation("PemberiDisposisi", fields: [pemberiId], references: [id])
+  // penerimaUnit  Unit                   @relation(fields: [penerimaUnitId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("disposisi_surat")
+}
+
 enum Category {
   Sidang
   Keuangan
@@ -828,4 +920,47 @@ enum ComplainmentTicketStatus {
   Cancelled
   Rejected
   Close
+}
+
+// ====== ENUM SURAT MENYURAT ======
+enum KlasifikasiSurat {
+  Normal
+  Confidential
+  Urgent
+  Restricted
+}
+
+enum RetensiSurat {
+  SatuTahun // Operasional
+  DuaTahun
+  LimaTahun // Standar Akreditasi
+  SepuluhTahun // Kepegawaian/Keuangan
+  Permanen // Arsip Vital
+}
+
+enum JenisSurat {
+  SuratResmi
+  SuratTugas
+  SuratUndangan
+  NotaDinas
+}
+
+enum InstruksiDisposisi {
+  TindakLanjuti // Tindak lanjuti & Laporkan
+  Pelajari // Pelajari & beri saran
+  Hadiri // Hadiri / Wakili
+  Simpan // Simpan
+  DraftBalasan // Draft balasan
+}
+
+enum StatusDisposisi {
+  BelumDiproses
+  Diproses
+  Selesai
+}
+
+enum StatusSuratKeluar {
+  Draft
+  Disetujui
+  Dikirim
 }
