@@ -40,8 +40,9 @@ model Users {
 
   contractInputs ContractAssignment[] @relation("UserInputs")
 
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  disposisiSurats DisposisiSurat[] @relation("PemberiDisposisi")
 
   @@map("users")
 }
@@ -505,8 +506,9 @@ model Unit {
   name     String       @db.VarChar(100)
   category UnitCategory
 
-  users       Users[] // Relasi ke User yang ada di unit ini
-  assignments ContractAssignment[] // Relasi ke KPI yang diberikan ke unit ini
+  users           Users[] // Relasi ke User yang ada di unit ini
+  assignments     ContractAssignment[] // Relasi ke KPI yang diberikan ke unit ini
+  disposisiSurats DisposisiSurat[]     @relation("PenerimaDisposisi")
 
   @@map("units")
 }
@@ -670,9 +672,9 @@ model DisposisiSurat {
   status     StatusDisposisi    @default(BelumDiproses)
 
   // Definisi Relasi
-  suratMasuk SuratMasuk @relation(fields: [suratMasukId], references: [id], onDelete: Cascade)
-  // pemberi       Users                  @relation("PemberiDisposisi", fields: [pemberiId], references: [id])
-  // penerimaUnit  Unit                   @relation(fields: [penerimaUnitId], references: [id])
+  suratMasuk   SuratMasuk @relation(fields: [suratMasukId], references: [id], onDelete: Cascade)
+  pemberi      Users      @relation("PemberiDisposisi", fields: [pemberiId], references: [id])
+  penerimaUnit Unit       @relation("PenerimaDisposisi", fields: [penerimaUnitId], references: [id])
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

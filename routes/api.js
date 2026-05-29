@@ -16,7 +16,7 @@ import { verifyRole, verifyToken } from '../middleware/auth-middleware.js'
 import multer from 'multer'
 import { loginWithGoogle } from '../controller/login-controller.js';
 import { createRtmMeeting, deleteRtm, getAllRtm, getRtmById, updateRtmMeeting } from '../controller/rtm-controller.js';
-import { createSuratMasuk, deleteSuratMasuk, getAllSuratMasuk, getSuratMasukById, updateSuratMasuk } from '../controller/surat-menyurat-controller.js';
+import { createDisposisi, createSuratMasuk, deleteSuratMasuk, deleteDisposisi, getAllDisposisi, getAllSuratMasuk, getSuratMasukById, updateDisposisiStatus, updateSuratMasuk } from '../controller/surat-menyurat-controller.js';
 
 const route = Router()
 
@@ -165,12 +165,23 @@ route.delete('/rtm/:id', deleteRtm)
 // ==== RTM ====
 
 // ==== Surat Menyurat ====
+// ==== Surat Masuk ====
 route.get('/administrasi-surat/surat-masuk', getAllSuratMasuk)
 route.get('/administrasi-surat/surat-masuk/:id', getSuratMasukById)
 route.post('/administrasi-surat/surat-masuk', createSuratMasuk)
 route.put('/administrasi-surat/surat-masuk/:id', updateSuratMasuk)
 route.delete('/administrasi-surat/surat-masuk/:id', deleteSuratMasuk)
+// ==== Surat Masuk ====
+
+// ==== Disposisi Surat ====
+route.get('/administrasi-surat/disposisi-surat', getAllDisposisi)
+route.post('/administrasi-surat/disposisi-surat', createDisposisi)
+route.patch('/administrasi-surat/disposisi-surat/:id/status', updateDisposisiStatus)
+route.delete('/administrasi-surat/disposisi-surat/:id', deleteDisposisi)
+// ==== Disposisi Surat ====
+
 // ==== Surat Menyurat ====
+
 
 
 export default route

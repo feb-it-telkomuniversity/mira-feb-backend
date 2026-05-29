@@ -3,7 +3,11 @@ import {
     getSuratMasukByIdQuery,
     createSuratMasukQuery,
     updateSuratMasukQuery,
-    deleteSuratMasukQuery
+    deleteSuratMasukQuery,
+    getAllDisposisiQuery,
+    createDisposisiQuery,
+    updateDisposisiStatusQuery,
+    deleteDisposisiQuery
 } from "../model/surat-menyurat-model.js";
 
 // ======= START SURAT MASUK =======
@@ -175,15 +179,152 @@ async function deleteSuratMasuk(req, res) {
 
 // ======= END SURAT MASUK =======
 
+// ======= START DISPOSISI =======
+
+const getAllDisposisi = async (req, res) => {
+    try {
+        const { search, status } = req.query;
+
+        const filters = {
+            search: search || undefined,
+            status: status || undefined
+        };
+
+        const data = await getAllDisposisiQuery(filters);
+
+        return res.status(200).json({
+            success: true,
+            message: "Berhasil mengambil log disposisi",
+            data: data
+        });
+    } catch (error) {
+        console.error("Error in getAllDisposisi:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Gagal mengambil log disposisi",
+            error: error.message
+        });
+    }
+}
+
+const createDisposisi = async (req, res) => {
+    try {
+        const payload = req.body;
+
+        // Validasi input wajib dari form disposisi
+        if (!payload.suratMasukId || !payload.pemberiId || !payload.penerimaUnitId || !payload.instruksi) {
+            return res.status(400).json({
+                success: false,
+                message: "Data disposisi tidak lengkap. Surat asal, pemberi, unit penerima, dan instruksi wajib diisi."
+            });
+        }
+
+        // Validasi Enum Instruksi (Mencegah string ngasal masuk ke DB)
+        const validInstruksi = ['TindakLanjuti', 'Pelajari', 'Hadiri', 'Simpan', 'DraftBalasan'];
+        if (!validInstruksi.includes(payload.instruksi)) {
+            return res.status(400).json({
+                success: false,
+                message: "Format instruksi aksi tidak valid"
+            });
+        }
+
+        // Eksekusi ke Query Model
+        const [newDisposisi, updatedSurat] = await createDisposisiQuery(payload);
+
+        return res.status(201).json({
+            success: true,
+            message: "Surat masuk berhasil didisposisikan tugasnya",
+            data: newDisposisi
+        });
+    } catch (error) {
+        console.error("Error in createDisposisi:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Gagal memproses disposisi surat",
+            error: error.message
+        });
+    }
+};
+
+// ======= END DISPOSISI =======
+
+const updateDisposisiStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        const validStatuses = ['BelumDiproses', 'Diproses', 'Selesai'];
+        if (!status || !validStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: `Status tidak valid. Gunakan salah satu: ${validStatuses.join(', ')}`
+            });
+        }
+
+        const updated = await updateDisposisiStatusQuery(id, status);
+
+        return res.status(200).json({
+            success: true,
+            message: `Status disposisi berhasil diubah menjadi ${status}`,
+            data: updated
+        });
+    } catch (error) {
+        console.error('Error in updateDisposisiStatus:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Gagal mengubah status disposisi',
+            error: error.message
+        });
+    }
+};
+
+const deleteDisposisi = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!id || isNaN(id)) {
+            return res.status(400).json({
+                success: false,
+                message: 'ID disposisi tidak valid'
+            });
+        }
+
+        await deleteDisposisiQuery(id);
+
+        return res.status(200).json({
+            success: true,
+            message: 'Log disposisi berhasil dihapus'
+        });
+    } catch (error) {
+        console.error('Error in deleteDisposisi:', error);
+        if (error.code === 'P2025') {
+            return res.status(404).json({ success: false, message: 'Log disposisi tidak ditemukan' });
+        }
+        return res.status(500).json({
+            success: false,
+            message: 'Gagal menghapus log disposisi',
+            error: error.message
+        });
+    }
+};
+
+
 // ======= START SURAT KELUAR =======
 
 // ======= END SURAT KELUAR =======
 
 
 export {
+    // Surat Masuk
     getAllSuratMasuk,
     getSuratMasukById,
     createSuratMasuk,
     updateSuratMasuk,
-    deleteSuratMasuk
+    deleteSuratMasuk,
+
+    // Disposisi Surat
+    getAllDisposisi,
+    createDisposisi,
+    updateDisposisiStatus,
+    deleteDisposisi
 }
