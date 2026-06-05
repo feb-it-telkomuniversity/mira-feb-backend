@@ -963,6 +963,7 @@ enum StatusDisposisi {
 
 enum StatusSuratKeluar {
   Draft
+  MenungguReview
   Disetujui
-  Dikirim
+  Terkirim
 }

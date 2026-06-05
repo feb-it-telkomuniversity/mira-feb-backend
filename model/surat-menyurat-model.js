@@ -190,8 +190,94 @@ async function deleteDisposisiQuery(id) {
 // END DISPOSISI SURAT
 
 // ======= START SURAT KELUAR =======
+async function getAllSuratKeluarQuery(filters = {}) {
+    const where = {};
 
+    if (filters.search) {
+        where.OR = [
+            { nomorSurat: { contains: filters.search, mode: 'insensitive' } },
+            { tujuanPenerima: { contains: filters.search, mode: 'insensitive' } },
+            { perihal: { contains: filters.search, mode: 'insensitive' } }
+        ];
+    }
 
+    if (filters.status) {
+        where.status = filters.status;
+    }
+
+    if (filters.jenisSurat) {
+        where.jenisSurat = filters.jenisSurat;
+    }
+
+    return await prisma.suratKeluar.findMany({
+        where: where,
+        orderBy: {
+            updatedAt: 'desc'
+        }
+    });
+}
+
+async function getSuratKeluarByIdQuery(id) {
+    const data = await prisma.suratKeluar.findUnique({
+        where: { id: parseInt(id) }
+    });
+
+    if (!data) throw new Error("SuratKeluarNotFound");
+    return data;
+}
+
+async function createSuratKeluarQuery(payload) {
+    const dataToInsert = {
+        nomorSurat: 'ST-089/FEB-TelU/WADEK1/V/2026',
+        jenisSurat: payload.jenisSurat,
+        tujuanPenerima: payload.tujuanPenerima,
+        perihal: payload.perihal,
+        isiUtama: payload.isiUtama,
+        kerahasiaan: payload.kerahasiaan || 'Normal',
+        tanggalSurat: payload.tanggalSurat ? new Date(payload.tanggalSurat) : null,
+
+        // Field ornamen Canvas PDF (opsional saat awal create)
+        salamPembuka: payload.salamPembuka || null,
+        paragrafPembuka: payload.paragrafPembuka || null,
+        paragrafPenutup: payload.paragrafPenutup || null,
+        namaPenandatangan: payload.namaPenandatangan || null,
+        jabatanPenandatangan: payload.jabatanPenandatangan || null,
+
+        status: 'Draft'
+    }
+
+    return await prisma.suratKeluar.create({
+        data: dataToInsert
+    })
+}
+
+async function updateSuratKeluarQuery(id, payload) {
+    const existingData = await prisma.suratKeluar.findUnique({
+        where: { id: parseInt(id) }
+    })
+    if (!existingData) throw new Error("SuratKeluarNotFound");
+
+    const dataToUpdate = { ...payload };
+    // Format ulang tanggal jika user mengirimkan perubahan tanggal
+    if (payload.tanggalSurat) {
+        dataToUpdate.tanggalSurat = new Date(payload.tanggalSurat);
+    }
+    return await prisma.suratKeluar.update({
+        where: { id: parseInt(id) },
+        data: dataToUpdate
+    });
+}
+
+async function deleteSuratKeluarQuery(id) {
+    const existingData = await prisma.suratKeluar.findUnique({
+        where: { id: parseInt(id) }
+    });
+    if (!existingData) throw new Error("SuratKeluarNotFound");
+
+    return await prisma.suratKeluar.delete({
+        where: { id: parseInt(id) }
+    });
+}
 
 
 // ======= END SURAT KELUAR =======
@@ -208,5 +294,12 @@ export {
     getAllDisposisiQuery,
     createDisposisiQuery,
     updateDisposisiStatusQuery,
-    deleteDisposisiQuery
+    deleteDisposisiQuery,
+
+    // Surat Keluar
+    getAllSuratKeluarQuery,
+    getSuratKeluarByIdQuery,
+    createSuratKeluarQuery,
+    updateSuratKeluarQuery,
+    deleteSuratKeluarQuery
 }

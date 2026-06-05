@@ -7,7 +7,12 @@ import {
     getAllDisposisiQuery,
     createDisposisiQuery,
     updateDisposisiStatusQuery,
-    deleteDisposisiQuery
+    deleteDisposisiQuery,
+    getAllSuratKeluarQuery,
+    getSuratKeluarByIdQuery,
+    createSuratKeluarQuery,
+    updateSuratKeluarQuery,
+    deleteSuratKeluarQuery
 } from "../model/surat-menyurat-model.js";
 
 // ======= START SURAT MASUK =======
@@ -310,6 +315,87 @@ const deleteDisposisi = async (req, res) => {
 
 
 // ======= START SURAT KELUAR =======
+const getAllSuratKeluar = async (req, res) => {
+    try {
+        const { search, status, jenisSurat } = req.query;
+        const data = await getAllSuratKeluarQuery({ search, status, jenisSurat });
+
+        return res.status(200).json({ success: true, data });
+    } catch (error) {
+        console.error("Error getAllSuratKeluar:", error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+}
+
+const getSuratKeluarById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (isNaN(id)) return res.status(400).json({ success: false, message: "ID tidak valid" });
+
+        const data = await getSuratKeluarByIdQuery(id);
+        return res.status(200).json({ success: true, data });
+    } catch (error) {
+        if (error.message === "SuratKeluarNotFound") {
+            return res.status(404).json({ success: false, message: "Draft tidak ditemukan" });
+        }
+        return res.status(500).json({ success: false, message: error.message });
+    }
+}
+
+const createSuratKeluar = async (req, res) => {
+    try {
+        const payload = req.body;
+
+        // Validasi field wajib berdasarkan schema Prisma
+        if (!payload.jenisSurat || !payload.tujuanPenerima || !payload.perihal || !payload.isiUtama) {
+            return res.status(400).json({
+                success: false,
+                message: "Jenis Surat, Tujuan Penerima, Perihal, dan Isi Utama wajib diisi"
+            })
+        }
+
+        const newData = await createSuratKeluarQuery(payload);
+        return res.status(201).json({ success: true, message: "Draft berhasil dibuat", data: newData });
+    } catch (error) {
+        console.error("Error createSuratKeluar:", error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+}
+
+const updateSuratKeluar = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (isNaN(id)) return res.status(400).json({ success: false, message: "ID tidak valid" });
+
+        const payload = req.body;
+        if (Object.keys(payload).length === 0) {
+            return res.status(400).json({ success: false, message: "Tidak ada data untuk diupdate" });
+        }
+
+        const updatedData = await updateSuratKeluarQuery(id, payload);
+        return res.status(200).json({ success: true, message: "Draft berhasil diupdate", data: updatedData });
+    } catch (error) {
+        if (error.message === "SuratKeluarNotFound") {
+            return res.status(404).json({ success: false, message: "Draft tidak ditemukan" });
+        }
+        return res.status(500).json({ success: false, message: error.message });
+    }
+}
+
+const deleteSuratKeluar = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (isNaN(id)) return res.status(400).json({ success: false, message: "ID tidak valid" });
+
+        await deleteSuratKeluarQuery(id);
+        return res.status(200).json({ success: true, message: "Draft berhasil dihapus" });
+    } catch (error) {
+        if (error.message === "SuratKeluarNotFound") {
+            return res.status(404).json({ success: false, message: "Draft tidak ditemukan" });
+        }
+        return res.status(500).json({ success: false, message: error.message });
+    }
+}
 
 // ======= END SURAT KELUAR =======
 
@@ -326,5 +412,12 @@ export {
     getAllDisposisi,
     createDisposisi,
     updateDisposisiStatus,
-    deleteDisposisi
+    deleteDisposisi,
+
+    // Surat Keluar
+    getAllSuratKeluar,
+    getSuratKeluarById,
+    createSuratKeluar,
+    updateSuratKeluar,
+    deleteSuratKeluar
 }
