@@ -16,7 +16,6 @@ import { verifyRole, verifyToken } from '../middleware/auth-middleware.js'
 import multer from 'multer'
 import { loginWithGoogle } from '../controller/login-controller.js';
 import { createRtmMeeting, deleteRtm, getAllRtm, getRtmById, updateRtmMeeting } from '../controller/rtm-controller.js';
-import { createSuratMasuk, deleteSuratMasuk, getAllSuratMasuk, getSuratMasukById, updateSuratMasuk } from '../controller/surat-menyurat-controller.js';
 import { getTtdLogs, getTtdLogById, getTtdStats, createTtdLog, updateTtdLog, updateTtdLogStatus, deleteTtdLog, uploadSupportingFile } from '../controller/log-ttd-dekan-controller.js';
 import { createDisposisi, createSuratMasuk, deleteSuratMasuk, deleteDisposisi, getAllDisposisi, getAllSuratMasuk, getSuratMasukById, updateDisposisiStatus, updateSuratMasuk, getAllSuratKeluar, getSuratKeluarById, createSuratKeluar, updateSuratKeluar, deleteSuratKeluar } from '../controller/surat-menyurat-controller.js';
 
