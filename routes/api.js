@@ -18,6 +18,7 @@ import { loginWithGoogle } from '../controller/login-controller.js';
 import { createRtmMeeting, deleteRtm, getAllRtm, getRtmById, updateRtmMeeting } from '../controller/rtm-controller.js';
 import { createSuratMasuk, deleteSuratMasuk, getAllSuratMasuk, getSuratMasukById, updateSuratMasuk } from '../controller/surat-menyurat-controller.js';
 import { getTtdLogs, getTtdLogById, getTtdStats, createTtdLog, updateTtdLog, updateTtdLogStatus, deleteTtdLog, uploadSupportingFile } from '../controller/log-ttd-dekan-controller.js';
+import { createDisposisi, createSuratMasuk, deleteSuratMasuk, deleteDisposisi, getAllDisposisi, getAllSuratMasuk, getSuratMasukById, updateDisposisiStatus, updateSuratMasuk, getAllSuratKeluar, getSuratKeluarById, createSuratKeluar, updateSuratKeluar, deleteSuratKeluar } from '../controller/surat-menyurat-controller.js';
 
 const route = Router()
 
@@ -167,11 +168,29 @@ route.delete('/rtm/:id', deleteRtm)
 // ==== RTM ====
 
 // ==== Surat Menyurat ====
+// ==== Surat Masuk ====
 route.get('/administrasi-surat/surat-masuk', getAllSuratMasuk)
 route.get('/administrasi-surat/surat-masuk/:id', getSuratMasukById)
 route.post('/administrasi-surat/surat-masuk', createSuratMasuk)
 route.put('/administrasi-surat/surat-masuk/:id', updateSuratMasuk)
 route.delete('/administrasi-surat/surat-masuk/:id', deleteSuratMasuk)
+// ==== Surat Masuk ====
+
+// ==== Disposisi Surat ====
+route.get('/administrasi-surat/disposisi-surat', getAllDisposisi)
+route.post('/administrasi-surat/disposisi-surat', createDisposisi)
+route.patch('/administrasi-surat/disposisi-surat/:id/status', updateDisposisiStatus)
+route.delete('/administrasi-surat/disposisi-surat/:id', deleteDisposisi)
+// ==== Disposisi Surat ====
+
+// ==== Surat Keluar ====
+route.get('/administrasi-surat/surat-keluar', getAllSuratKeluar)
+route.get('/administrasi-surat/surat-keluar/:id', getSuratKeluarById)
+route.post('/administrasi-surat/surat-keluar', createSuratKeluar)
+route.put('/administrasi-surat/surat-keluar/:id', updateSuratKeluar)
+route.delete('/administrasi-surat/surat-keluar/:id', deleteSuratKeluar)
+// ==== Surat Keluar ====
+
 // ==== Surat Menyurat ====
 
 // ==== Log Ttd Dekan ====
@@ -184,5 +203,6 @@ route.put('/log-ttd-dekan/:id', updateTtdLog)
 route.patch('/log-ttd-dekan/:id/status', verifyRole(['super_admin', 'admin', 'dekanat', 'wadek']), updateTtdLogStatus)
 route.delete('/log-ttd-dekan/:id', deleteTtdLog)
 // ==== Log Ttd Dekan ====
+
 
 export default route
