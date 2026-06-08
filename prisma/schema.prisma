@@ -40,8 +40,11 @@ model Users {
 
   contractInputs ContractAssignment[] @relation("UserInputs")
 
-  createdAt       DateTime         @default(now()) @map("created_at")
-  updatedAt       DateTime         @updatedAt @map("updated_at")
+  ttdLogs         LogTtdDekan[]        @relation("UserTtdLogs")
+  ttdHistories    LogTtdDekanHistory[] @relation("UserTtdHistory")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
   disposisiSurats DisposisiSurat[] @relation("PemberiDisposisi")
 
   @@map("users")
@@ -966,4 +969,48 @@ enum StatusSuratKeluar {
   MenungguReview
   Disetujui
   Terkirim
+}
+
+model LogTtdDekan {
+  id              Int      @id @default(autoincrement())
+  nomorDokumen    String?  @map("nomor_dokumen") @db.VarChar(255)
+  namaDokumen     String   @map("nama_dokumen") @db.Text
+  jenisDokumen    String   @map("jenis_dokumen") @db.VarChar(100)
+  namaPengaju     String   @map("nama_pengaju") @db.VarChar(200)
+  unitAsal        String   @map("unit_asal") @db.VarChar(100)
+  metodeOtorisasi String   @map("metode_otorisasi") @db.VarChar(100)
+  berkasPendukung String?  @map("berkas_pendukung") @db.Text
+  catatanPengaju  String?  @map("catatan_pengaju") @db.Text
+
+  status          String   @default("Menunggu TTD") @db.VarChar(50)
+
+  hashVerifier    String?  @map("hash_verifier") @db.VarChar(255)
+  catatanPenyetuju String? @map("catatan_penyetuju") @db.Text
+
+  tanggalAjuan    DateTime @default(now()) @map("tanggal_ajuan")
+  tanggalTtd      DateTime? @map("tanggal_ttd")
+  tanggalDitolak  DateTime? @map("tanggal_ditolak")
+
+  userId          Int      @map("user_id")
+  user            Users    @relation("UserTtdLogs", fields: [userId], references: [id], onDelete: Cascade)
+
+  histories       LogTtdDekanHistory[]
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("log_ttd_dekan")
+}
+
+model LogTtdDekanHistory {
+  id             Int          @id @default(autoincrement())
+  logTtdDekanId  Int          @map("log_ttd_dekan_id")
+  logTtdDekan    LogTtdDekan  @relation(fields: [logTtdDekanId], references: [id], onDelete: Cascade)
+  actorId        Int          @map("actor_id")
+  actor          Users        @relation("UserTtdHistory", fields: [actorId], references: [id], onDelete: Cascade)
+  actionType     String       @map("action_type")
+  message        String?      @db.Text
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  @@map("log_ttd_dekan_history")
 }

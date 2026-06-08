@@ -16,6 +16,8 @@ import { verifyRole, verifyToken } from '../middleware/auth-middleware.js'
 import multer from 'multer'
 import { loginWithGoogle } from '../controller/login-controller.js';
 import { createRtmMeeting, deleteRtm, getAllRtm, getRtmById, updateRtmMeeting } from '../controller/rtm-controller.js';
+import { createSuratMasuk, deleteSuratMasuk, getAllSuratMasuk, getSuratMasukById, updateSuratMasuk } from '../controller/surat-menyurat-controller.js';
+import { getTtdLogs, getTtdLogById, getTtdStats, createTtdLog, updateTtdLog, updateTtdLogStatus, deleteTtdLog, uploadSupportingFile } from '../controller/log-ttd-dekan-controller.js';
 import { createDisposisi, createSuratMasuk, deleteSuratMasuk, deleteDisposisi, getAllDisposisi, getAllSuratMasuk, getSuratMasukById, updateDisposisiStatus, updateSuratMasuk, getAllSuratKeluar, getSuratKeluarById, createSuratKeluar, updateSuratKeluar, deleteSuratKeluar } from '../controller/surat-menyurat-controller.js';
 
 const route = Router()
@@ -34,6 +36,7 @@ route.get("/google/redirect", googleRedirect)
 route.post('/auth/google', loginWithGoogle)
 route.post('/auth/otp/request', requestOtp)
 route.post('/auth/otp/verify', verifyOtp)
+route.get('/public/log-ttd-dekan/:id', getTtdLogById)
 
 // PROTECTED ROUTES
 route.use(verifyToken)
@@ -190,6 +193,16 @@ route.delete('/administrasi-surat/surat-keluar/:id', deleteSuratKeluar)
 
 // ==== Surat Menyurat ====
 
+// ==== Log Ttd Dekan ====
+route.get('/log-ttd-dekan', getTtdLogs)
+route.get('/log-ttd-dekan/stats', getTtdStats)
+route.get('/log-ttd-dekan/:id', getTtdLogById)
+route.post('/log-ttd-dekan', createTtdLog)
+route.post('/log-ttd-dekan/upload', uploadSupportingFile)
+route.put('/log-ttd-dekan/:id', updateTtdLog)
+route.patch('/log-ttd-dekan/:id/status', verifyRole(['super_admin', 'admin', 'dekanat', 'wadek']), updateTtdLogStatus)
+route.delete('/log-ttd-dekan/:id', deleteTtdLog)
+// ==== Log Ttd Dekan ====
 
 
 export default route
