@@ -23,11 +23,6 @@ async function findUserByUsernameQuery(username) {
 
 async function getUsersQuery() {
     return await prisma.users.findMany({
-        where: {
-            role: {
-                not: "admin"
-            }
-        }
     })
 }
 
