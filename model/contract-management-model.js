@@ -39,20 +39,20 @@ export const getContractStatsQuery = async (currentQuarter, year) => {
     ] = await prisma.$transaction([
         prisma.contractManagement.count({ where: whereCurrent }),
 
-        prisma.contractAssignment.aggregate({
+        prisma.contractManagement.aggregate({
             _avg: avgField,
-            where: { contract: whereCurrent }
+            where: whereCurrent
         }),
 
         // Target Tercapai (Achievement >= 100)
-        prisma.contractAssignment.count({
-            where: { contract: whereCurrent, [`achievementTw${twNum}`]: { gte: 100 } }
+        prisma.contractManagement.count({
+            where: { ...whereCurrent, [`achievementTw${twNum}`]: { gte: 100 } }
         }),
 
         // Total Nilai
-        prisma.contractAssignment.aggregate({
+        prisma.contractManagement.aggregate({
             _sum: sumField,
-            where: { contract: whereCurrent }
+            where: whereCurrent
         })
     ])
 
@@ -68,9 +68,9 @@ export const getContractStatsQuery = async (currentQuarter, year) => {
 
         const [prevCount, prevAvg, prevMet, prevSum] = await prisma.$transaction([
             prisma.contractManagement.count({ where: wherePrev }),
-            prisma.contractAssignment.aggregate({ _avg: prevAvgField, where: { contract: wherePrev } }),
-            prisma.contractAssignment.count({ where: { contract: wherePrev, [`achievementTw${prevTwNum}`]: { gte: 100 } } }),
-            prisma.contractAssignment.aggregate({ _sum: prevSumField, where: { contract: wherePrev } })
+            prisma.contractManagement.aggregate({ _avg: prevAvgField, where: wherePrev }),
+            prisma.contractManagement.count({ where: { ...wherePrev, [`achievementTw${prevTwNum}`]: { gte: 100 } } }),
+            prisma.contractManagement.aggregate({ _sum: prevSumField, where: wherePrev })
         ])
 
         prevStats = {

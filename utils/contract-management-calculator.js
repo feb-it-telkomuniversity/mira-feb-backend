@@ -2,7 +2,7 @@ export const calculateKM = (data) => {
     const {
         responsibility,
         weight,      // Bobot (AD)
-        target,      // Target (AE) - Bisa String "RKA"
+        target,      // Target (AE)
         realization, // Realisasi (AF)
         min,         // Min (AI)
         max          // Max (AH)
@@ -12,45 +12,51 @@ export const calculateKM = (data) => {
 
     const cleanTarget = String(target).replace(',', '.');
     const targetNum = parseFloat(cleanTarget);
-    const realNum = parseFloat(realization)
+    const realNum = parseFloat(realization);
 
     const minimizeMetrics = [
         "operating ratio fakultas",
-        "operating ratio & cash collection telkom university (common indikator)",
         "do dan undur diri (turn over) mahasiswa angkatan habis masa studi"
-    ]
+    ];
 
+    const isPenurunanKM = responsibility && responsibility.toLowerCase().includes("penurunan kontrak manajemen");
+    const maxNumForCheck = max !== undefined && max !== null ? parseFloat(max) : 120;
     const isSmallerBetter = responsibility && minimizeMetrics.some(metric =>
         responsibility.toLowerCase().trim().includes(metric)
-    )
+    );
 
     if (isNaN(targetNum) || targetNum === 0 || realNum === null || isNaN(realNum)) {
         achievement = 0;
     } else {
-        if (isSmallerBetter) {
-            // RUMUS DIBALIK (Khusus 3 indikator di atas)
+        if (isPenurunanKM && realNum >= targetNum) {
+            achievement = maxNumForCheck;
+        } else if (isSmallerBetter) {
+            // Indikator yang masuk daftar tetap dibalik
             achievement = (targetNum / realNum) * 100;
         } else {
-            // RUMUS NORMAL (Realisasi / Target * 100)
+            // Operating Ratio & Cash Collection Telkom University sekarang lari ke sini
             achievement = (realNum / targetNum) * 100;
         }
     }
 
-    // --- 2. Hitung PERS REAL (Capped Achievement/AJ) ---
-    // Rumus: =IF(AG<=Min; Min; IF(AG>=Max; Max; AG))
+    // --- 2. Hitung PERS REAL (Capped Achievement) ---
     let persReal = achievement;
     const minNum = min !== undefined && min !== null ? parseFloat(min) : 80;
     const maxNum = max !== undefined && max !== null ? parseFloat(max) : 120;
 
-    if (achievement <= minNum) {
-        persReal = minNum;
-    } else if (achievement >= maxNum) {
-        persReal = maxNum;
+    if (isNaN(targetNum) || targetNum === 0 || realNum === null || isNaN(realNum)) {
+        persReal = 0;
     } else {
-        persReal = achievement;
+        if (achievement <= minNum) {
+            persReal = minNum;
+        } else if (achievement >= maxNum) {
+            persReal = maxNum;
+        } else {
+            persReal = achievement;
+        }
     }
-    // --- 3. Hitung NILAI (Score/AK) ---
-    // Rumus: =(Bobot * PersReal) / 100
+
+    // --- 3. Hitung NILAI (Score) ---
     const weightNum = parseFloat(weight) || 0;
     const score = (weightNum * persReal) / 100;
 

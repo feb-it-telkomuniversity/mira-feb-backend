@@ -23,7 +23,7 @@ export const getContractStats = async (req, res) => {
         const { quarterly, year } = req.query
 
         // Logic sederhana penentuan TW default (bisa disesuaikan dengan logic tanggal)
-        const currentQuarter = quarterly || "TW-4"
+        const currentQuarter = quarterly || "TW-1"
         const currentYear = year || new Date().getFullYear()
 
         const stats = await getContractStatsQuery(currentQuarter, currentYear)

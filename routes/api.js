@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getTickets, getConversationDetails, assignTicketToAdmin, countDasboardStats, getTicketCategoryStats, getTicketTrends, resolveTicketByAdmin, getConversationRelevantDetails, createComplaintTicket, getMyTickets, getTicketsForAdmin, verifyTicket, getTicketComplaintDetail, uploadComplaintTicketFiles, resolveTicketByUnit, approveTicketResolution, assignTicket, getDekanatTickets, getDekanatTicketDetail, getUnitTickets, getUnitTicketDetail } from "../controller/tickets-controller.js"
-import { signIn, getUsers, registerUser, deleteUser, updateUser, updateMyProfile, uploadAvatar, deleteAvatar, getMyProfile, linkGoogleAccount, unlinkGoogleAccount, requestOtp, verifyOtp, signOut } from '../controller/auth-controller.js'
+import { signIn, getUsers, registerUser, deleteUser, updateUser, updateMyProfile, uploadAvatar, deleteAvatar, getMyProfile, linkGoogleAccount, unlinkGoogleAccount, requestOtp, verifyOtp, signOut, loginWithSSO } from '../controller/auth-controller.js'
 import { handleCreateSchedule, getSchedulesByMonth, handleCancelSchedule, handleDeleteSchedule } from '../controller/schedule-controller.js';
 import { createContact, getContacts, handleDeleteContact, updateContact } from '../controller/contacts-controller.js';
 import { createPartnershipData, deletePartnershipData, getPartnershipCharts, getPartnershipData, getPartnershipStats, getPartnershipSummaryStats, updatePartnershipData } from '../controller/partnership-controller.js';
@@ -18,6 +18,7 @@ import { loginWithGoogle } from '../controller/login-controller.js';
 import { createRtmMeeting, deleteRtm, getAllRtm, getRtmById, updateRtmMeeting } from '../controller/rtm-controller.js';
 import { getTtdLogs, getTtdLogById, getTtdStats, createTtdLog, updateTtdLog, updateTtdLogStatus, deleteTtdLog, uploadSupportingFile } from '../controller/log-ttd-dekan-controller.js';
 import { createDisposisi, createSuratMasuk, deleteSuratMasuk, deleteDisposisi, getAllDisposisi, getAllSuratMasuk, getSuratMasukById, updateDisposisiStatus, updateSuratMasuk, getAllSuratKeluar, getSuratKeluarById, createSuratKeluar, updateSuratKeluar, deleteSuratKeluar } from '../controller/surat-menyurat-controller.js';
+import { issueAuth, getProfileDosen, getTridarmaDosen } from '../controller/aacsb-controller.js';
 
 const route = Router()
 
@@ -30,6 +31,7 @@ const upload = multer({
 
 // PUBLIC ROUTES
 route.post('/sign-in', signIn)
+route.post('/auth/sso', loginWithSSO)
 route.get("/google/login", googleLogin);
 route.get("/google/redirect", googleRedirect)
 route.post('/auth/google', loginWithGoogle)
@@ -203,5 +205,11 @@ route.patch('/log-ttd-dekan/:id/status', verifyRole(['super_admin', 'admin', 'de
 route.delete('/log-ttd-dekan/:id', deleteTtdLog)
 // ==== Log Ttd Dekan ====
 
+// ==== AACSB Gateway API ====
+// SECURITY: Hanya role dengan hak kelola data yang boleh akses API Gateway AACSB
+route.post('/aacsb/auth', canEditData, issueAuth)
+route.get('/aacsb/dosen/profile', canEditData, getProfileDosen)
+route.get('/aacsb/dosen/tridarma', canEditData, getTridarmaDosen)
+// ==== AACSB Gateway API ====
 
 export default route

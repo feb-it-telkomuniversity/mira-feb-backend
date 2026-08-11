@@ -504,6 +504,136 @@ const verifyOtp = async (req, res) => {
     }
 }
 
+/**
+ * POST /api/auth/sso
+ * Login MIRA menggunakan kredensial SSO Gateway Telkom University.
+ * Memverifikasi ke Gateway, lalu auto-create/find user di MIRA dan issue JWT MIRA.
+ */
+const GATEWAY_BASE_URL = "https://gateway.telkomuniversity.ac.id";
+
+const loginWithSSO = async (req, res) => {
+    try {
+        const { username, password } = req.body;
+
+        if (!username || !password) {
+            return res.status(400).json({
+                success: false,
+                message: "Username dan password SSO Telkom University wajib diisi.",
+            });
+        }
+
+        // 1. Verifikasi kredensial ke Gateway Telkom University
+        const formData = new URLSearchParams();
+        formData.append("username", username);
+        formData.append("password", password);
+
+        let gatewayResponse;
+        try {
+            gatewayResponse = await fetch(`${GATEWAY_BASE_URL}/issueauth`, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: formData.toString(),
+            });
+        } catch (fetchErr) {
+            console.error("SSO Gateway connection error:", fetchErr);
+            return res.status(503).json({
+                success: false,
+                message: "Tidak dapat terhubung ke Gateway SSO Telkom University. Coba lagi nanti.",
+            });
+        }
+
+        if (!gatewayResponse.ok) {
+            return res.status(401).json({
+                success: false,
+                message: "Username atau password SSO Telkom University tidak valid.",
+            });
+        }
+
+        let gatewayData;
+        try {
+            gatewayData = await gatewayResponse.json();
+        } catch {
+            return res.status(502).json({
+                success: false,
+                message: "Respons Gateway SSO tidak dapat dibaca. Hubungi administrator.",
+            });
+        }
+
+        // 2. Ekstrak informasi user dari token Gateway (JWT payload)
+        // Token Gateway adalah JWT — decode payload (tanpa verify signature)
+        let gatewayUsername = username;
+        let gatewayScopes = [];
+        const rawToken = gatewayData?.token || gatewayData?.access_token;
+        if (rawToken) {
+            try {
+                const payloadBase64 = rawToken.split(".")[1];
+                const decoded = JSON.parse(Buffer.from(payloadBase64, "base64").toString("utf-8"));
+                gatewayUsername = decoded?.sub || username;
+                gatewayScopes = decoded?.scopes || [];
+            } catch {
+                // fallback ke username yang diinput
+            }
+        }
+
+        // 3. Cari / Auto-register user MIRA berdasarkan username SSO
+        // Coba cari via ssoUsername field atau username
+        let user = await prisma.users.findFirst({
+            where: {
+                OR: [
+                    { username: gatewayUsername },
+                    { email: `${gatewayUsername}@telkomuniversity.ac.id` },
+                ],
+            },
+        });
+
+        if (!user) {
+            // Auto-register: buat akun MIRA baru
+            // Tentukan role berdasarkan scopes dari Gateway
+            const isStaff = gatewayScopes.some((s) =>
+                ["old-dosen", "old-pegawai", "attendance-employee"].includes(s)
+            );
+            const isDosen = gatewayScopes.includes("old-dosen");
+
+            user = await prisma.users.create({
+                data: {
+                    username: gatewayUsername,
+                    name: gatewayUsername,
+                    email: `${gatewayUsername}@telkomuniversity.ac.id`,
+                    role: isDosen ? "tpa" : isStaff ? "tpa" : "mahasiswa",
+                },
+            });
+        }
+
+        // 4. Issue JWT MIRA — sama persis dengan login biasa
+        const jwtPayload = {
+            id: user.id,
+            username: user.username,
+            role: user.role,
+            unitId: user.unitId,
+        };
+        const authToken = jwt.sign(jwtPayload, process.env.JWT_SECRET_KEY, { expiresIn: "1d" });
+        res.cookie("auth_token", authToken, cookieOptions);
+
+        return res.status(200).json({
+            success: true,
+            message: "Login via SSO Telkom University berhasil!",
+            user: {
+                id: user.id,
+                name: user.name,
+                username: user.username,
+                role: user.role,
+                accessibleMenus: user.accessibleMenus || [],
+            },
+        });
+    } catch (error) {
+        console.error("SSO Login error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Terjadi kesalahan server saat proses login SSO.",
+        });
+    }
+};
+
 const signOut = (req, res) => {
     res.clearCookie('auth_token', {
         httpOnly: true,
@@ -532,5 +662,6 @@ export {
     unlinkGoogleAccount,
     requestOtp,
     verifyOtp,
-    signOut
+    signOut,
+    loginWithSSO,
 }
