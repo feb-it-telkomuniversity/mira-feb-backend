@@ -25,6 +25,7 @@ model Users {
   identifier      String?  @db.VarChar(255)
   avatarUrl       String?
   accessibleMenus String[] @default([]) @map("accessible_menus")
+  isSsoMapped     Boolean  @default(false) @map("is_sso_mapped")
 
   conversations Conversation[]
 

@@ -73,11 +73,20 @@ async function signIn(req, res) {
 
 async function registerUser(req, res) {
     try {
-        const { username, password, name, role, supervisorId, unitId, accessibleMenus } = req.body
-        if (!username || !name || !password || !role || !unitId) {
+        const { username, password, name, role, supervisorId, unitId, accessibleMenus, isSsoUser } = req.body
+
+        // Untuk user SSO, password tidak wajib karena mereka login via gateway
+        if (!username || !name || !role || !unitId) {
             return res.status(400).json({
                 success: false,
-                message: 'Username, name, password, role, and unitId are required'
+                message: 'Username, name, role, and unitId are required'
+            });
+        }
+
+        if (!isSsoUser && !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Password wajib diisi untuk akun manual'
             });
         }
 
@@ -89,9 +98,10 @@ async function registerUser(req, res) {
             })
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10)
+        const hashedPassword = password ? await bcrypt.hash(password, 10) : null
 
-        const newUser = await createUserQuery(username, hashedPassword, name, role, supervisorId, unitId, accessibleMenus)
+        // isSsoMapped = true berarti admin sudah sengaja mendaftarkan akun ini
+        const newUser = await createUserQuery(username, hashedPassword, name, role, supervisorId, unitId, accessibleMenus, !!isSsoUser)
         res.status(201).json({
             success: true,
             message: "User created successfuly",
@@ -144,7 +154,7 @@ async function deleteUser(req, res) {
 async function updateUser(req, res) {
     try {
         const { id } = req.params
-        const { username, name, password, role, supervisorId, unitId, accessibleMenus } = req.body
+        const { username, name, password, role, supervisorId, unitId, accessibleMenus, isSsoMapped } = req.body
 
         const updateData = {}
         if (username) updateData.username = username
@@ -157,6 +167,8 @@ async function updateUser(req, res) {
             updateData.unitId = unitId ? parseInt(unitId) : null
         }
         if (accessibleMenus) updateData.accessibleMenus = accessibleMenus
+        // Tandai user SSO sudah dipetakan jika admin sengaja menyimpan perubahan
+        if (isSsoMapped !== undefined) updateData.isSsoMapped = isSsoMapped
 
         if (password) {
             updateData.password = await bcrypt.hash(password, 10)
@@ -600,6 +612,8 @@ const loginWithSSO = async (req, res) => {
                     name: gatewayUsername,
                     email: `${gatewayUsername}@telkomuniversity.ac.id`,
                     role: isDosen ? "tpa" : isStaff ? "tpa" : "mahasiswa",
+                    // isSsoMapped = false: akun ini dibuat otomatis, belum dipetakan admin
+                    isSsoMapped: false,
                 },
             });
         }
@@ -623,6 +637,7 @@ const loginWithSSO = async (req, res) => {
                 username: user.username,
                 role: user.role,
                 accessibleMenus: user.accessibleMenus || [],
+                isSsoMapped: user.isSsoMapped,
             },
         });
     } catch (error) {

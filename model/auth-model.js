@@ -1,16 +1,18 @@
 import prisma from "../utils/prisma.js";
 
 
-async function createUserQuery(username, hashedPassword, name, role, supervisorId, unitId, accessibleMenus) {
+async function createUserQuery(username, hashedPassword, name, role, supervisorId, unitId, accessibleMenus, isSsoUser = false) {
     return await prisma.users.create({
         data: {
             username: username,
-            password: hashedPassword,
+            password: hashedPassword || null,
             name: name,
             role: role,
             supervisorId: supervisorId,
             unitId: unitId,
-            accessibleMenus: accessibleMenus
+            accessibleMenus: accessibleMenus,
+            // Jika admin mendaftarkan sebagai SSO user, tandai sudah dipetakan
+            isSsoMapped: isSsoUser ? true : false,
         }
     })
 }
