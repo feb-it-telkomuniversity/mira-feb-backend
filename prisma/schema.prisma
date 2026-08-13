@@ -1022,7 +1022,7 @@ model LectureProfile {
   nipNidn              String?  @map("nip_nidn") @db.VarChar(100)
   nip                  String?  @map("nip") @db.VarChar(50)
   nidn                 String?  @map("nidn") @db.VarChar(50)
-  name                 String   @map("name") @db.VarChar(255)
+  nama                 String   @map("nama") @db.VarChar(255)
   homebase             String?  @map("homebase") @db.VarChar(255)
   kelompokKeahlian     String?  @map("kelompok_keahlian") @db.VarChar(255)
   employeeStatus       String?  @map("employee_status") @db.VarChar(100)
