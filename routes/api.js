@@ -205,11 +205,10 @@ route.patch('/log-ttd-dekan/:id/status', verifyRole(['super_admin', 'admin', 'de
 route.delete('/log-ttd-dekan/:id', deleteTtdLog)
 // ==== Log Ttd Dekan ====
 
-// ==== AACSB Gateway API ====
-// SECURITY: Hanya role dengan hak kelola data yang boleh akses API Gateway AACSB
+// ==== AACSB Gateway & Database API ====
 route.post('/aacsb/auth', canEditData, issueAuth)
-route.get('/aacsb/dosen/profile', canEditData, getProfileDosen)
-route.get('/aacsb/dosen/tridarma', canEditData, getTridarmaDosen)
-// ==== AACSB Gateway API ====
+route.get('/aacsb/dosen/profile', getProfileDosen)
+route.get('/aacsb/dosen/tridarma', getTridarmaDosen)
+// ==== AACSB Gateway & Database API ====
 
 export default route

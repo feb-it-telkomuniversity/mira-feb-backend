@@ -1015,3 +1015,37 @@ model LogTtdDekanHistory {
 
   @@map("log_ttd_dekan_history")
 }
+
+model LectureProfile {
+  id                   Int      @id @default(autoincrement())
+  lecturerCode         String   @unique @map("lecturer_code") @db.VarChar(50)
+  nipNidn              String?  @map("nip_nidn") @db.VarChar(100)
+  nip                  String?  @map("nip") @db.VarChar(50)
+  nidn                 String?  @map("nidn") @db.VarChar(50)
+  name                 String   @map("name") @db.VarChar(255)
+  homebase             String?  @map("homebase") @db.VarChar(255)
+  kelompokKeahlian     String?  @map("kelompok_keahlian") @db.VarChar(255)
+  employeeStatus       String?  @map("employee_status") @db.VarChar(100)
+  academicFuncPosition String?  @map("academic_func_position") @db.VarChar(50)
+  lastAcademicTitle    String?  @map("last_academic_title") @db.VarChar(50)
+  institutionName      String?  @map("institution_name") @db.Text
+  tahun                String?  @map("tahun") @db.VarChar(50)
+
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  @@map("lecture_profile")
+}
+
+model LectureTridharma {
+  id               Int      @id @default(autoincrement())
+  lecturerCode     String   @unique @map("lecturer_code") @db.VarChar(50)
+  studyProgramType String?  @map("study_program_type") @db.VarChar(50)
+  totalBimbingan   String?  @map("total_bimbingan") @db.VarChar(50)
+  listMataKuliah   Json?    @map("list_mata_kuliah") @db.Json
+
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("lecture_tridharma")
+}
