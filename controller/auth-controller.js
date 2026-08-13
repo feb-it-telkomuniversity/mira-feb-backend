@@ -54,6 +54,7 @@ async function signIn(req, res) {
         res.status(200).json({
             success: true,
             message: 'Login successful',
+            token: token,
             user: {
                 id: user.id,
                 name: user.name,
@@ -631,6 +632,7 @@ const loginWithSSO = async (req, res) => {
         return res.status(200).json({
             success: true,
             message: "Login via SSO Telkom University berhasil!",
+            token: authToken,
             user: {
                 id: user.id,
                 name: user.name,
