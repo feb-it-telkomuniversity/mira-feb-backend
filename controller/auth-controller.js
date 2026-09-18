@@ -600,22 +600,51 @@ const loginWithSSO = async (req, res) => {
 
         if (!user) {
             // Auto-register: buat akun MIRA baru
-            // Tentukan role berdasarkan scopes dari Gateway
+            // Tentukan role berdasarkan scopes dari Gateway (Pegawai = Dosen, Tendik/TPA)
             const isStaff = gatewayScopes.some((s) =>
                 ["old-dosen", "old-pegawai", "attendance-employee"].includes(s)
             );
-            const isDosen = gatewayScopes.includes("old-dosen");
 
             user = await prisma.users.create({
                 data: {
                     username: gatewayUsername,
                     name: gatewayUsername,
                     email: `${gatewayUsername}@telkomuniversity.ac.id`,
-                    role: isDosen ? "tpa" : isStaff ? "tpa" : "mahasiswa",
+                    role: isStaff ? "pegawai" : "mahasiswa",
+                    accessibleMenus: [
+                        "/dashboard/halo-dekan/pengaduan-baru",
+                        "/dashboard/halo-dekan/riwayat-tiket"
+                    ],
                     // isSsoMapped = false: akun ini dibuat otomatis, belum dipetakan admin
                     isSsoMapped: false,
                 },
             });
+        } else if (!user.isSsoMapped) {
+            // Jika akun SSO belum diubah manual oleh admin, pastikan role Pegawai & default akses menu aktif
+            const currentMenus = Array.isArray(user.accessibleMenus) ? user.accessibleMenus : [];
+            const defaultMenus = [
+                "/dashboard/halo-dekan/pengaduan-baru",
+                "/dashboard/halo-dekan/riwayat-tiket"
+            ];
+            const hasAllDefault = defaultMenus.every((m) => currentMenus.includes(m));
+            const isStaff = gatewayScopes.some((s) =>
+                ["old-dosen", "old-pegawai", "attendance-employee"].includes(s)
+            );
+
+            const updatePayload = {};
+            if (!hasAllDefault) {
+                updatePayload.accessibleMenus = Array.from(new Set([...currentMenus, ...defaultMenus]));
+            }
+            if (isStaff && (user.role === "tpa" || user.role === "dosen")) {
+                updatePayload.role = "pegawai";
+            }
+
+            if (Object.keys(updatePayload).length > 0) {
+                user = await prisma.users.update({
+                    where: { id: user.id },
+                    data: updatePayload
+                });
+            }
         }
 
         // 4. Issue JWT MIRA — sama persis dengan login biasa

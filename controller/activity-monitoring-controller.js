@@ -1,3 +1,4 @@
+import { sendActivityNotificationEmail } from '../services/email-service.js';
 import { createActivityMonitoringQuery, getActivityMonitoringListQuery, deleteActivityMonitoringQuery, updateActivityMonitoringQuery, getActivityMonitoringByIdQuery, patchActivityDatesQuery } from '../model/activity-monitoring-model.js'
 import prisma from "../utils/prisma.js";
 const UNIT_MAP = {
@@ -184,7 +185,43 @@ async function createActivityMonitoring(req, res) {
             officials: officialsEnum
         }
 
-        const newActivity = await createActivityMonitoringQuery(payload)
+        const newActivity = await createActivityMonitoringQuery(payload);
+
+        // Kirim notifikasi email ke semua user terdaftar & tembusan admin
+        (async () => {
+            try {
+                // Ambil semua email user terdaftar di database MIRA
+                const registeredUsers = await prisma.users.findMany({
+                    where: {
+                        email: { not: null }
+                    },
+                    select: { email: true }
+                });
+                const allEmails = registeredUsers.map(u => u.email).filter(Boolean);
+
+                // Data penginput kegiatan
+                const creator = newActivity.user || (req.user ? {
+                    id: req.user.id,
+                    name: req.user.name || req.user.username,
+                    role: req.user.role,
+                    email: req.user.email
+                } : null);
+
+                await sendActivityNotificationEmail({
+                    activity: {
+                        ...newActivity,
+                        room: raw.room,
+                        unit: raw.unit,
+                        officials: raw.officials,
+                        description: raw.description
+                    },
+                    creator: creator,
+                    allUserEmails: allEmails
+                });
+            } catch (emailErr) {
+                console.error("Gagal mengirim email notifikasi background:", emailErr);
+            }
+        })();
 
         let message = "Kegiatan berhasil ditambahkan."
         if (newActivity.status === 'RoomConflict') {

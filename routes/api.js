@@ -1,3 +1,4 @@
+import { getRecentNotifications } from '../controller/notification-controller.js';
 import { Router } from 'express';
 import { getTickets, getConversationDetails, assignTicketToAdmin, countDasboardStats, getTicketCategoryStats, getTicketTrends, resolveTicketByAdmin, getConversationRelevantDetails, createComplaintTicket, getMyTickets, getTicketsForAdmin, verifyTicket, getTicketComplaintDetail, uploadComplaintTicketFiles, resolveTicketByUnit, approveTicketResolution, assignTicket, getDekanatTickets, getDekanatTicketDetail, getUnitTickets, getUnitTicketDetail } from "../controller/tickets-controller.js"
 import { signIn, getUsers, registerUser, deleteUser, updateUser, updateMyProfile, uploadAvatar, deleteAvatar, getMyProfile, linkGoogleAccount, unlinkGoogleAccount, requestOtp, verifyOtp, signOut, loginWithSSO } from '../controller/auth-controller.js'
@@ -17,10 +18,15 @@ import multer from 'multer'
 import { loginWithGoogle } from '../controller/login-controller.js';
 import { createRtmMeeting, deleteRtm, getAllRtm, getRtmById, updateRtmMeeting } from '../controller/rtm-controller.js';
 import { getTtdLogs, getTtdLogById, getTtdStats, createTtdLog, updateTtdLog, updateTtdLogStatus, deleteTtdLog, uploadSupportingFile } from '../controller/log-ttd-dekan-controller.js';
-import { createDisposisi, createSuratMasuk, deleteSuratMasuk, deleteDisposisi, getAllDisposisi, getAllSuratMasuk, getSuratMasukById, updateDisposisiStatus, updateSuratMasuk, getAllSuratKeluar, getSuratKeluarById, createSuratKeluar, updateSuratKeluar, deleteSuratKeluar } from '../controller/surat-menyurat-controller.js';
+import { extractSuratMasukAI, createDisposisi, createSuratMasuk, deleteSuratMasuk, deleteDisposisi, getAllDisposisi, getAllSuratMasuk, getSuratMasukById, updateDisposisiStatus, updateSuratMasuk, getAllSuratKeluar, getSuratKeluarById, createSuratKeluar, updateSuratKeluar, deleteSuratKeluar } from '../controller/surat-menyurat-controller.js';
 import { issueAuth, getProfileDosen, getTridarmaDosen } from '../controller/aacsb-controller.js';
 
 const route = Router()
+
+const uploadDocument = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 15 * 1024 * 1024 } // 15mb for letter scans/pdfs
+});
 
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -105,6 +111,9 @@ route.patch('/contract-management/:id/update-assignment', updateAssignment)
 route.patch('/contract-management/reorder', reorderContracts)
 // ==== Contract Management ====
 
+// ==== Notifications ====
+route.get('/notifications', getRecentNotifications)
+
 // ==== Activtiy Monitoring List ====
 route.get('/activity-monitoring', getActivityMonitoringList)
 route.post('/activity-monitoring', createActivityMonitoring)
@@ -172,6 +181,7 @@ route.delete('/rtm/:id', deleteRtm)
 // ==== Surat Masuk ====
 route.get('/administrasi-surat/surat-masuk', getAllSuratMasuk)
 route.get('/administrasi-surat/surat-masuk/:id', getSuratMasukById)
+route.post('/administrasi-surat/surat-masuk/extract-ai', uploadDocument.single('file'), extractSuratMasukAI)
 route.post('/administrasi-surat/surat-masuk', createSuratMasuk)
 route.put('/administrasi-surat/surat-masuk/:id', updateSuratMasuk)
 route.delete('/administrasi-surat/surat-masuk/:id', deleteSuratMasuk)

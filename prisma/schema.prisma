@@ -43,6 +43,7 @@ model Users {
 
   ttdLogs         LogTtdDekan[]        @relation("UserTtdLogs")
   ttdHistories    LogTtdDekanHistory[] @relation("UserTtdHistory")
+  activities      ActivityMonitoring[] @relation("UserActivities")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -324,6 +325,9 @@ model ActivityMonitoring {
   officials      OfficialOption[]
 
   status ActivityMonitoringStatus @default(Normal)
+
+  userId         Int?             @map("user_id")
+  user           Users?           @relation("UserActivities", fields: [userId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -791,6 +795,7 @@ enum Role {
   admin
   mahasiswa
   dosen
+  pegawai
   dekanat
   wadek
   kaur

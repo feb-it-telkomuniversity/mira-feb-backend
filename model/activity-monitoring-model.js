@@ -107,6 +107,18 @@ async function getActivityMonitoringListQuery(page = 1, limit = 10, search = "",
             take: limit,
             orderBy: {
                 date: 'desc',
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        username: true,
+                        email: true,
+                        role: true,
+                        avatarUrl: true
+                    }
+                }
             }
         }),
         prisma.activityMonitoring.count({ where: whereClause })
@@ -142,7 +154,20 @@ async function createActivityMonitoringQuery(payload) {
             room: payload.room,
             locationDetail: payload.locationDetail || null,
             officials: payload.officials || [],
-            status: conflictResult.status
+            status: conflictResult.status,
+            userId: payload.userId || null
+        },
+        include: {
+            user: {
+                select: {
+                    id: true,
+                    name: true,
+                    username: true,
+                    email: true,
+                    role: true,
+                    avatarUrl: true
+                }
+            }
         }
     })
 
@@ -227,7 +252,21 @@ async function updateActivityMonitoringQuery(id, payload) {
 
 async function getActivityMonitoringByIdQuery(id) {
     return await prisma.activityMonitoring.findUnique({
-        where: { id: parseInt(id) }
+        where: {
+            id: parseInt(id)
+        },
+        include: {
+            user: {
+                select: {
+                    id: true,
+                    name: true,
+                    username: true,
+                    email: true,
+                    role: true,
+                    avatarUrl: true
+                }
+            }
+        }
     })
 }
 

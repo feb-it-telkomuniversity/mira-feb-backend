@@ -1,3 +1,7 @@
+import { sendDispositionNotificationEmail } from '../services/email-service.js';
+import prisma from '../utils/prisma.js';
+import { extractSuratMasukMetadata } from '../services/gemini-service.js';
+import { put } from '@vercel/blob';
 import {
     getAllSuratMasukQuery,
     getSuratMasukByIdQuery,
@@ -235,6 +239,42 @@ const createDisposisi = async (req, res) => {
 
         // Eksekusi ke Query Model
         const [newDisposisi, updatedSurat] = await createDisposisiQuery(payload);
+        // Memicu pengiriman email notifikasi secara asinkron di latar belakang
+        (async () => {
+            try {
+                const [suratMasuk, pemberi, unitWithUsers] = await Promise.all([
+                    prisma.suratMasuk.findUnique({
+                        where: { id: parseInt(payload.suratMasukId) }
+                    }),
+                    prisma.users.findUnique({
+                        where: { id: parseInt(payload.pemberiId) },
+                        select: { id: true, name: true, role: true, email: true }
+                    }),
+                    prisma.unit.findUnique({
+                        where: { id: parseInt(payload.penerimaUnitId) },
+                        include: {
+                            users: {
+                                select: { id: true, name: true, email: true, role: true }
+                            }
+                        }
+                    })
+                ]);
+
+                const recipientEmails = (unitWithUsers?.users || [])
+                    .map(u => u.email)
+                    .filter(e => e && typeof e === 'string' && e.includes('@'));
+
+                await sendDispositionNotificationEmail({
+                    disposisi: newDisposisi,
+                    suratMasuk: suratMasuk,
+                    pemberi: pemberi,
+                    recipientUnit: unitWithUsers,
+                    recipientEmails: recipientEmails
+                });
+            } catch (emailErr) {
+                console.error('[Disposisi] Gagal mengirim notifikasi email latar belakang:', emailErr);
+            }
+        })();
 
         return res.status(201).json({
             success: true,
@@ -400,7 +440,71 @@ const deleteSuratKeluar = async (req, res) => {
 // ======= END SURAT KELUAR =======
 
 
+
+const extractSuratMasukAI = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: "Berkas surat (PDF atau gambar) wajib diunggah"
+            });
+        }
+
+        const { buffer, mimetype, originalname } = req.file;
+
+        const validMimes = [
+            'application/pdf',
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'image/webp'
+        ];
+
+        if (!validMimes.includes(mimetype.toLowerCase())) {
+            return res.status(400).json({
+                success: false,
+                message: "Format file tidak didukung. Harap unggah berkas PDF, JPG, atau PNG."
+            });
+        }
+
+        console.log(`[AI Surat Masuk] Menganalisis dokumen: ${originalname} (${mimetype}, ${buffer.length} bytes)`);
+
+        // Analisis dengan Gemini
+        const extracted = await extractSuratMasukMetadata(buffer, mimetype);
+
+        // Upload ke Vercel Blob jika token tersedia
+        let fileUrl = null;
+        if (process.env.BLOB_READ_WRITE_TOKEN) {
+            try {
+                const safeName = `surat-masuk/${Date.now()}-${originalname.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+                const blob = await put(safeName, buffer, { access: 'public' });
+                fileUrl = blob.url;
+                console.log(`[AI Surat Masuk] Berkas berhasil diunggah ke Blob: ${fileUrl}`);
+            } catch (blobErr) {
+                console.warn("[AI Surat Masuk] Upload Vercel Blob gagal (opsional):", blobErr.message);
+            }
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Berhasil mengekstrak informasi surat masuk dengan AI",
+            data: {
+                ...extracted,
+                linkPdf: fileUrl || ''
+            }
+        });
+    } catch (error) {
+        console.error("Error in extractSuratMasukAI:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Gagal mengekstrak dokumen surat dengan AI",
+            error: error.message
+        });
+    }
+};
+
 export {
+    extractSuratMasukAI,
     // Surat Masuk
     getAllSuratMasuk,
     getSuratMasukById,
