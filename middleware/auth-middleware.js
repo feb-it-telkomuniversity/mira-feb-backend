@@ -30,6 +30,7 @@ export const verifyToken = (req, res, next) => {
 };
 
 // 2. Middleware Cek Role (Satpam VIP)
+// Cara pakainya nanti: verifyRole(['admin', 'dekanat'])
 export const verifyRole = (allowedRoles) => {
     return (req, res, next) => {
         if (!req.user || !allowedRoles.includes(req.user.role)) {

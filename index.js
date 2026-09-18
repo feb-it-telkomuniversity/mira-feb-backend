@@ -12,6 +12,8 @@ const allowedOrigins = [
 ]
 
 const app = express()
+
+app.set('trust proxy', true)
 app.use(cors({
     origin: function (origin, callback) {
         if (!origin) return callback(null, true)

@@ -1,8 +1,9 @@
+import prisma from "../utils/prisma.js";
+
 const GATEWAY_BASE_URL = "https://gateway.telkomuniversity.ac.id";
 
-// SECURITY: Token HARUS diatur via environment variable AACSB_GATEWAY_TOKEN di .env
-// Jangan pernah hardcode token di source code.
-const DEFAULT_GATEWAY_TOKEN = process.env.AACSB_GATEWAY_TOKEN;
+// In-memory token storage agar token langsung aktif otomatis tanpa edit .env manual
+let activeGatewayToken = process.env.AACSB_GATEWAY_TOKEN || "";
 
 /**
  * POST /api/aacsb/auth
@@ -37,13 +38,21 @@ export async function issueAuth(req, res) {
     if (!response.ok) {
       return res.status(response.status).json({
         success: false,
-        message: "Gagal autentikasi ke Gateway AACSB Telkom University. Periksa username/password.",
+        message:
+          "Gagal autentikasi ke Gateway AACSB Telkom University. Periksa username/password.",
       });
+    }
+
+    // Otomatis perbarui token aktif di memori server
+    const newToken = data?.token || data?.access_token;
+    if (newToken) {
+      activeGatewayToken = newToken;
     }
 
     return res.status(200).json({
       success: true,
-      message: "Berhasil mendapatkan token autentikasi Gateway AACSB",
+      message:
+        "Berhasil mendapatkan & mengaktifkan token Gateway AACSB secara otomatis di server MIRA.",
       data,
     });
   } catch (error) {
@@ -51,15 +60,13 @@ export async function issueAuth(req, res) {
     return res.status(500).json({
       success: false,
       message: "Terjadi kesalahan server saat menghubungi Gateway AACSB.",
-      // SECURITY: Jangan expose error.message ke client di production
     });
   }
 }
 
 /**
  * GET /api/aacsb/dosen/profile?lecture_code=xxx
- * Get Lecturer Profile Data from Telkom University Gateway
- * Role: super_admin, admin, dekanat, wadek, kaur, kaprodi (canEditData)
+ * Get Lecturer Profile Data from Local Database or Telkom University Gateway
  */
 export async function getProfileDosen(req, res) {
   try {
@@ -72,24 +79,42 @@ export async function getProfileDosen(req, res) {
       });
     }
 
-    // SECURITY: Hanya izinkan karakter alfanumerik pada lecture_code untuk mencegah injection
-    if (!/^[a-zA-Z0-9_-]{1,20}$/.test(lectureCode)) {
-      return res.status(400).json({
-        success: false,
-        message: "Format lecture_code tidak valid. Hanya huruf dan angka diperbolehkan.",
+    const normalizedCode = lectureCode.trim().toUpperCase();
+
+    // 1. Cek dulu di Database Lokal
+    const dbProfile = await prisma.lectureProfile.findUnique({
+      where: { lecturerCode: normalizedCode },
+    });
+
+    if (dbProfile) {
+      return res.status(200).json({
+        success: true,
+        message: `Berhasil mengambil data profile dosen (${normalizedCode}) dari database`,
+        data: {
+          "nip / nidn": dbProfile.nipNidn,
+          nama: dbProfile.nama,
+          lecturercode: dbProfile.lecturerCode,
+          homebase: dbProfile.homebase,
+          "kelompok keahlian": dbProfile.kelompokKeahlian,
+          employeestatus: dbProfile.employeeStatus,
+          academicfuncposition: dbProfile.academicFuncPosition,
+          lastacademictitle: dbProfile.lastAcademicTitle,
+          institutionname: dbProfile.institutionName,
+          tahun: dbProfile.tahun,
+        },
       });
     }
 
-    // SECURITY: Gunakan token dari env var saja — TIDAK dari request header yang bisa dimanipulasi client
-    const bearerToken = DEFAULT_GATEWAY_TOKEN;
+    // 2. Fallback ke Gateway API
+    const bearerToken = activeGatewayToken || process.env.AACSB_GATEWAY_TOKEN;
     if (!bearerToken) {
-      return res.status(503).json({
+      return res.status(404).json({
         success: false,
-        message: "AACSB Gateway token belum dikonfigurasi. Hubungi administrator sistem.",
+        message: `Data profile dosen dengan kode '${normalizedCode}' tidak ditemukan di database.`,
       });
     }
 
-    const endpointUrl = `${GATEWAY_BASE_URL}/b4eba405e82fdb9ef0d15f767fda2afe?lecture_code=${encodeURIComponent(lectureCode)}`;
+    const endpointUrl = `${GATEWAY_BASE_URL}/b4eba405e82fdb9ef0d15f767fda2afe?lecture_code=${encodeURIComponent(normalizedCode)}`;
 
     const response = await fetch(endpointUrl, {
       method: "GET",
@@ -116,7 +141,7 @@ export async function getProfileDosen(req, res) {
 
     return res.status(200).json({
       success: true,
-      message: `Berhasil mengambil data profile dosen (${lectureCode})`,
+      message: `Berhasil mengambil data profile dosen (${normalizedCode})`,
       data: data,
     });
   } catch (error) {
@@ -130,8 +155,7 @@ export async function getProfileDosen(req, res) {
 
 /**
  * GET /api/aacsb/dosen/tridarma?lecture_code=xxx
- * Get Lecturer Tridarma Data from Telkom University Gateway
- * Role: super_admin, admin, dekanat, wadek, kaur, kaprodi (canEditData)
+ * Get Lecturer Tridarma Data from Local Database or Telkom University Gateway
  */
 export async function getTridarmaDosen(req, res) {
   try {
@@ -144,24 +168,36 @@ export async function getTridarmaDosen(req, res) {
       });
     }
 
-    // SECURITY: Hanya izinkan karakter alfanumerik pada lecture_code untuk mencegah injection
-    if (!/^[a-zA-Z0-9_-]{1,20}$/.test(lectureCode)) {
-      return res.status(400).json({
-        success: false,
-        message: "Format lecture_code tidak valid. Hanya huruf dan angka diperbolehkan.",
+    const normalizedCode = lectureCode.trim().toUpperCase();
+
+    // 1. Cek dulu di Database Lokal
+    const dbTridharma = await prisma.lectureTridharma.findUnique({
+      where: { lecturerCode: normalizedCode },
+    });
+
+    if (dbTridharma) {
+      return res.status(200).json({
+        success: true,
+        message: `Berhasil mengambil data tridarma dosen (${normalizedCode}) dari database`,
+        data: {
+          lecturercode: dbTridharma.lecturerCode,
+          studyprogramtype: dbTridharma.studyProgramType,
+          total_bimbingan: dbTridharma.totalBimbingan,
+          list_mata_kuliah: dbTridharma.listMataKuliah || [],
+        },
       });
     }
 
-    // SECURITY: Gunakan token dari env var saja
-    const bearerToken = DEFAULT_GATEWAY_TOKEN;
+    // 2. Fallback ke Gateway API
+    const bearerToken = activeGatewayToken || process.env.AACSB_GATEWAY_TOKEN;
     if (!bearerToken) {
-      return res.status(503).json({
+      return res.status(404).json({
         success: false,
-        message: "AACSB Gateway token belum dikonfigurasi. Hubungi administrator sistem.",
+        message: `Data tridarma dosen dengan kode '${normalizedCode}' tidak ditemukan di database.`,
       });
     }
 
-    const endpointUrl = `${GATEWAY_BASE_URL}/f3a8003ca78d9a479ef9e1d9554ae8a5/?lecture_code=${encodeURIComponent(lectureCode)}`;
+    const endpointUrl = `${GATEWAY_BASE_URL}/f3a8003ca78d9a479ef9e1d9554ae8a5/?lecture_code=${encodeURIComponent(normalizedCode)}`;
 
     const response = await fetch(endpointUrl, {
       method: "GET",
@@ -188,7 +224,7 @@ export async function getTridarmaDosen(req, res) {
 
     return res.status(200).json({
       success: true,
-      message: `Berhasil mengambil data tridarma dosen (${lectureCode})`,
+      message: `Berhasil mengambil data tridarma dosen (${normalizedCode})`,
       data: data,
     });
   } catch (error) {
