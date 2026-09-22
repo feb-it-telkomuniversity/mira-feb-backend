@@ -224,23 +224,46 @@ async function updateActivityMonitoringQuery(id, payload) {
     else if (roomConflict) newStatus = 'RoomConflict'
     else if (officialConflict) newStatus = 'OfficialConflict'
 
+    const existingActivity = await prisma.activityMonitoring.findUnique({
+        where: { id: parseInt(id) },
+        select: { userId: true }
+    });
+
+    const updateData = {
+        title: payload.title,
+        date: targetDate,
+        endDate: payload.endDate ? new Date(payload.endDate) : null,
+        startTime: start,
+        endTime: end,
+        participants: parseInt(payload.participants),
+        description: payload.description,
+
+        unit: payload.unit,
+        otherUnit: payload.otherUnit || null,
+        room: payload.room,
+        locationDetail: payload.locationDetail || null,
+        officials: payload.officials,
+        status: conflictResult.status
+    };
+
+    if (!existingActivity?.userId && payload.userId) {
+        updateData.userId = payload.userId;
+    }
+
     const updatedActivity = await prisma.activityMonitoring.update({
         where: { id: parseInt(id) },
-        data: {
-            title: payload.title,
-            date: targetDate,
-            endDate: payload.endDate ? new Date(payload.endDate) : null,
-            startTime: start,
-            endTime: end,
-            participants: parseInt(payload.participants),
-            description: payload.description,
-
-            unit: payload.unit,
-            otherUnit: payload.otherUnit || null,
-            room: payload.room,
-            locationDetail: payload.locationDetail || null,
-            officials: payload.officials,
-            status: conflictResult.status
+        data: updateData,
+        include: {
+            user: {
+                select: {
+                    id: true,
+                    name: true,
+                    username: true,
+                    email: true,
+                    role: true,
+                    avatarUrl: true
+                }
+            }
         }
     })
 
@@ -316,6 +339,18 @@ async function patchActivityDatesQuery(id, newDateStr, newEndDateStr = null) {
             date: targetDate,
             endDate: targetEndDate,
             status: newStatus
+        },
+        include: {
+            user: {
+                select: {
+                    id: true,
+                    name: true,
+                    username: true,
+                    email: true,
+                    role: true,
+                    avatarUrl: true
+                }
+            }
         }
     })
 }

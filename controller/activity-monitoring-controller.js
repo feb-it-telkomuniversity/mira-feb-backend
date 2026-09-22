@@ -169,6 +169,8 @@ async function createActivityMonitoring(req, res) {
             })
         }
 
+        const userId = req.user?.id ? parseInt(req.user.id) : (raw.userId ? parseInt(raw.userId) : null);
+
         const payload = {
             title: raw.title,
             date: raw.date,
@@ -182,7 +184,8 @@ async function createActivityMonitoring(req, res) {
             otherUnit: raw.otherUnit,
             room: roomEnum,
             locationDetail: raw.locationDetail,
-            officials: officialsEnum
+            officials: officialsEnum,
+            userId: userId
         }
 
         const newActivity = await createActivityMonitoringQuery(payload);
@@ -307,6 +310,8 @@ async function updateActivityMonitoring(req, res) {
             })
         }
 
+        const userId = req.user?.id ? parseInt(req.user.id) : (raw.userId ? parseInt(raw.userId) : null);
+
         const payload = {
             title: raw.title,
             date: raw.date,
@@ -320,7 +325,8 @@ async function updateActivityMonitoring(req, res) {
             otherUnit: raw.otherUnit,
             room: roomEnum,
             locationDetail: raw.locationDetail,
-            officials: officialsEnum
+            officials: officialsEnum,
+            userId: userId
         }
 
         const updatedActivity = await updateActivityMonitoringQuery(id, payload);
