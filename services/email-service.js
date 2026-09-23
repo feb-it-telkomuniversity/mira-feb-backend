@@ -49,6 +49,11 @@ export const sendOtpEmail = async (toEmail, otpCode) => {
 // Notifikasi kegiatan baru ke semua user dan tembusan admin
 export const sendActivityNotificationEmail = async ({ activity, creator, allUserEmails = [] }) => {
     try {
+        if (process.env.ENABLE_EMAIL_NOTIFICATIONS === 'false') {
+            console.log('[EmailService] Notifikasi email kegiatan dinonaktifkan (ENABLE_EMAIL_NOTIFICATIONS=false).');
+            return false;
+        }
+
         const adminEmail = 'seb@telkomuniversity.ac.id';
         
         // Clean & deduplicate recipient emails

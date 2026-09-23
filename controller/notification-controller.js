@@ -11,6 +11,10 @@ const instruksiLabels = {
 export const getRecentNotifications = async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 10;
+        const userRole = req.user?.role;
+        // Notifikasi agenda hanya untuk role: dekanat, wadek, kaur, kaprodi, sekprodi, ketua kk (serta admin)
+        const allowedAgendaRoles = ['dekanat', 'wadek', 'kaur', 'kaprodi', 'sekprodi', 'ketua_kk', 'admin', 'super_admin'];
+        const canSeeAgenda = allowedAgendaRoles.includes(userRole);
 
         const [recentActivities, recentDispositions] = await Promise.all([
             prisma.activityMonitoring.findMany({
@@ -64,7 +68,7 @@ export const getRecentNotifications = async (req, res) => {
             })
         ]);
 
-        const mappedActivities = recentActivities.map((act) => {
+        const mappedActivities = canSeeAgenda ? recentActivities.map((act) => {
             const hasConflict = act.status && act.status !== 'Normal';
             const creatorName = act.user?.name || 'Sistem';
 
@@ -83,7 +87,7 @@ export const getRecentNotifications = async (req, res) => {
                 createdAt: act.createdAt,
                 link: '/dashboard/monitoring-kegiatan',
             };
-        });
+        }) : [];
 
         const mappedDispositions = recentDispositions.map((disp) => {
             const instruksiText = instruksiLabels[disp.instruksi] || disp.instruksi;

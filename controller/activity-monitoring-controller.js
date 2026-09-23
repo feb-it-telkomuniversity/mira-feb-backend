@@ -190,13 +190,21 @@ async function createActivityMonitoring(req, res) {
 
         const newActivity = await createActivityMonitoringQuery(payload);
 
-        // Kirim notifikasi email ke semua user terdaftar & tembusan admin
+        // Kirim notifikasi email ke role dekanat, wadek, kaur, kaprodi, sekprodi, ketua_kk & tembusan admin
         (async () => {
             try {
-                // Ambil semua email user terdaftar di database MIRA
+                if (process.env.ENABLE_EMAIL_NOTIFICATIONS === 'false') {
+                    return;
+                }
+
+                // Hanya kirim notifikasi email agenda ke role tertentu
+                const allowedRoles = ['dekanat', 'wadek', 'kaur', 'kaprodi', 'sekprodi', 'ketua_kk', 'admin', 'super_admin'];
+
+                // Ambil email user terdaftar di database MIRA sesuai role target
                 const registeredUsers = await prisma.users.findMany({
                     where: {
-                        email: { not: null }
+                        email: { not: null },
+                        role: { in: allowedRoles }
                     },
                     select: { email: true }
                 });
