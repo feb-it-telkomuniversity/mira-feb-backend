@@ -1,3 +1,4 @@
+import http from "http";
 import express from "express"
 import { initializeWhatsapp } from "./services/whatsapp-service.js";
 import route from "./routes/api.js"
@@ -5,6 +6,7 @@ import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import cron from "node-cron"
 import { sendScheduleReminders } from "./model/schedule-model.js";
+import { initSocket } from "./services/socket-service.js";
 
 const allowedOrigins = [
     'http://localhost:3000',
@@ -53,6 +55,9 @@ app.use('/api', route)
 
 const PORT = 3001
 
-app.listen(3001, () => {
+const server = http.createServer(app);
+initSocket(server, allowedOrigins);
+
+server.listen(PORT, () => {
     console.log(`Server walk in  http://localhost:${PORT}`);
 })

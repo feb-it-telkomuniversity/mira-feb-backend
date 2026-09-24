@@ -26,9 +26,11 @@ async function getPartnershipStatsQuery() {
     return { yearStats, docTypeStats };
 }
 
-async function getPartnershipSummaryStatsQuery() {
+async function getPartnershipSummaryStatsQuery(reminderDays = 30) {
     const today = new Date()
-    const [totalMoA, totalMoU, totalIA, activePartnerGroup] = await Promise.all([
+    const targetDate = new Date()
+    targetDate.setDate(today.getDate() + reminderDays)
+    const [totalMoA, totalMoU, totalIA, activePartnerGroup, expiringCount] = await Promise.all([
         prisma.partnershipDocument.count({
             where: { docType: 'MoA' }
         }),
@@ -45,10 +47,18 @@ async function getPartnershipSummaryStatsQuery() {
                     gte: today // lebih besar atau sama dengan hari ini
                 }
             }
+        }),
+        prisma.partnershipDocument.count({
+            where: {
+                validUntil: {
+                    gte: today,
+                    lte: targetDate
+                }
+            }
         })
     ])
 
-    return { totalMoA, totalMoU, totalIA, activePartnerGroup: activePartnerGroup.length }
+    return { totalMoA, totalMoU, totalIA, activePartnerGroup: activePartnerGroup.length, expiringCount }
 }
 
 async function getPartnershipChartQuery() {
@@ -93,7 +103,22 @@ async function getPartnershipChartQuery() {
     return { documentsByYear, documentByCategory, documentByScope }
 }
 
-async function getPartnershipDataQuery(page = 1, limit = 15, search = "", filters = {}) {
+async function getPartnershipDataQuery(page = 1, limit = 15, search = "", filters = {}, sortBy = "updatedAt", sortOrder = "desc") {
+    const allowedSortFields = {
+        yearIssued: "yearIssued",
+        docType: "docType",
+        partnerName: "partnerName",
+        scope: "scope",
+        partnershipType: "partnershipType",
+        picInternal: "picInternal",
+        validUntil: "validUntil",
+        status: "validUntil",
+        updatedAt: "updatedAt",
+        dateCreated: "dateCreated",
+        dateSigned: "dateSigned"
+    };
+    const sortField = allowedSortFields[sortBy] || "updatedAt";
+    const sortDirection = sortOrder?.toLowerCase() === "asc" ? "asc" : "desc";
     const skip = (page - 1) * limit
 
     const andConditions = []
@@ -153,7 +178,7 @@ async function getPartnershipDataQuery(page = 1, limit = 15, search = "", filter
             skip: skip,     // Lewati data sebelumnya
             take: limit,    // Ambil sejumlah limit
             orderBy: {
-                updatedAt: 'desc', // Urutkan dari yang terbaru diupdate
+                [sortField]: sortDirection,
             },
             include: {
                 activities: true

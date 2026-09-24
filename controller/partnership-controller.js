@@ -11,7 +11,8 @@ async function getPartnershipStats(req, res) {
 
 async function getPartnershipSummaryStats(req, res) {
     try {
-        const stats = await getPartnershipSummaryStatsQuery()
+        const reminderDays = parseInt(req.query.reminderDays) || 30;
+        const stats = await getPartnershipSummaryStatsQuery(reminderDays)
         res.status(200).json({
             success: true,
             message: "Successfully fetch partnership statistic",
@@ -45,6 +46,8 @@ async function getPartnershipData(req, res) {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 15;
         const search = req.query.search || ""
+        const sortBy = req.query.sortBy || "updatedAt"
+        const sortOrder = req.query.sortOrder || "desc"
 
         const filters = {
             scope: req.query.scope || null,
@@ -61,7 +64,7 @@ async function getPartnershipData(req, res) {
             });
         }
 
-        const result = await getPartnershipDataQuery(page, limit, search, filters)
+        const result = await getPartnershipDataQuery(page, limit, search, filters, sortBy, sortOrder)
 
         res.status(200).json({
             success: true,

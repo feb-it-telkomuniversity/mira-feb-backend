@@ -1,3 +1,4 @@
+import { emitActivityChange, emitNotificationChange } from "../services/socket-service.js";
 import { sendActivityNotificationEmail } from '../services/email-service.js';
 import { createActivityMonitoringQuery, getActivityMonitoringListQuery, deleteActivityMonitoringQuery, updateActivityMonitoringQuery, getActivityMonitoringByIdQuery, patchActivityDatesQuery } from '../model/activity-monitoring-model.js'
 import prisma from "../utils/prisma.js";
@@ -246,6 +247,9 @@ async function createActivityMonitoring(req, res) {
         }
         delete newActivity._conflictDetails;
 
+        emitActivityChange("create", newActivity);
+        emitNotificationChange(newActivity);
+
         res.status(201).json({
             success: true,
             message: message,
@@ -270,6 +274,8 @@ async function deleteActivityMonitoring(req, res) {
         const activityId = parseInt(req.params.id)
         const response = await deleteActivityMonitoringQuery(activityId)
         if (response) {
+            emitActivityChange("delete", { id: activityId });
+
             res.status(200).json({
                 success: true,
                 message: "Delete activity success"
@@ -352,6 +358,8 @@ async function updateActivityMonitoring(req, res) {
         }
         delete updatedActivity._conflictDetails
 
+        emitActivityChange("update", updatedActivity);
+
         res.status(200).json({
             success: true,
             message: message,
@@ -403,6 +411,7 @@ async function patchActivityDates(req, res) {
         }
 
         const updatedActivity = await patchActivityDatesQuery(id, tanggal, newEndDateStr);
+        emitActivityChange("patch", updatedActivity);
         res.status(200).json({
             success: true,
             message: "Activity Date successfully updated",
