@@ -161,6 +161,10 @@ async function getContractManagementDataQuery(page = 1, limit = 15, search = "",
         andConditions.push({ ContractManagementCategory: filters.category });
     }
 
+    if (filters.year) {
+        andConditions.push({ year: filters.year });
+    }
+
     // 2. Filter spesifik berdasarkan ID Unit
     if (filters.unitId) {
         andConditions.push({

@@ -141,7 +141,8 @@ async function getContractManagementData(req, res) {
         const filters = {
             category: req.query.category || null,
             quarterly: req.query.quarterly || null,
-            unitId: unitFilterId
+            unitId: unitFilterId,
+            year: req.query.year || null
         };
 
         if (page < 1 || limit < 1) {

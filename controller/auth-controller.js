@@ -102,7 +102,15 @@ async function registerUser(req, res) {
         const hashedPassword = password ? await bcrypt.hash(password, 10) : null
 
         // isSsoMapped = true berarti admin sudah sengaja mendaftarkan akun ini
-        const newUser = await createUserQuery(username, hashedPassword, name, role, supervisorId, unitId, accessibleMenus, !!isSsoUser)
+        let finalMenus = accessibleMenus || [];
+        if (role === 'mahasiswa') {
+            const defaultMahasiswaMenus = [
+                '/dashboard/halo-dekan/pengaduan-baru',
+                '/dashboard/halo-dekan/riwayat-tiket'
+            ];
+            finalMenus = Array.from(new Set([...finalMenus, ...defaultMahasiswaMenus]));
+        }
+        const newUser = await createUserQuery(username, hashedPassword, name, role, supervisorId, unitId, finalMenus, !!isSsoUser)
         res.status(201).json({
             success: true,
             message: "User created successfuly",
@@ -167,7 +175,27 @@ async function updateUser(req, res) {
         if (unitId !== undefined) {
             updateData.unitId = unitId ? parseInt(unitId) : null
         }
-        if (accessibleMenus) updateData.accessibleMenus = accessibleMenus
+        if (accessibleMenus) {
+            let finalMenus = accessibleMenus;
+            if (role === 'mahasiswa') {
+                 const defaultMahasiswaMenus = [
+                    '/dashboard/halo-dekan/pengaduan-baru',
+                    '/dashboard/halo-dekan/riwayat-tiket'
+                ];
+                finalMenus = Array.from(new Set([...finalMenus, ...defaultMahasiswaMenus]));
+            }
+            updateData.accessibleMenus = finalMenus;
+        } else if (role === 'mahasiswa') {
+            const userToUpdate = await prisma.users.findUnique({ where: { id: parseInt(id) } });
+            if (userToUpdate && userToUpdate.role !== 'mahasiswa') {
+                const currentMenus = userToUpdate.accessibleMenus || [];
+                const defaultMahasiswaMenus = [
+                    '/dashboard/halo-dekan/pengaduan-baru',
+                    '/dashboard/halo-dekan/riwayat-tiket'
+                ];
+                updateData.accessibleMenus = Array.from(new Set([...currentMenus, ...defaultMahasiswaMenus]));
+            }
+        }
         // Tandai user SSO sudah dipetakan jika admin sengaja menyimpan perubahan
         if (isSsoMapped !== undefined) updateData.isSsoMapped = isSsoMapped
 
