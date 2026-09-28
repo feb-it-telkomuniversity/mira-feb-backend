@@ -72,12 +72,13 @@ export const sendActivityNotificationEmail = async ({ activity, creator, allUser
         // BCC to all other users so emails remain private
         const bccList = uniqueEmails.filter(e => e !== primaryTo && !ccList.includes(e));
 
-        const startDateStr = activity.date ? new Date(activity.date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '-';
-        const endDateStr = activity.endDate ? new Date(activity.endDate).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : null;
+        const startDateStr = activity.date ? new Date(activity.date).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '-';
+        const endDateStr = activity.endDate ? new Date(activity.endDate).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : null;
         const dateDisplay = endDateStr && endDateStr !== startDateStr ? `${startDateStr} s.d. ${endDateStr}` : startDateStr;
 
-        const startTimeStr = activity.startTime ? new Date(activity.startTime).toTimeString().slice(0, 5) : '-';
-        const endTimeStr = activity.endTime ? new Date(activity.endTime).toTimeString().slice(0, 5) : '-';
+        const timeOptions = { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', hour12: false };
+        const startTimeStr = activity.startTime ? new Date(activity.startTime).toLocaleTimeString('en-GB', timeOptions) : '-';
+        const endTimeStr = activity.endTime ? new Date(activity.endTime).toLocaleTimeString('en-GB', timeOptions) : '-';
 
         const officialsList = Array.isArray(activity.officials) && activity.officials.length > 0 
             ? activity.officials.join(', ') 
@@ -94,11 +95,11 @@ export const sendActivityNotificationEmail = async ({ activity, creator, allUser
             subject: `[Agenda Baru] ${activity.title} - MIRA FEB`,
             html: `
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; background-color: #f8fafc; padding: 24px; border-radius: 16px; border: 1px solid #e2e8f0;">
-                <div style="background: linear-gradient(135deg, #009da5 0%, #0f766e 100%); padding: 20px 24px; border-radius: 12px; color: #ffffff; text-align: left; margin-bottom: 20px;">
+                <div style="background: linear-gradient(135deg, #FFFFFF 0%, #B9B9B9 100%); padding: 20px 24px; border-radius: 12px; color: #ffffff; text-align: left; margin-bottom: 20px;">
                     <span style="display: inline-block; font-size: 11px; font-weight: 700; background-color: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
                         Notifikasi Agenda Kegiatan Baru
                     </span>
-                    <h2 style="margin: 0 0 6px 0; font-size: 20px; font-weight: 700; line-height: 1.3; color: #ffffff;">${activity.title}</h2>
+                    <h2 style="margin: 0 0 6px 0; font-size: 20px; font-weight: 700; line-height: 1.3; color: #1e293b;">${activity.title}</h2>
                     <p style="margin: 0; font-size: 13px; opacity: 0.9;">Fakultas Ekonomi dan Bisnis (FEB) - Telkom University</p>
                 </div>
 
@@ -123,10 +124,6 @@ export const sendActivityNotificationEmail = async ({ activity, creator, allUser
                         <tr>
                             <td style="padding: 8px 0; color: #64748b; vertical-align: top;">Unit Pelaksana</td>
                             <td style="padding: 8px 0; color: #0f172a; font-weight: 600;">: ${activity.unit || '-'} ${activity.otherUnit ? `(${activity.otherUnit})` : ''}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 8px 0; color: #64748b; vertical-align: top;">Estimasi Peserta</td>
-                            <td style="padding: 8px 0; color: #0f172a; font-weight: 600;">: ${activity.participants || 0} Orang</td>
                         </tr>
                         <tr>
                             <td style="padding: 8px 0; color: #64748b; vertical-align: top;">Pejabat Terlibat</td>
