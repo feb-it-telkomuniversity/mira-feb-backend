@@ -80,9 +80,19 @@ export const sendActivityNotificationEmail = async ({ activity, creator, allUser
         const startTimeStr = activity.startTime ? new Date(activity.startTime).toLocaleTimeString('en-GB', timeOptions) : '-';
         const endTimeStr = activity.endTime ? new Date(activity.endTime).toLocaleTimeString('en-GB', timeOptions) : '-';
 
+        const formatEnumText = (str) => {
+            if (!str) return str;
+            return str
+                .replace(/([a-z])([A-Z0-9])/g, '$1 $2')
+                .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2');
+        };
+
         const officialsList = Array.isArray(activity.officials) && activity.officials.length > 0 
-            ? activity.officials.join(', ') 
+            ? activity.officials.map(formatEnumText).join(', ') 
             : 'Tidak ada pejabat spesifik yang ditugaskan';
+            
+        const roomFormatted = formatEnumText(activity.room) || 'Lainnya';
+        const unitFormatted = formatEnumText(activity.unit) || '-';
 
         const creatorName = creator?.name || 'Sistem / Pengguna MIRA';
         const creatorRole = creator?.role ? ` (${creator.role.toUpperCase()})` : '';
@@ -95,7 +105,7 @@ export const sendActivityNotificationEmail = async ({ activity, creator, allUser
             subject: `[Agenda Baru] ${activity.title} - MIRA FEB`,
             html: `
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; background-color: #f8fafc; padding: 24px; border-radius: 16px; border: 1px solid #e2e8f0;">
-                <div style="background: linear-gradient(135deg, #FFFFFF 0%, #B9B9B9 100%); padding: 20px 24px; border-radius: 12px; color: #ffffff; text-align: left; margin-bottom: 20px;">
+                <div style="background: linear-gradient(135deg, #B9B9B9 0%, #B9B9B9 100%); padding: 20px 24px; border-radius: 12px; color: #ffffff; text-align: left; margin-bottom: 20px;">
                     <span style="display: inline-block; font-size: 11px; font-weight: 700; background-color: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
                         Notifikasi Agenda Kegiatan Baru
                     </span>
@@ -119,11 +129,11 @@ export const sendActivityNotificationEmail = async ({ activity, creator, allUser
                         </tr>
                         <tr>
                             <td style="padding: 8px 0; color: #64748b; vertical-align: top;">Ruangan / Lokasi</td>
-                            <td style="padding: 8px 0; color: #0f172a; font-weight: 600;">: ${activity.room || 'Lainnya'} ${activity.locationDetail ? `(${activity.locationDetail})` : ''}</td>
+                            <td style="padding: 8px 0; color: #0f172a; font-weight: 600;">: ${roomFormatted} ${activity.locationDetail ? `(${activity.locationDetail})` : ''}</td>
                         </tr>
                         <tr>
                             <td style="padding: 8px 0; color: #64748b; vertical-align: top;">Unit Pelaksana</td>
-                            <td style="padding: 8px 0; color: #0f172a; font-weight: 600;">: ${activity.unit || '-'} ${activity.otherUnit ? `(${activity.otherUnit})` : ''}</td>
+                            <td style="padding: 8px 0; color: #0f172a; font-weight: 600;">: ${unitFormatted} ${activity.otherUnit ? `(${activity.otherUnit})` : ''}</td>
                         </tr>
                         <tr>
                             <td style="padding: 8px 0; color: #64748b; vertical-align: top;">Pejabat Terlibat</td>
