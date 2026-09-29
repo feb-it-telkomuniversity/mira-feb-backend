@@ -105,12 +105,12 @@ export const sendActivityNotificationEmail = async ({ activity, creator, allUser
             subject: `[Agenda Baru] ${activity.title} - MIRA FEB`,
             html: `
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; background-color: #f8fafc; padding: 24px; border-radius: 16px; border: 1px solid #e2e8f0;">
-                <div style="background: linear-gradient(135deg, #B9B9B9 0%, #B9B9B9 100%); padding: 20px 24px; border-radius: 12px; color: #ffffff; text-align: left; margin-bottom: 20px;">
+                <div style="background: linear-gradient(135deg, #B9B9B9 0%, #B9B9B9 100%); padding: 20px 24px; border-radius: 12px; color: #1e293b; text-align: left; margin-bottom: 20px;">
                     <span style="display: inline-block; font-size: 11px; font-weight: 700; background-color: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
                         Notifikasi Agenda Kegiatan Baru
                     </span>
                     <h2 style="margin: 0 0 6px 0; font-size: 20px; font-weight: 700; line-height: 1.3; color: #1e293b;">${activity.title}</h2>
-                    <p style="margin: 0; font-size: 13px; opacity: 0.9;">Fakultas Ekonomi dan Bisnis (FEB) - Telkom University</p>
+                    <p style="margin: 0; font-size: 13px; opacity: 0.9; color: #1e293b;">Fakultas Ekonomi dan Bisnis (FEB) - Telkom University</p>
                 </div>
 
                 <div style="background-color: #ffffff; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
