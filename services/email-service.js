@@ -97,6 +97,25 @@ export const sendActivityNotificationEmail = async ({ activity, creator, allUser
         const creatorName = creator?.name || 'Sistem / Pengguna MIRA';
         const creatorRole = creator?.role ? ` (${creator.role.toUpperCase()})` : '';
 
+        const formatGCalDate = (dateStr) => {
+            if (!dateStr) return '';
+            try {
+                return new Date(dateStr).toISOString().replace(/-|:|\.\d\d\d/g, '');
+            } catch (e) {
+                return '';
+            }
+        };
+
+        const gcalStart = formatGCalDate(activity.startTime || activity.date);
+        const gcalEnd = formatGCalDate(activity.endTime || activity.endDate || activity.startTime || activity.date);
+        const gcalDates = gcalStart && gcalEnd ? `&dates=${gcalStart}/${gcalEnd}` : '';
+        const gcalTitle = encodeURIComponent(activity.title || 'Agenda MIRA');
+        const gcalLocation = encodeURIComponent(`${roomFormatted} ${activity.locationDetail ? `(${activity.locationDetail})` : ''}`.trim());
+        const gcalDetails = encodeURIComponent(`Unit Pelaksana: ${unitFormatted}\nPejabat: ${officialsList}\n\n${activity.description || ''}`.trim());
+        
+        const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${gcalTitle}${gcalDates}&details=${gcalDetails}&location=${gcalLocation}`;
+
+
         const mailOptions = {
             from: '"MIRA FEB Telkom University" <' + (process.env.SMTP_EMAIL || 'sekpimfeb.telkomuniv@gmail.com') + '>',
             to: primaryTo,
@@ -116,7 +135,7 @@ export const sendActivityNotificationEmail = async ({ activity, creator, allUser
                 <div style="background-color: #ffffff; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
                     <h3 style="margin-top: 0; margin-bottom: 14px; font-size: 14px; font-weight: 700; color: #1e293b; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
                         Detail Agenda Kegiatan
-                    </h3>
+                    </h3> 
                     
                     <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
                         <tr>
@@ -145,6 +164,12 @@ export const sendActivityNotificationEmail = async ({ activity, creator, allUser
                             <td style="padding: 8px 0; color: #334155;">: ${activity.description}</td>
                         </tr>` : ''}
                     </table>
+                </div>
+
+                <div style="text-align: center; margin-top: 20px; margin-bottom: 24px;">
+                    <a href="${gcalUrl}" target="_blank" style="display: inline-block; background-color: #009da5; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; box-shadow: 0 4px 6px -1px rgba(0, 157, 165, 0.2), 0 2px 4px -1px rgba(0, 157, 165, 0.1);">
+                        📅 Tambahkan ke Google Calendar
+                    </a>
                 </div>
 
                 <div style="background-color: #f1f5f9; border-left: 4px solid #009da5; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
