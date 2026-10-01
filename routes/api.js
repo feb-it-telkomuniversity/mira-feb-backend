@@ -12,6 +12,7 @@ import { verifyApiKey } from '../middleware/api-key-middleware.js'
 import { createManagementReport, deleteManagementReport, getManagementReportList, toggleReportStatus, updateManagementReport } from '../controller/management-report-controller.js'
 import { getLecturersList } from '../controller/lecturer-controller.js'
 import { getStaffsList } from '../controller/staff-controller.js'
+import { getAlumniList } from '../controller/alumni-controller.js'
 import { createMeeting, deleteMeetingById, getMeetingList, getMeetingListById, updateMeeting } from '../controller/meeting-controller.js'
 import { createUnit, getUnits, updateUnit, deleteUnit } from '../controller/unit-controller.js'
 import { verifyRole, verifyToken } from '../middleware/auth-middleware.js'
@@ -39,11 +40,11 @@ const upload = multer({
 // PUBLIC ROUTES
 route.post('/sign-in', signIn)
 route.post('/auth/sso', loginWithSSO)
-route.get("/google/login", googleLogin);
-route.get("/google/redirect", googleRedirect)
-route.post('/auth/google', loginWithGoogle)
-route.post('/auth/otp/request', requestOtp)
-route.post('/auth/otp/verify', verifyOtp)
+// route.get("/google/login", googleLogin);
+// route.get("/google/redirect", googleRedirect)
+// route.post('/auth/google', loginWithGoogle)
+// route.post('/auth/otp/request', requestOtp)
+// route.post('/auth/otp/verify', verifyOtp)
 route.get('/public/log-ttd-dekan/:id', getTtdLogById)
 route.get('/external/agendas', verifyApiKey, getExternalAgendas)
 
@@ -142,6 +143,9 @@ route.delete('/meetings/:id', deleteMeetingById)
 // ==== DATA TPA dan DATA DOSEN ====
 route.get('/lecturers', getLecturersList)
 route.get('/staffs', getStaffsList)
+
+// ==== DATA ALUMNI ====
+route.get('/alumni', getAlumniList)
 
 // ==== HaloDekan ====
 // Mahasiswa
