@@ -7,7 +7,8 @@ import { createContact, getContacts, handleDeleteContact, updateContact } from '
 import { createPartnershipData, deletePartnershipData, getPartnershipCharts, getPartnershipData, getPartnershipStats, getPartnershipSummaryStats, updatePartnershipData } from '../controller/partnership-controller.js';
 import { addEvent, getGoogleEvents, googleLogin, googleRedirect } from '../controller/google-calendar-controller.js';
 import { createContractManagementWithAssignment, deleteContractManagement, getContractManagementById, getContractManagementData, getContractStats, reorderContracts, updateAssignment, updateContractManagement } from '../controller/contract-management-controller.js';
-import { createActivityMonitoring, getActivityMonitoringList, deleteActivityMonitoring, updateActivityMonitoring, patchActivityDates } from '../controller/activity-monitoring-controller.js'
+import { createActivityMonitoring, getActivityMonitoringList, deleteActivityMonitoring, updateActivityMonitoring, patchActivityDates, getExternalAgendas } from '../controller/activity-monitoring-controller.js'
+import { verifyApiKey } from '../middleware/api-key-middleware.js'
 import { createManagementReport, deleteManagementReport, getManagementReportList, toggleReportStatus, updateManagementReport } from '../controller/management-report-controller.js'
 import { getLecturersList } from '../controller/lecturer-controller.js'
 import { getStaffsList } from '../controller/staff-controller.js'
@@ -44,6 +45,8 @@ route.post('/auth/google', loginWithGoogle)
 route.post('/auth/otp/request', requestOtp)
 route.post('/auth/otp/verify', verifyOtp)
 route.get('/public/log-ttd-dekan/:id', getTtdLogById)
+route.get('/external/agendas', verifyApiKey, getExternalAgendas)
+
 
 // PROTECTED ROUTES
 route.use(verifyToken)
@@ -116,6 +119,7 @@ route.get('/notifications', getRecentNotifications)
 
 // ==== Activtiy Monitoring List ====
 route.get('/activity-monitoring', getActivityMonitoringList)
+
 route.post('/activity-monitoring', createActivityMonitoring)
 route.delete('/activity-monitoring/:id', deleteActivityMonitoring)
 route.put('/activity-monitoring/:id', updateActivityMonitoring)

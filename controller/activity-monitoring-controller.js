@@ -427,4 +427,66 @@ async function patchActivityDates(req, res) {
     }
 }
 
-export { getActivityMonitoringList, createActivityMonitoring, deleteActivityMonitoring, updateActivityMonitoring, patchActivityDates }
+async function getExternalAgendas(req, res) {
+    try {
+        const { date, status } = req.query; // optional filters
+        
+        let whereClause = {};
+        if (date) {
+            whereClause.date = new Date(date);
+        }
+        if (status) {
+            whereClause.status = status;
+        }
+
+        const agendas = await prisma.activityMonitoring.findMany({
+            where: whereClause,
+            select: {
+                id: true,
+                title: true,
+                date: true,
+                startTime: true,
+                endTime: true,
+                room: true,
+                locationDetail: true,
+                status: true,
+                unit: true,
+                officials: true,
+                description: true
+            },
+            orderBy: [
+                { date: 'asc' },
+                { startTime: 'asc' }
+            ]
+        });
+
+        // Format enum texts back to readable strings if needed
+        const formatEnumText = (str) => {
+            if (!str) return str;
+            return str
+                .replace(/([a-z])([A-Z0-9])/g, '$1 $2')
+                .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2');
+        };
+
+        const formattedAgendas = agendas.map(agenda => ({
+            ...agenda,
+            room: formatEnumText(agenda.room),
+            unit: formatEnumText(agenda.unit),
+            officials: agenda.officials ? agenda.officials.map(formatEnumText) : []
+        }));
+
+        res.status(200).json({
+            success: true,
+            message: "Successfully fetch agenda data for external use",
+            data: formattedAgendas
+        });
+    } catch (error) {
+        console.error("Error fetching external agendas:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        });
+    }
+}
+
+export { getActivityMonitoringList, createActivityMonitoring, deleteActivityMonitoring, updateActivityMonitoring, patchActivityDates, getExternalAgendas }
