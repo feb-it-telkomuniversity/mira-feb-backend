@@ -38,9 +38,13 @@ const PRODI_MAP = {
 
 const ROOM_MAP = {
     "Ruang Rapat Manterawu lt. 2": "RuangRapatManterawuLt2",
+    "Ruang Rapat Manterawu Lt2": "RuangRapatManterawuLt2",
     "Ruang Rapat Miossu lt. 1": "RuangRapatMiossuLt1",
+    "Ruang Rapat Miossu Lt1": "RuangRapatMiossuLt1",
     "Ruang Rapat Miossu lt. 2": "RuangRapatMiossuLt2",
+    "Ruang Rapat Miossu Lt2": "RuangRapatMiossuLt2",
     "Ruang Rapat Maratua lt. 1": "RuangRapatMaratuaLt1",
+    "Ruang Rapat Maratua Lt1": "RuangRapatMaratuaLt1",
     "Aula FEB": "AulaFEB",
     "Aula Manterawu": "AulaManterawu",
     "Lainnya": "Lainnya"
