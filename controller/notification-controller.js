@@ -16,7 +16,7 @@ export const getRecentNotifications = async (req, res) => {
         const allowedAgendaRoles = ['dekanat', 'wadek', 'kaur', 'kaprodi', 'sekprodi', 'ketua_kk', 'admin', 'super_admin'];
         const canSeeAgenda = allowedAgendaRoles.includes(userRole);
 
-        const [recentActivities, recentDispositions] = await Promise.all([
+        const [recentActivities, recentDispositions, recentTickets] = await Promise.all([
             prisma.activityMonitoring.findMany({
                 take: limit,
                 orderBy: {
@@ -65,6 +65,17 @@ export const getRecentNotifications = async (req, res) => {
                         },
                     },
                 },
+            }),
+            prisma.complainmentTicket.findMany({
+                take: limit,
+                orderBy: {
+                    updatedAt: 'desc',
+                },
+                include: {
+                    user: {
+                        select: { name: true, role: true }
+                    }
+                }
             })
         ]);
 
@@ -110,8 +121,23 @@ export const getRecentNotifications = async (req, res) => {
             };
         });
 
+        const mappedTickets = recentTickets.map((t) => {
+            const reporterName = t.user?.name || 'Mahasiswa/Umum';
+            return {
+                id: `ticket-${t.id}-${t.updatedAt.getTime()}`,
+                ticketId: t.id,
+                type: 'complaint_ticket',
+                title: `Halo Dekan: ${t.ticketCode}`,
+                message: `Status tiket diperbarui menjadi: ${t.status}`,
+                creator: t.user || null,
+                status: t.status,
+                createdAt: t.updatedAt,
+                link: '/dashboard/halo-dekan/riwayat-tiket',
+            };
+        });
+
         // Gabungkan dan urutkan berdasarkan tanggal dibuat terbaru
-        const combined = [...mappedActivities, ...mappedDispositions]
+        const combined = [...mappedActivities, ...mappedDispositions, ...mappedTickets]
             .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
             .slice(0, limit);
 

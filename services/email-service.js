@@ -346,3 +346,80 @@ export const sendDispositionNotificationEmail = async ({
         return false;
     }
 };
+export const sendHaloDekanNotificationEmail = async ({ ticket, actionMessage, recipients }) => {
+    try {
+        if (process.env.ENABLE_EMAIL_NOTIFICATIONS === 'false') {
+            console.log('[EmailService] Notifikasi email dinonaktifkan (ENABLE_EMAIL_NOTIFICATIONS=false).');
+            return false;
+        }
+
+        // Clean & deduplicate recipient emails
+        const uniqueEmails = Array.from(new Set(
+            recipients
+                .filter(e => e && typeof e === 'string' && e.includes('@'))
+                .map(e => e.trim().toLowerCase())
+        ));
+
+        if (uniqueEmails.length === 0) return false;
+
+        const primaryTo = uniqueEmails[0];
+        const bccList = uniqueEmails.slice(1);
+
+        const htmlTemplate = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; }
+                    .header { background-color: #A20000; color: white; padding: 15px 20px; border-radius: 8px 8px 0 0; }
+                    .content { background-color: white; padding: 20px; border-radius: 0 0 8px 8px; border: 1px solid #ddd; border-top: none; }
+                    .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #666; }
+                    .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; background-color: #e5e7eb; color: #374151; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h2>Notifikasi Halo Dekan</h2>
+                    </div>
+                    <div class="content">
+                        <p>Halo,</p>
+                        <p>${actionMessage}</p>
+                        
+                        <div style="background-color: #f8fafc; border-left: 4px solid #A20000; padding: 15px; margin: 20px 0;">
+                            <h3 style="margin-top: 0; margin-bottom: 10px; color: #A20000;">${ticket.ticketCode}</h3>
+                            <p style="margin: 0 0 5px 0;"><strong>Status:</strong> <span class="badge">${ticket.status}</span></p>
+                            <p style="margin: 0 0 5px 0;"><strong>Kategori:</strong> ${ticket.category || '-'}</p>
+                            <p style="margin: 0 0 5px 0;"><strong>Deskripsi Laporan:</strong></p>
+                            <p style="margin: 5px 0 0 0; color: #555;">${ticket.description ? ticket.description.substring(0, 150) + (ticket.description.length > 150 ? '...' : '') : '-'}</p>
+                        </div>
+
+                        <p>Silakan login ke aplikasi MIRA FEB untuk melihat detail selengkapnya.</p>
+                        <br/>
+                        <p>Terima kasih,<br>Sistem MIRA FEB Telkom University</p>
+                    </div>
+                    <div class="footer">
+                        <p>Email ini dihasilkan secara otomatis, mohon tidak dibalas.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
+
+        const mailOptions = {
+            from: '"MIRA FEB Telkom University" <no-reply@telkomuniversity.ac.id>',
+            to: primaryTo,
+            bcc: bccList,
+            subject: `[Halo Dekan] Update Tiket ${ticket.ticketCode}`,
+            html: htmlTemplate
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+        console.log(`[EmailService] Berhasil mengirim notifikasi tiket ${ticket.ticketCode} ke ${uniqueEmails.length} penerima.`);
+        return true;
+    } catch (error) {
+        console.error('[EmailService] Error saat mengirim notifikasi email Halo Dekan:', error);
+        return false;
+    }
+};

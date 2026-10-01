@@ -1,4 +1,6 @@
-
+import prisma from '../utils/prisma.js';
+import { emitNotificationChange } from '../services/socket-service.js';
+import { sendHaloDekanNotificationEmail } from '../services/email-service.js';
 import { findConversationById, findTickets, assignTicketToAdminQuery, countDasboardStatsQuery, getTicketCategoryStatsQuery, getTicketTrendsQuery, resolveTicketByAdminQuery, findRelevantConversationSegment, createComplaintTicketQuery, getMyTicketsQuery, getTicketsForAdminQuery, verifyTicketQuery, getTicketComplaintDetailQuery, assignTicketQuery, submitResolutionQuery, updateTicketStatusQuery, getTicketsForRoleQuery, getTicketsForUnitQuery } from "../model/ticket-model.js"
 import { put } from "@vercel/blob"
 import multer from 'multer';
@@ -216,6 +218,9 @@ async function verifyTicket(req, res) {
 
         const updatedTicket = await verifyTicketQuery(id, { status, actionNote })
 
+        
+        await notifyHaloDekanUpdate(id, "Laporan berhasil diverifikasi oleh Admin. Status: " + status);
+
         res.status(200).json({
             success: true,
             message: `Ticket successfully updated to status: ${status}`,
@@ -240,6 +245,9 @@ async function assignTicket(req, res) {
         }
 
         const updatedTicket = await assignTicketQuery(id, unitId, actionNote);
+        
+        await notifyHaloDekanUpdate(id, "Laporan telah ditugaskan kepada Unit/Program Studi terkait. Cek instruksi Dekanat.");
+
         res.status(200).json({
             success: true,
             message: "Tiket berhasil ditugaskan ke Unit terkait.",
@@ -269,6 +277,9 @@ async function resolveTicketByUnit(req, res) {
 
         const updatedTicket = await submitResolutionQuery(id, resolutionNote, resolutionProofUrls);
 
+        
+        await notifyHaloDekanUpdate(id, "Bukti penyelesaian laporan telah diunggah oleh Unit terkait dan menunggu persetujuan/verifikasi Dekan.");
+
         res.status(200).json({
             success: true,
             message: "Bukti penyelesaian berhasil dikirim ke Dekan.",
@@ -295,6 +306,9 @@ async function approveTicketResolution(req, res) {
         }
 
         const updatedTicket = await updateTicketStatusQuery(id, status, actionNote)
+
+        
+        await notifyHaloDekanUpdate(id, status === 'Resolved' ? "Laporan dinyatakan SELESAI dan disetujui oleh Dekan." : "Dekan meminta perbaikan/revisi atas laporan/tindak lanjut Unit.");
 
         res.status(200).json({
             success: true,
@@ -489,4 +503,39 @@ export {
     getDekanatTicketDetail,
     getUnitTickets,
     getUnitTicketDetail
+}
+// Helper for Notifications
+async function notifyHaloDekanUpdate(ticketId, actionMessage) {
+    try {
+        const ticket = await getTicketComplaintDetailQuery(ticketId);
+        if (!ticket) return;
+
+        // Emit Socket Event to update Bell Icon for everyone who has access
+        emitNotificationChange(ticket);
+
+        // Fetch Dekanat emails
+        const dekanats = await prisma.users.findMany({
+            where: { role: 'dekanat' },
+            select: { email: true }
+        });
+        const dekanatEmails = dekanats.map(d => d.email).filter(e => e);
+
+        // Fetch Reporter email
+        const reporterEmail = ticket.user?.email;
+
+        // Fetch Assigned Unit email
+        const assignedEmail = ticket.assignedTo?.email;
+
+        const allEmails = [...dekanatEmails];
+        if (reporterEmail) allEmails.push(reporterEmail);
+        if (assignedEmail) allEmails.push(assignedEmail);
+
+        await sendHaloDekanNotificationEmail({
+            ticket: ticket,
+            actionMessage: actionMessage,
+            recipients: allEmails
+        });
+    } catch (err) {
+        console.error("Error triggering Halo Dekan notification:", err);
+    }
 }

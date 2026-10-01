@@ -244,7 +244,7 @@ async function getTicketsForAdminQuery(statusFilter) {
                 select: { name: true, email: true, role: true }
             },
             assignedTo: {
-                select: { name: true }
+                select: { name: true, email: true }
             }
         }
     })
@@ -270,7 +270,7 @@ async function getTicketComplaintDetailQuery(ticketId) {
                 select: { name: true, username: true, email: true }
             },
             assignedTo: {
-                select: { name: true }
+                select: { name: true, email: true }
             }
         }
     })
@@ -338,7 +338,7 @@ async function getTicketsForRoleQuery() {
                 select: { name: true, email: true, role: true }
             },
             assignedTo: {
-                select: { name: true }
+                select: { name: true, email: true }
             }
         }
     })
